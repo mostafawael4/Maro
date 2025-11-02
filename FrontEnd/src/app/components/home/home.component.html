@@ -1,0 +1,21 @@
+<div class="home-container">
+  <div class="header">
+    <h1>MARO WEDDINGS</h1>
+    <p>"Where timeless memories meet soulful storytelling."</p>
+  </div>
+
+  <div class="photo-grid">
+    <div 
+      *ngFor="let image of images; let i = index" 
+      class="photo-item"
+      [class.loading]="!isImageLoaded(i)"
+    >
+      <img 
+        [src]="image" 
+        [alt]="'Wedding photo ' + (i + 1)"
+        (load)="onImageLoad(i)"
+        [class.loaded]="isImageLoaded(i)"
+      />
+    </div>
+  </div>
+</div>

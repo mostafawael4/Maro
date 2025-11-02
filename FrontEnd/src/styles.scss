@@ -1,0 +1,155 @@
+/* You can add global styles to this file, and also import other style files */
+ @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cinematic Wedding Photography Color Palette CSS Variables */
+:root {
+  /* Primary Colors - Terracotta Tones */
+  --color-primary-50: #fdf2f1;
+  --color-primary-100: #fce4e1;
+  --color-primary-200: #f9ccc6;
+  --color-primary-300: #f5a99e;
+  --color-primary-400: #f08676;
+  --color-primary-500: #e2725b; /* Main terracotta */
+  --color-primary-600: #d65a43;
+  --color-primary-700: #b84a36;
+  --color-primary-800: #9a3d2d;
+  --color-primary-900: #7c3124;
+  --color-primary-950: #4d1e16;
+
+  /* Secondary Colors - Sage Green Tones */
+  --color-secondary-50: #f6f7f4;
+  --color-secondary-100: #e9ebe4;
+  --color-secondary-200: #d4d7c7;
+  --color-secondary-300: #b8bca4;
+  --color-secondary-400: #9c9f84; /* Main sage green */
+  --color-secondary-500: #83866d;
+  --color-secondary-600: #6b6e5a;
+  --color-secondary-700: #56584a;
+  --color-secondary-800: #484a3e;
+  --color-secondary-900: #3d3f35;
+  --color-secondary-950: #20211c;
+
+  /* Accent Colors - Charcoal/Gray Tones */
+  --color-accent-50: #f7f7f7;
+  --color-accent-100: #e3e3e3;
+  --color-accent-200: #c8c8c8;
+  --color-accent-300: #a4a4a4;
+  --color-accent-400: #818181;
+  --color-accent-500: #666666;
+  --color-accent-600: #515151;
+  --color-accent-700: #434343;
+  --color-accent-800: #383838;
+  --color-accent-900: #333333; /* Main charcoal */
+  --color-accent-950: #1a1a1a;
+
+  /* Neutral Colors - Cream/Beige Tones */
+  --color-neutral-50: #fefdfb;
+  --color-neutral-100: #fdf9f2;
+  --color-neutral-200: #faf2e3;
+  --color-neutral-300: #f5e6c7;
+  --color-neutral-400: #f5f5dc; /* Main cream */
+  --color-neutral-500: #d8c3a5; /* Soft beige */
+  --color-neutral-600: #c4a882;
+  --color-neutral-700: #a68f68;
+  --color-neutral-800: #8a7555;
+  --color-neutral-900: #6f5f46;
+  --color-neutral-950: #3a3124;
+
+  /* Warm Tones */
+  --color-warm-50: #fdf8f6;
+  --color-warm-100: #f2e8e5;
+  --color-warm-200: #eaddd7;
+  --color-warm-300: #e0cec7;
+  --color-warm-400: #d2bab0;
+  --color-warm-500: #bfa094;
+  --color-warm-600: #a18072;
+  --color-warm-700: #977669;
+  --color-warm-800: #846358;
+  --color-warm-900: #6d4c41;
+  --color-warm-950: #3c2b24;
+
+  /* Cool Tones */
+  --color-cool-50: #f8fafc;
+  --color-cool-100: #f1f5f9;
+  --color-cool-200: #e2e8f0;
+  --color-cool-300: #cbd5e1;
+  --color-cool-400: #94a3b8;
+  --color-cool-500: #64748b;
+  --color-cool-600: #475569;
+  --color-cool-700: #334155;
+  --color-cool-800: #1e293b;
+  --color-cool-900: #0f172a;
+  --color-cool-950: #020617;
+}
+
+/* Base styles for cinematic theme */
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-neutral-400); /* Cream background */
+  color: var(--color-accent-900); /* Charcoal text */
+  line-height: 1.6;
+}
+
+/* Cinematic typography classes */
+.font-cinematic {
+  font-family: 'Playfair Display', serif;
+}
+
+/* Gradient backgrounds */
+.bg-gradient-cinematic {
+  background: linear-gradient(135deg, var(--color-neutral-400) 0%, var(--color-neutral-500) 100%);
+}
+
+.bg-gradient-warm {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-400) 100%);
+}
+
+/* Common button styles */
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-600);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(226, 114, 91, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary-400);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-secondary-500);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 159, 132, 0.3);
+}
+
+/* Card styles */
+.card-cinematic {
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card-cinematic:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
