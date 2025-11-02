@@ -1,0 +1,132 @@
+.home-container {
+  background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+  font-family: 'Georgia', serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 50px;
+
+  h1 {
+    color: white;
+    font-size: 3.5em;
+    letter-spacing: 8px;
+    font-weight: 300;
+    margin-bottom: 10px;
+    font-family: 'Playfair Display', serif;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1em;
+    font-style: italic;
+  }
+}
+
+.photo-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 120px;
+  column-count: 4;
+  column-gap: 20px;
+}
+
+.photo-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  margin-bottom: 20px;
+  break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+
+    &.loaded {
+      opacity: 1;
+    }
+  }
+
+  // Loading skeleton
+  &.loading {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    min-height: 200px;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Responsive design
+@media (max-width: 1200px) {
+  .photo-grid {
+    column-count: 3;
+    column-gap: 15px;
+  }
+
+  .photo-item {
+    margin-bottom: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .photo-grid {
+    column-count: 2;
+    column-gap: 12px;
+    padding: 15px;
+  }
+
+  .photo-item {
+    margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-size: 2.5em;
+    letter-spacing: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .photo-grid {
+    column-count: 1;
+    column-gap: 10px;
+    padding: 10px;
+  }
+
+  .photo-item {
+    margin-bottom: 10px;
+  }
+
+  .header h1 {
+    font-size: 2em;
+  }
+}
+

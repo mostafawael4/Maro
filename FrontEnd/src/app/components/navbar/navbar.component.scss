@@ -1,0 +1,211 @@
+// Navbar Cinematic Styling
+.navbar-cinematic {
+  transition: all 0.3s ease;
+  
+  // Enhanced backdrop blur effect
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  // Subtle shadow that increases on scroll
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  
+  &.scrolled {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    background-color: rgba(51, 51, 51, 0.98);
+  }
+}
+
+// Desktop Navigation Links
+.nav-link-desktop {
+  @apply relative px-3 py-2 text-white font-medium transition-all duration-300 ease-in-out;
+  
+  &:hover {
+    @apply text-white;
+    transform: translateY(-1px);
+  }
+  
+  &.active {
+    @apply text-white;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      background-color: #e2725b;
+      border-radius: 50%;
+      animation: fadeInScale 0.3s ease-in-out;
+    }
+  }
+  
+  // Underline animation on hover
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #e2725b, #9c9f84);
+    transition: width 0.3s ease-in-out;
+  }
+  
+  &:hover::before {
+    width: 100%;
+  }
+}
+
+// Mobile Navigation Links
+.nav-link-mobile {
+  @apply text-white font-medium transition-all duration-200;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    @apply text-white;
+    transform: translateX(4px);
+  }
+  
+  &.active {
+    background-color: rgba(226, 114, 91, 0.2);
+    @apply text-white border-l-4;
+    border-color: #e2725b;
+    
+    svg {
+      color: #e2725b;
+    }
+  }
+  
+  svg {
+    transition: all 0.2s ease-in-out;
+  }
+}
+
+// Mobile Menu Animation
+.mobile-menu {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top;
+  
+  &.open {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  
+  &.closed {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+// Hamburger Menu Animation
+.hamburger {
+  transition: all 0.3s ease-in-out;
+  
+  &.open {
+    transform: rotate(90deg);
+  }
+}
+
+// Logo Animation
+.navbar-logo {
+  transition: all 0.3s ease-in-out;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+// CTA Button Enhancement
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease-in-out;
+  }
+  
+  &:hover::before {
+    left: 100%;
+  }
+}
+
+// Responsive Adjustments
+@media (max-width: 768px) {
+  .navbar-cinematic {
+    padding: 0 1rem;
+  }
+  
+  .nav-link-mobile {
+    margin: 0.25rem 0;
+    border-radius: 0.5rem;
+  }
+}
+
+// Animation Keyframes
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes slideInFromTop {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Smooth entrance animation
+.navbar-cinematic {
+  animation: slideInFromTop 0.6s ease-out;
+}
+
+// Focus states for accessibility
+.nav-link-desktop:focus-visible,
+.nav-link-mobile:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-primary-400);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .navbar-cinematic {
+    border-bottom: 2px solid var(--color-accent-900);
+  }
+  
+  .nav-link-desktop,
+  .nav-link-mobile {
+    font-weight: 600;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .navbar-cinematic,
+  .nav-link-desktop,
+  .nav-link-mobile,
+  .btn-primary {
+    transition: none;
+    animation: none;
+  }
+}
