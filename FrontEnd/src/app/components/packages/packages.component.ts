@@ -48,6 +48,9 @@ export class PackagesComponent implements OnInit {
   switchSection(section: string): void {
     this.activeSection = section;
     // Navigate to the corresponding route
-    this.router.navigate(['/packages', section]);
+    this.router.navigate(['/packages', section]).then(() => {
+      // Scroll to top after navigation
+      window.scrollTo(0, 0);
+    });
   }
 }
