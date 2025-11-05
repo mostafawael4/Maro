@@ -11,7 +11,7 @@
   <div class="categories-nav">
     <button 
       class="category-btn" 
-      [class.active]="activeSection === 'cinematography'"
+      [class.active]="isActive('cinematography')"
       (click)="switchSection('cinematography')"
     >
       <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +22,7 @@
 
     <button 
       class="category-btn" 
-      [class.active]="activeSection === 'photography'"
+      [class.active]="isActive('photography')"
       (click)="switchSection('photography')"
     >
       <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,7 +34,7 @@
 
     <button 
       class="category-btn" 
-      [class.active]="activeSection === 'fullrecording'"
+      [class.active]="isActive('fullrecording')"
       (click)="switchSection('fullrecording')"
     >
       <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,11 +44,9 @@
     </button>
   </div>
 
-  <!-- Package Content -->
+  <!-- Package Content (Router Outlet for child routes) -->
   <div class="package-content">
-    <app-cinematography *ngIf="activeSection === 'cinematography'"></app-cinematography>
-    <app-photography *ngIf="activeSection === 'photography'"></app-photography>
-    <app-full-recording *ngIf="activeSection === 'fullrecording'"></app-full-recording>
+    <router-outlet></router-outlet>
   </div>
 </div>
 
