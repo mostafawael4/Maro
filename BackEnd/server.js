@@ -4,6 +4,9 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
+const logger = require('./utils/logger');
+const morgan = require('morgan');
 
 const connectDB = require('./config/db');
 const Admin = require('./models/admin');
@@ -11,6 +14,7 @@ const bcrypt = require('bcryptjs');
 
 const adminRoutes = require('./routes/admin');
 const orderRoutes = require('./routes/orders');
+const logsRoutes = require('./routes/logs');
 
 const PORT = process.env.PORT || 4000;
 const DB_USER = process.env.DB_USER || '';
@@ -28,6 +32,13 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
 
+    // create a write stream for requests
+    const accessLogStream = fs.createWriteStream(path.join(process.env.LOG_DIR || './logs', 'access.log'), { flags: 'a' });
+
+    // log every request to console & file
+    app.use(morgan('combined', { stream: accessLogStream }));
+    app.use(morgan('dev'));
+
     // sessions (using MongoStore)
     app.use(session({
       secret: SESSION_SECRET,
@@ -43,7 +54,8 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     // routes
     app.use('/admin', adminRoutes);
     app.use('/orders', orderRoutes);
-
+    app.use('/logs', logsRoutes);
+    
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
 
@@ -60,7 +72,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     }
 
     app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
+      logger.info(`Server listening on http://localhost:${PORT}`);
     });
 
   } catch (err) {
