@@ -1,5 +1,5 @@
 .home-container {
-  background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%); // Light warm sunshine gradient
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Georgia', serif;
@@ -10,7 +10,7 @@
   margin-bottom: 50px;
 
   h1 {
-    color: white;
+    color: #333333; // Dark text on white background
     font-size: 3.5em;
     letter-spacing: 8px;
     font-weight: 300;
@@ -19,7 +19,7 @@
   }
 
   p {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(0, 0, 0, 0.7); // Dark text on white background
     font-size: 1em;
     font-style: italic;
   }

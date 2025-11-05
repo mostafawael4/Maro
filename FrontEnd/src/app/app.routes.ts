@@ -8,6 +8,9 @@ export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
     { path: 'home', component: HomeComponent },
     { path: 'packages', component: PackagesComponent },
+    { path: 'packages/cinematography', component: PackagesComponent },
+    { path: 'packages/photography', component: PackagesComponent },
+    { path: 'packages/fullrecording', component: PackagesComponent },
     { path: 'gallery', component: GalleryComponent },
     { path: 'contact', component: ContactComponent },
 ];

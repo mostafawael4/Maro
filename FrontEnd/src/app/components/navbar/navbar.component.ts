@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
 export class NavbarComponent {
   isMobileMenuOpen = false;
   isScrolled = false;
-  @Input() navbarBgColor: string = 'rgba(51, 51, 51, 0.95)';
+  @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
   constructor() {
 

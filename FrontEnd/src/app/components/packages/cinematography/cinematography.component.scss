@@ -1,0 +1,362 @@
+// Cinematography Section
+.cinematography-section {
+  background: linear-gradient(180deg, #FFFCF8 0%, #FFFFFF 50%, #FFF9F2 100%);
+  padding: 4rem 2rem;
+  min-height: 100vh;
+}
+
+// Section Header
+.section-header {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 4rem;
+  position: relative;
+}
+
+.header-decoration {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+  margin: 0 auto 1.5rem;
+  border-radius: 2px;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem;
+  font-weight: 600;
+  color: #8B3A3A;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+}
+
+.section-subtitle {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: #6B6B6B;
+  font-style: italic;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+// Packages Container
+.packages-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2.5rem;
+  margin-bottom: 4rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+// Package Card
+.package-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  border-radius: 20px;
+  padding: 2.5rem;
+  border: 2px solid rgba(200, 155, 123, 0.2);
+  box-shadow: 0 8px 24px rgba(139, 58, 58, 0.08), 0 4px 12px rgba(255, 218, 185, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #8B3A3A 0%, #B8826B 50%, #FFDAB9 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(139, 58, 58, 0.15), 0 8px 16px rgba(255, 218, 185, 0.15);
+    border-color: rgba(139, 58, 58, 0.3);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &.popular {
+    border-color: #8B3A3A;
+    box-shadow: 0 12px 32px rgba(139, 58, 58, 0.15), 0 8px 16px rgba(255, 218, 185, 0.15);
+    transform: scale(1.05);
+
+    &::before {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      transform: scale(1);
+    }
+  }
+}
+
+// Package Header
+.package-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(200, 155, 123, 0.2);
+}
+
+.package-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #8B3A3A;
+  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.package-duration {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  color: #B8826B;
+  font-style: italic;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.package-price {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333333;
+  letter-spacing: 1px;
+}
+
+// Package Features
+.package-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-family: 'Playfair Display', serif;
+  color: #5A5A5A;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #8B3A3A;
+    transform: translateX(4px);
+  }
+
+  .check-icon {
+    width: 20px;
+    height: 20px;
+    color: #8B3A3A;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+// Extras Section
+.extras-section {
+  max-width: 1000px;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+
+.extras-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #8B3A3A;
+  text-align: center;
+  margin-bottom: 2rem;
+  letter-spacing: 1px;
+  position: relative;
+  padding-bottom: 1rem;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+    border-radius: 2px;
+  }
+}
+
+.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.extra-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  border: 2px solid rgba(200, 155, 123, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.06);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(139, 58, 58, 0.12);
+    border-color: rgba(139, 58, 58, 0.3);
+  }
+
+  .extra-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: #5A5A5A;
+    letter-spacing: 0.5px;
+  }
+
+  .extra-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    letter-spacing: 0.5px;
+  }
+}
+
+// Contact CTA Section
+.contact-cta {
+  text-align: center;
+  max-width: 700px;
+  margin: 4rem auto 0;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(139, 58, 58, 0.05) 0%, rgba(255, 218, 185, 0.05) 100%);
+  border-radius: 20px;
+  border: 2px solid rgba(139, 58, 58, 0.1);
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    margin-bottom: 1rem;
+    letter-spacing: 1px;
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  p {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: #6B6B6B;
+    font-style: italic;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    letter-spacing: 0.3px;
+  }
+}
+
+.cta-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 1.25rem 2.5rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+    background: linear-gradient(135deg, #20BA5A 0%, #0E7866 100%);
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  .whatsapp-icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+// Animations
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.package-card {
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+
+  &:nth-child(1) { animation-delay: 0.1s; }
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.3s; }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .cinematography-section {
+    padding: 3rem 1rem;
+  }
+
+  .package-card {
+    padding: 2rem;
+  }
+
+  .contact-cta {
+    padding: 2rem 1.5rem;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .package-card,
+  .cta-btn {
+    animation: none;
+    transition: none;
+  }
+}
+

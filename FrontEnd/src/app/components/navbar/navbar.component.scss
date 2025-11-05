@@ -6,26 +6,30 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   
-  // Subtle shadow that increases on scroll
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  // Light warm shadow with subtle burgundy and sunshine glow
+  box-shadow: 0 1px 3px rgba(107, 31, 31, 0.04), 0 1px 8px rgba(255, 223, 186, 0.06);
   
   &.scrolled {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    background-color: rgba(51, 51, 51, 0.98);
+    box-shadow: 0 4px 12px rgba(107, 31, 31, 0.06), 0 2px 15px rgba(255, 223, 186, 0.08);
+    background-color: rgba(255, 250, 245, 0.98); // Light warm cream when scrolled
   }
 }
 
 // Desktop Navigation Links
 .nav-link-desktop {
-  @apply relative px-3 py-2 text-white font-medium transition-all duration-300 ease-in-out;
+  @apply relative px-3 py-2 font-medium transition-all duration-300 ease-in-out;
+  font-family: 'Playfair Display', serif; // Elegant serif font
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  color: #333333; // Dark text for white navbar
   
   &:hover {
-    @apply text-white;
+    color: #8B3A3A; // Lighter burgundy on hover (mixed with warmth)
     transform: translateY(-1px);
   }
   
   &.active {
-    @apply text-white;
+    color: #8B3A3A; // Lighter burgundy for active
     
     &::after {
       content: '';
@@ -35,13 +39,14 @@
       transform: translateX(-50%);
       width: 6px;
       height: 6px;
-      background-color: #e2725b;
+      background: radial-gradient(circle, #8B3A3A 0%, #C89B7B 100%); // Soft burgundy to sunshine gradient
       border-radius: 50%;
       animation: fadeInScale 0.3s ease-in-out;
+      box-shadow: 0 0 8px rgba(200, 155, 123, 0.3); // Soft warm glow
     }
   }
   
-  // Underline animation on hover
+  // Underline animation on hover - gradient mixing burgundy with sunshine
   &::before {
     content: '';
     position: absolute;
@@ -49,7 +54,7 @@
     left: 0;
     width: 0;
     height: 2px;
-    background: linear-gradient(90deg, #e2725b, #9c9f84);
+    background: linear-gradient(90deg, #6B1F1F 0%, #B8826B 50%, #FFDAB9 100%); // Light burgundy to peach sunshine
     transition: width 0.3s ease-in-out;
   }
   
@@ -60,21 +65,27 @@
 
 // Mobile Navigation Links
 .nav-link-mobile {
-  @apply text-white font-medium transition-all duration-200;
+  @apply font-medium transition-all duration-200;
+  font-family: 'Playfair Display', serif; // Elegant serif font
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  color: #333333; // Dark text for white navbar
   
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    @apply text-white;
+    background: linear-gradient(90deg, rgba(139, 58, 58, 0.08) 0%, rgba(255, 223, 186, 0.08) 100%); // Light burgundy to sunshine
+    color: #8B3A3A; // Lighter burgundy on hover
     transform: translateX(4px);
   }
   
   &.active {
-    background-color: rgba(226, 114, 91, 0.2);
-    @apply text-white border-l-4;
-    border-color: #e2725b;
+    background: linear-gradient(90deg, rgba(139, 58, 58, 0.12) 0%, rgba(255, 223, 186, 0.12) 100%); // Light burgundy to sunshine
+    color: #8B3A3A; // Lighter burgundy for active
+    @apply border-l-4;
+    border-color: #8B3A3A; // Light burgundy border
+    box-shadow: inset 0 0 15px rgba(255, 223, 186, 0.2); // Soft warm inner glow
     
     svg {
-      color: #e2725b;
+      color: #8B3A3A; // Lighter burgundy for icons
     }
   }
   
@@ -115,6 +126,12 @@
   &:hover {
     transform: scale(1.05);
   }
+}
+
+// Logo Color Filter (Dark Burgundy)
+.navbar-logo-img {
+  // Apply dark burgundy color to logo
+  filter: brightness(0) saturate(100%) invert(10%) sepia(85%) saturate(4200%) hue-rotate(340deg) brightness(75%) contrast(115%);
 }
 
 // CTA Button Enhancement
