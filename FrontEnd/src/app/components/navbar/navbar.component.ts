@@ -1,6 +1,7 @@
 import { Component, HostListener, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -12,11 +13,17 @@ import { RouterLink } from '@angular/router';
 export class NavbarComponent {
   isMobileMenuOpen = false;
   isScrolled = false;
+  isAuthenticated = false;
   @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
-  constructor() {
-
-    
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
+    // Subscribe to authentication state
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth;
+    });
   }
 
   @HostListener('window:scroll', ['$event'])
@@ -30,6 +37,18 @@ export class NavbarComponent {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen = false;
+  }
+
+  onLogout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.closeMobileMenu();
+        this.router.navigate(['/']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+      }
+    });
   }
 
 }

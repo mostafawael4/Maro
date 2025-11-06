@@ -42,9 +42,9 @@ export class AdminComponent implements OnInit {
       next: (response) => {
         if (response.ok) {
           this.isLoading = false;
-          // Successfully logged in - you can redirect to admin dashboard
           console.log('Logged in successfully');
-          this.isAuthenticated = true;
+          // Redirect to home page after successful login
+          this.router.navigate(['/']);
         }
       },
       error: (error) => {
