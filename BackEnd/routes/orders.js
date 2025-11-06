@@ -83,7 +83,8 @@ const uploadMemory = multer({
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
   fileFilter: (req, file, cb) => {
     const allowed = [
-      ...allowedExtensions,
+      ...allowedExtensions.images,
+      ...allowedExtensions.videos,
     ];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
@@ -102,7 +103,7 @@ router.post(
         logger.warn(`Upload attempted to non-existent order ${orderId}`);
         return res.status(404).json({ ok: false, message: "Order not found" });
       }
-
+      
       const files = req.files || [];
       if (!files.length) {
         logger.warn(`Upload attempt to order ${orderId} with no files`);
@@ -112,7 +113,7 @@ router.post(
 
       // Save each file using the uploadService
       const fileObjs = files.map((f) => {
-        const url = uploadService.saveFile(orderId, f.buffer, f.originalname);
+        const url = uploadService.saveFile(orderId, f.buffer, f.originalname, { isGallery: false, isFilm: false });
         logger.info(`Saved file "${f.originalname}" for order ${orderId} (URL: ${url})`);
         return {
           filename: url.split("/").pop(),
@@ -156,7 +157,7 @@ router.get("/view/by-email", async (req, res) => {
   }
 });
 
-// GET /home/recent-random?limit=6 - return random images from recent orders for homepage
+/* // GET /home/recent-random?limit=6 - return random images from recent orders for homepage
 router.get("/home/recent-random", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 6;
@@ -191,5 +192,5 @@ router.get("/home/recent-random", async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
-
+ */
 module.exports = router;
