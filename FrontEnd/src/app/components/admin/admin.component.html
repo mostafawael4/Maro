@@ -1,0 +1,63 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <!-- Login Form -->
+    <div *ngIf="!isAuthenticated" class="login-container">
+      <div class="modal-header">
+        <h2 class="modal-title">Admin Login</h2>
+        <button class="close-btn" (click)="closeModal()" aria-label="Close">&times;</button>
+      </div>
+      
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            placeholder="Enter admin password"
+            class="password-input"
+            [disabled]="isLoading"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div *ngIf="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </div>
+
+        <button 
+          type="submit" 
+          class="login-btn"
+          [disabled]="isLoading"
+        >
+          <span *ngIf="!isLoading">Login</span>
+          <span *ngIf="isLoading">Logging in...</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Admin Dashboard (after login) -->
+    <div *ngIf="isAuthenticated" class="dashboard-container">
+      <div class="modal-header">
+        <h2 class="modal-title">Admin Panel</h2>
+        <button class="close-btn" (click)="closeModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="dashboard-content">
+        <p class="success-message">✓ You are logged in as admin</p>
+        
+        <div class="admin-actions">
+          <h3>Admin Actions</h3>
+          <p>You can add your admin functionalities here.</p>
+          <!-- Add your admin panel content here -->
+        </div>
+
+        <button class="logout-btn" (click)="onLogout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
