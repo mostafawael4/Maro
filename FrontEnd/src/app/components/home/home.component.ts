@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import imageData from '../../../assets/images.json';
+import { GalleryService, GalleryImage } from '../../services/gallery.service';
 
 @Component({
   selector: 'app-home',
@@ -10,12 +10,37 @@ import imageData from '../../../assets/images.json';
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  images: string[] = [];
+  images: GalleryImage[] = [];
   loadedImages: Set<number> = new Set();
+  isLoading: boolean = true;
+
+  constructor(private galleryService: GalleryService) {}
 
   ngOnInit() {
-    // Load images from JSON file
-    this.images = imageData.gallery;
+    // Load random images from backend API
+    this.loadRandomImages();
+  }
+
+  loadRandomImages() {
+    this.isLoading = true;
+    this.galleryService.getRandomImages(6).subscribe({
+      next: (images) => {
+        this.images = images;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading random images:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getImageUrl(image: GalleryImage): string {
+    // If the URL is relative, prepend the backend URL
+    if (image.url.startsWith('/')) {
+      return `http://localhost:4000${image.url}`;
+    }
+    return image.url;
   }
 
   onImageLoad(index: number) {
