@@ -6,6 +6,7 @@ import { PhotographyComponent } from './components/packages/photography/photogra
 import { FullRecordingComponent } from './components/packages/full-recording/full-recording.component';
 import { GalleryComponent } from './components/gallery/gallery.component';
 import { ContactComponent } from './components/contact/contact.component';
+import { AdminComponent } from './components/admin/admin.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -22,4 +23,5 @@ export const routes: Routes = [
     },
     { path: 'gallery', component: GalleryComponent },
     { path: 'contact', component: ContactComponent },
+    { path: 'admin', component: AdminComponent },
 ];

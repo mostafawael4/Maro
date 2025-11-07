@@ -1,0 +1,8 @@
+// Minimal styles - most styling is done with Tailwind CSS in the template
+
+// Floating label animation when input has value
+input:not(:placeholder-shown) + label {
+  top: -1.5rem;
+  font-size: 0.875rem;
+  color: #8B3A3A;
+}
