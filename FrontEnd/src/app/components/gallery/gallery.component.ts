@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { GalleryService, GalleryImage } from '../../services/gallery.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -12,18 +12,24 @@ import { UploadModalComponent } from '../upload-modal/upload-modal.component';
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
-export class GalleryComponent implements OnInit {
+export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   images: GalleryImage[] = [];
   loadedImages: Set<number> = new Set();
+  visibleImages: Set<number> = new Set();
   isLoading: boolean = true;
   errorMessage: string = '';
   isAuthenticated: boolean = false;
   showUploadModal: boolean = false;
+  private intersectionObserver?: IntersectionObserver;
+  private isBrowser: boolean;
 
   constructor(
     private galleryService: GalleryService,
-    private authService: AuthService
-  ) {}
+    private authService: AuthService,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   ngOnInit() {
     this.loadGalleryImages();
@@ -34,18 +40,85 @@ export class GalleryComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    // Setup Intersection Observer for scroll animations (browser only)
+    if (this.isBrowser) {
+      setTimeout(() => {
+        this.setupIntersectionObserver();
+        this.observeAllImages();
+      }, 50);
+    }
+  }
+
+  ngOnDestroy() {
+    // Clean up observer
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+    }
+  }
+
+  setupIntersectionObserver() {
+    if (!this.isBrowser) return;
+    
+    const options = {
+      root: null,
+      rootMargin: '50px', // Start animation slightly before element enters viewport
+      threshold: 0.1
+    };
+
+    this.intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const element = entry.target as HTMLElement;
+          const index = parseInt(element.getAttribute('data-index') || '0', 10);
+          // Add to visible set to trigger animation
+          setTimeout(() => {
+            this.visibleImages.add(index);
+          }, 0);
+        }
+      });
+    }, options);
+  }
+
+  observeImage(element: HTMLElement) {
+    if (this.intersectionObserver && element) {
+      this.intersectionObserver.observe(element);
+    }
+  }
+
+  isImageVisible(index: number): boolean {
+    return this.visibleImages.has(index);
+  }
+
   loadGalleryImages() {
     this.isLoading = true;
     this.galleryService.getAllImages().subscribe({
       next: (images) => {
         this.images = images;
         this.isLoading = false;
+        
+        // Re-setup observer after images are loaded (browser only)
+        if (this.isBrowser) {
+          setTimeout(() => {
+            this.setupIntersectionObserver();
+            this.observeAllImages();
+          }, 100);
+        }
       },
       error: (error) => {
         console.error('Error loading gallery images:', error);
         this.errorMessage = 'Failed to load gallery images. Please try again later.';
         this.isLoading = false;
       }
+    });
+  }
+
+  observeAllImages() {
+    if (!this.isBrowser) return;
+    
+    const photoItems = document.querySelectorAll('.photo-item');
+    photoItems.forEach((item) => {
+      this.observeImage(item as HTMLElement);
     });
   }
 

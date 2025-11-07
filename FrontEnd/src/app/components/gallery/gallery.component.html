@@ -37,6 +37,8 @@
     <div 
       *ngFor="let image of images; let i = index" 
       class="photo-item"
+      [attr.data-index]="i"
+      [class.animate-in]="isImageVisible(i)"
     >
       <img 
         [src]="getImageUrl(image)" 
