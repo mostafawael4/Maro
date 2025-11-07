@@ -1,1 +1,40 @@
-<p>gallery works!</p>
+<div class="gallery-container">
+  <!-- Header Section -->
+  <div class="header">
+    <h1>OUR GALLERY</h1>
+    <p>"Capturing the magic of love, one frame at a time."</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading beautiful moments...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <p>{{ errorMessage }}</p>
+    <button (click)="loadGalleryImages()" class="retry-btn">Retry</button>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !errorMessage && images.length === 0" class="empty-container">
+    <p>No images in the gallery yet.</p>
+  </div>
+
+  <!-- Photo Grid -->
+  <div *ngIf="!isLoading && !errorMessage && images.length > 0" class="photo-grid">
+    <div 
+      *ngFor="let image of images; let i = index" 
+      class="photo-item"
+    >
+      <img 
+        [src]="getImageUrl(image)" 
+        [alt]="image.filename"
+        (load)="onImageLoad(i)"
+        (error)="onImageError(i, image)"
+        [class.loaded]="isImageLoaded(i)"
+      />
+    </div>
+  </div>
+</div>
