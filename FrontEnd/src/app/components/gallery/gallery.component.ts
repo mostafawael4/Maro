@@ -1,12 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService, GalleryImage } from '../../services/gallery.service';
+import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { UploadModalComponent } from '../upload-modal/upload-modal.component';
 
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UploadModalComponent],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
@@ -15,11 +17,21 @@ export class GalleryComponent implements OnInit {
   loadedImages: Set<number> = new Set();
   isLoading: boolean = true;
   errorMessage: string = '';
+  isAuthenticated: boolean = false;
+  showUploadModal: boolean = false;
 
-  constructor(private galleryService: GalleryService) {}
+  constructor(
+    private galleryService: GalleryService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.loadGalleryImages();
+    
+    // Check authentication status
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth;
+    });
   }
 
   loadGalleryImages() {
@@ -56,5 +68,19 @@ export class GalleryComponent implements OnInit {
       return `${environment.apiUrl}${image.url}`;
     }
     return image.url;
+  }
+
+  // Upload Modal methods
+  openUploadModal() {
+    this.showUploadModal = true;
+  }
+
+  closeUploadModal() {
+    this.showUploadModal = false;
+  }
+
+  onUploadComplete() {
+    // Reload gallery images after successful upload
+    this.loadGalleryImages();
   }
 }

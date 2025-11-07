@@ -28,13 +28,13 @@ export class GalleryService {
     return this.http.get<GalleryImage[]>(`${this.apiUrl}/random?numImages=${numImages}`);
   }
 
-  // Upload images to gallery
+  // Upload images to gallery (requires admin authentication)
   uploadImages(files: File[]): Observable<any> {
     const formData = new FormData();
     files.forEach(file => {
       formData.append('images', file);
     });
-    return this.http.post(`${this.apiUrl}/upload`, formData);
+    return this.http.post(`${this.apiUrl}/upload`, formData, { withCredentials: true });
   }
 }
 

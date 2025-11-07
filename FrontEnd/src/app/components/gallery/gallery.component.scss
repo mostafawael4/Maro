@@ -23,6 +23,39 @@
     font-size: 1em;
     font-style: italic;
   }
+
+  .upload-btn {
+    margin-top: 20px;
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    svg {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(107, 31, 31, 0.4);
+
+      svg {
+        transform: translateY(-2px);
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
 // Loading State
@@ -176,6 +209,11 @@
   .header h1 {
     font-size: 2em;
     letter-spacing: 2px;
+  }
+
+  .upload-btn {
+    font-size: 0.9em;
+    padding: 10px 20px;
   }
 }
 

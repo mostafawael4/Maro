@@ -1,0 +1,316 @@
+// Upload Modal Styles
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  padding: 24px 30px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}
+
+.modal-body {
+  padding: 30px;
+  max-height: 50vh;
+  overflow-y: auto;
+
+  .file-input-container {
+    margin-bottom: 20px;
+
+    .file-input-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      border: 3px dashed #D1D5DB;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #F9FAFB;
+
+      &:hover {
+        border-color: #8B3A3A;
+        background: #FFF9F2;
+      }
+
+      &.dragging {
+        border-color: #8B3A3A;
+        background: #FFF9F2;
+        border-style: solid;
+        transform: scale(1.02);
+        box-shadow: 0 8px 25px rgba(139, 58, 58, 0.2);
+      }
+
+      svg {
+        color: #8B3A3A;
+        margin-bottom: 15px;
+        transition: transform 0.3s ease;
+      }
+
+      &.dragging svg {
+        transform: scale(1.1);
+        animation: pulse 1s ease-in-out infinite;
+      }
+
+      span {
+        color: #6B7280;
+        font-size: 1em;
+        text-align: center;
+        transition: color 0.3s ease;
+      }
+
+      .drop-here {
+        color: #8B3A3A;
+        font-weight: 600;
+        font-size: 1.1em;
+      }
+    }
+  }
+
+  .selected-files {
+    margin-top: 20px;
+
+    h3 {
+      font-size: 1.1em;
+      color: #333;
+      margin-bottom: 15px;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .file-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      background: #F9FAFB;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #F3F4F6;
+      }
+
+      .file-name {
+        color: #333;
+        font-size: 0.95em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+
+      .remove-file-btn {
+        background: #EF4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+        transition: background 0.3s ease;
+        margin-left: 10px;
+
+        &:hover:not(:disabled) {
+          background: #DC2626;
+        }
+
+        &:disabled {
+          background: #D1D5DB;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .success-message {
+    padding: 15px;
+    background: #D1FAE5;
+    color: #065F46;
+    border-radius: 8px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .error-message {
+    padding: 15px;
+    background: #FEE2E2;
+    color: #991B1B;
+    border-radius: 8px;
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+  }
+}
+
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+
+  button {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .cancel-btn {
+    background: #F3F4F6;
+    color: #6B7280;
+
+    &:hover:not(:disabled) {
+      background: #E5E7EB;
+    }
+  }
+
+  .upload-submit-btn {
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(107, 31, 31, 0.4);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 10px;
+
+    button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 20px;
+
+    h2 {
+      font-size: 1.2em;
+    }
+  }
+
+  .modal-body {
+    padding: 15px;
+
+    .file-input-label {
+      padding: 30px 20px !important;
+    }
+  }
+}
+
