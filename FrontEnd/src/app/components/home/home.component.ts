@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService, GalleryImage } from '../../services/gallery.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-home',
@@ -38,7 +39,7 @@ export class HomeComponent implements OnInit {
   getImageUrl(image: GalleryImage): string {
     // If the URL is relative, prepend the backend URL
     if (image.url.startsWith('/')) {
-      return `http://localhost:4000${image.url}`;
+      return `${environment.apiUrl}${image.url}`;
     }
     return image.url;
   }
