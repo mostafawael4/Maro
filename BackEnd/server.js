@@ -17,6 +17,7 @@ const orderRoutes = require('./routes/orders');
 const logsRoutes = require('./routes/logs');
 const galleryRoutes = require('./routes/gallery');
 const filmsRoutes = require('./routes/films');
+const packagesRoutes = require('./routes/packages');
 
 const PORT = process.env.PORT || 4000;
 const DB_USER = process.env.DB_USER || '';
@@ -59,6 +60,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     app.use('/logs', logsRoutes);
     app.use('/gallery', galleryRoutes);
     app.use('/films', filmsRoutes);
+    app.use('/packages', packagesRoutes);
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
 
