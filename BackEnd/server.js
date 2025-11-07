@@ -61,6 +61,8 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     app.use('/gallery', galleryRoutes);
     app.use('/films', filmsRoutes);
     app.use('/packages', packagesRoutes);
+
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
 
