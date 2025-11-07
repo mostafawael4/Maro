@@ -18,19 +18,20 @@ export class HomeComponent implements OnInit {
   constructor(private galleryService: GalleryService) {}
 
   ngOnInit() {
-    // Load random images from backend API
-    this.loadRandomImages();
+    // Load latest images from gallery
+    this.loadLatestImages();
   }
 
-  loadRandomImages() {
+  loadLatestImages() {
     this.isLoading = true;
-    this.galleryService.getRandomImages(6).subscribe({
+    this.galleryService.getAllImages().subscribe({
       next: (images) => {
-        this.images = images;
+        // Get the last 5 images (most recent ones)
+        this.images = images.slice(-10).reverse();
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading random images:', error);
+        console.error('Error loading latest images:', error);
         this.isLoading = false;
       }
     });

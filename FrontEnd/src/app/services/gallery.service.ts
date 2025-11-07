@@ -23,11 +23,6 @@ export class GalleryService {
     return this.http.get<GalleryImage[]>(this.apiUrl);
   }
 
-  // Get random images (for homepage)
-  getRandomImages(numImages: number = 6): Observable<GalleryImage[]> {
-    return this.http.get<GalleryImage[]>(`${this.apiUrl}/random?numImages=${numImages}`);
-  }
-
   // Upload images to gallery (requires admin authentication)
   uploadImages(files: File[]): Observable<any> {
     const formData = new FormData();
