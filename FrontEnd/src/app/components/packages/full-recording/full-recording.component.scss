@@ -1,11 +1,11 @@
-// Full Recording Section
+// Full Recording Section - Simple & Creative
 .full-recording-section {
   background: linear-gradient(180deg, #FFFCF8 0%, #FFFFFF 50%, #FFF9F2 100%);
   padding: 4rem 2rem;
   min-height: 100vh;
 }
 
-// Loading State
+// Loading & Error States
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -25,17 +25,14 @@
   p {
     margin-top: 20px;
     color: #8B3A3A;
-    font-size: 1.1em;
+    font-size: 1rem;
   }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-// Error State
 .error-container {
   text-align: center;
   padding: 60px 20px;
@@ -47,54 +44,51 @@
   }
 }
 
-// Section Header
+// Section Header - Simple & Elegant
 .section-header {
   text-align: center;
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto 4rem;
-  position: relative;
 }
 
 .header-decoration {
-  width: 60px;
-  height: 2px;
+  width: 80px;
+  height: 3px;
   background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
   margin: 0 auto 1.5rem;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .section-title {
   font-family: 'Playfair Display', serif;
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 600;
   color: #8B3A3A;
   margin-bottom: 1rem;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 }
 
 .section-subtitle {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #6B6B6B;
   font-style: italic;
-  line-height: 1.8;
-  letter-spacing: 0.5px;
+  line-height: 1.7;
 }
 
 // Services Container
 .services-container {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 2rem;
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2.5rem;
   margin-bottom: 4rem;
 
@@ -104,18 +98,23 @@
   }
 }
 
-// Service Card
+// Service Card - Creative Design
 .service-card {
   position: relative;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
-  border-radius: 20px;
-  padding: 2.5rem;
-  border: 2px solid rgba(200, 155, 123, 0.2);
-  box-shadow: 0 8px 24px rgba(139, 58, 58, 0.08), 0 4px 12px rgba(255, 218, 185, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  text-align: center;
+  background: #FFFFFF;
+  border-radius: 16px;
   overflow: hidden;
-
+  border: 2px solid rgba(139, 58, 58, 0.15);
+  box-shadow: 0 8px 24px rgba(139, 58, 58, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(30px);
+  
+  // Top accent border
   &::before {
     content: '';
     position: absolute;
@@ -123,106 +122,125 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #8B3A3A 0%, #B8826B 50%, #FFDAB9 100%);
+    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 50%, #8B3A3A 100%);
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.3s ease;
+  }
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+    
+    // Stagger animation for each card
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.1}s;
+      }
+    }
   }
 
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 12px 32px rgba(139, 58, 58, 0.15), 0 8px 16px rgba(255, 218, 185, 0.15);
+    box-shadow: 0 16px 40px rgba(139, 58, 58, 0.12);
     border-color: rgba(139, 58, 58, 0.3);
-
+    
     &::before {
       opacity: 1;
     }
-
-    .service-icon {
+    
+    .service-icon-wrapper {
       transform: scale(1.1);
-      color: #6B1F1F;
     }
   }
 }
 
 // Service Icon
 .service-icon-wrapper {
-  margin-bottom: 1.5rem;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, rgba(139, 58, 58, 0.08) 0%, rgba(255, 218, 185, 0.12) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
 }
 
 .service-icon {
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   color: #8B3A3A;
-  margin: 0 auto;
-  transition: all 0.3s ease;
+  stroke-width: 2;
 }
 
 // Service Details
 .service-details {
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .service-name {
   font-family: 'Playfair Display', serif;
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 600;
   color: #8B3A3A;
-  margin-bottom: 0.75rem;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .service-description {
-  font-family: 'Playfair Display', serif;
-  font-size: 1rem;
-  color: #B8826B;
+  font-size: 0.95rem;
+  color: #6B6B6B;
   font-style: italic;
-  margin-bottom: 1.5rem;
-  letter-spacing: 0.5px;
 }
 
 .service-price {
   font-family: 'Playfair Display', serif;
-  font-size: 2rem;
-  font-weight: 600;
-  color: #333333;
-  letter-spacing: 1px;
-  padding: 1rem;
-  background: linear-gradient(135deg, rgba(139, 58, 58, 0.05) 0%, rgba(255, 218, 185, 0.05) 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(139, 58, 58, 0.1);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #8B3A3A;
+  letter-spacing: 0.5px;
+  margin-top: 0.5rem;
 }
 
-// Contact CTA Section
+// Contact CTA - Simple & Clean
 .contact-cta {
   text-align: center;
-  max-width: 700px;
+  max-width: 650px;
   margin: 4rem auto 0;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, rgba(139, 58, 58, 0.05) 0%, rgba(255, 218, 185, 0.05) 100%);
-  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 252, 248, 0.6);
+  border-radius: 16px;
   border: 2px solid rgba(139, 58, 58, 0.1);
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(30px);
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.7s ease-out forwards;
+  }
 
   h3 {
     font-family: 'Playfair Display', serif;
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 600;
     color: #8B3A3A;
-    margin-bottom: 1rem;
-    letter-spacing: 1px;
+    margin-bottom: 0.8rem;
 
     @media (max-width: 768px) {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
     }
   }
 
   p {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     color: #6B6B6B;
     font-style: italic;
-    line-height: 1.7;
+    line-height: 1.6;
     margin-bottom: 2rem;
-    letter-spacing: 0.3px;
   }
 }
 
@@ -230,23 +248,20 @@
   background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: white;
   border: none;
-  border-radius: 12px;
-  padding: 1.25rem 2.5rem;
-  font-family: 'Playfair Display', serif;
-  font-size: 1.1rem;
+  border-radius: 8px;
+  padding: 1rem 2.5rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   transition: all 0.3s ease;
   box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
 
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
-    background: linear-gradient(135deg, #20BA5A 0%, #0E7866 100%);
   }
 
   &:active {
@@ -254,29 +269,21 @@
   }
 
   .whatsapp-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 }
 
-// Animations
+// Fade in and slide up animation
 @keyframes fadeInUp {
-  0% {
+  from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.service-card {
-  animation: fadeInUp 0.6s ease-out;
-  animation-fill-mode: both;
-
-  &:nth-child(1) { animation-delay: 0.1s; }
-  &:nth-child(2) { animation-delay: 0.2s; }
 }
 
 // Responsive
@@ -285,21 +292,15 @@
     padding: 3rem 1rem;
   }
 
+  .services-container {
+    padding: 0 1rem;
+  }
+
   .service-card {
-    padding: 2rem;
+    padding: 2rem 1.5rem;
   }
 
   .contact-cta {
     padding: 2rem 1.5rem;
   }
 }
-
-// Reduced motion support
-@media (prefers-reduced-motion: reduce) {
-  .service-card,
-  .cta-btn {
-    animation: none;
-    transition: none;
-  }
-}
-

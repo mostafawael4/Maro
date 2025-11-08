@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PackagesService, PackageCollection, PackageExtra } from '../../../services/packages.service';
 
 @Component({
@@ -9,7 +9,7 @@ import { PackagesService, PackageCollection, PackageExtra } from '../../../servi
   templateUrl: './photography.component.html',
   styleUrl: './photography.component.scss'
 })
-export class PhotographyComponent implements OnInit {
+export class PhotographyComponent implements OnInit, AfterViewInit, OnDestroy {
   // Photography packages
   photographyPackages: PackageCollection[] = [];
   
@@ -19,11 +19,107 @@ export class PhotographyComponent implements OnInit {
   isLoading: boolean = true;
   errorMessage: string = '';
   selectedPackage: any = null;
+  
+  // Animation states
+  visiblePackages: Set<number> = new Set();
+  visibleExtras: Set<number> = new Set();
+  visibleCta: boolean = false; // Added for CTA animation
+  private intersectionObserver?: IntersectionObserver;
+  private isBrowser: boolean;
 
-  constructor(private packagesService: PackagesService) {}
+  constructor(
+    private packagesService: PackagesService,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   ngOnInit(): void {
     this.loadPhotographyPackages();
+  }
+  
+  ngAfterViewInit(): void {
+    // Setup Intersection Observer for scroll animations (browser only)
+    if (this.isBrowser) {
+      setTimeout(() => {
+        this.setupIntersectionObserver();
+        this.observeAllElements();
+      }, 50);
+    }
+  }
+  
+  ngOnDestroy(): void {
+    // Clean up observer
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+    }
+  }
+  
+  setupIntersectionObserver(): void {
+    if (!this.isBrowser) return;
+    
+    const options = {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0.1
+    };
+
+    this.intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const element = entry.target as HTMLElement;
+          const index = parseInt(element.getAttribute('data-index') || '0', 10);
+          const type = element.getAttribute('data-type') || 'package';
+          
+          setTimeout(() => {
+            if (type === 'package') {
+              this.visiblePackages.add(index);
+            } else if (type === 'extra') {
+              this.visibleExtras.add(index);
+            } else if (type === 'cta') {
+              this.visibleCta = true;
+            }
+          }, 0);
+        }
+      });
+    }, options);
+  }
+  
+  observeAllElements(): void {
+    if (!this.isBrowser) return;
+    
+    const packageCards = document.querySelectorAll('.package-card');
+    const extraCards = document.querySelectorAll('.extra-card');
+    const ctaSection = document.querySelector('.contact-cta'); // Added for CTA animation
+    
+    packageCards.forEach((card) => {
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(card as HTMLElement);
+      }
+    });
+    
+    extraCards.forEach((card) => {
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(card as HTMLElement);
+      }
+    });
+    
+    // Observe CTA section
+    if (ctaSection && this.intersectionObserver) {
+      this.intersectionObserver.observe(ctaSection as HTMLElement);
+    }
+  }
+  
+  isPackageVisible(index: number): boolean {
+    return this.visiblePackages.has(index);
+  }
+  
+  isExtraVisible(index: number): boolean {
+    return this.visibleExtras.has(index);
+  }
+  
+  isCTAVisible(): boolean {
+    return this.visibleCta;
   }
 
   loadPhotographyPackages(): void {
@@ -39,6 +135,14 @@ export class PhotographyComponent implements OnInit {
         }
         
         this.isLoading = false;
+        
+        // Re-setup observer after data is loaded (browser only)
+        if (this.isBrowser) {
+          setTimeout(() => {
+            this.setupIntersectionObserver();
+            this.observeAllElements();
+          }, 100);
+        }
       },
       error: (error) => {
         console.error('Error loading photography packages:', error);
@@ -57,4 +161,3 @@ export class PhotographyComponent implements OnInit {
     window.open('https://wa.me/201025641261', '_blank');
   }
 }
-

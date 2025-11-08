@@ -28,6 +28,9 @@
         *ngFor="let package of photographyPackages; let i = index" 
         class="package-card"
         [class.popular]="i === 0"
+        [class.animate-in]="isPackageVisible(i)"
+        [attr.data-index]="i"
+        [attr.data-type]="'package'"
       >
         <!-- Package Header -->
         <div class="package-header">
@@ -54,7 +57,13 @@
   <div *ngIf="!isLoading && !errorMessage && extras && extras.length > 0" class="extras-section">
     <h3 class="extras-title">Extras</h3>
     <div class="extras-grid">
-      <div *ngFor="let extra of extras" class="extra-card">
+      <div 
+        *ngFor="let extra of extras; let i = index" 
+        class="extra-card"
+        [class.animate-in]="isExtraVisible(i)"
+        [attr.data-index]="i"
+        [attr.data-type]="'extra'"
+      >
         <div class="extra-name">{{ extra.name }}</div>
         <div class="extra-price">{{ extra.price }}</div>
       </div>
@@ -62,7 +71,11 @@
   </div>
 
   <!-- Contact CTA -->
-  <div class="contact-cta">
+  <div 
+    class="contact-cta"
+    [class.animate-in]="isCTAVisible()"
+    [attr.data-type]="'cta'"
+  >
     <h3>Need a Package?</h3>
     <p>Let's discuss your vision and create the perfect photography package for your special day</p>
     <button class="cta-btn" (click)="contactUs()">

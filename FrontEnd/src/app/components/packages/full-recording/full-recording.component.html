@@ -24,7 +24,12 @@
   <!-- Services Grid -->
   <div *ngIf="!isLoading && !errorMessage" class="services-container">
     <div class="services-grid">
-      <div *ngFor="let service of services; let i = index" class="service-card">
+      <div 
+        *ngFor="let service of services; let i = index" 
+        class="service-card"
+        [class.animate-in]="isServiceVisible(i)"
+        [attr.data-index]="i"
+      >
         <!-- Service Icon -->
         <div class="service-icon-wrapper">
           <svg *ngIf="i === 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +51,11 @@
   </div>
 
   <!-- Contact CTA -->
-  <div class="contact-cta">
+  <div 
+    class="contact-cta"
+    [class.animate-in]="isCTAVisible()"
+    [attr.data-type]="'cta'"
+  >
     <h3>Ready to Book?</h3>
     <p>Contact us to discuss your requirements and secure our professional videography services</p>
     <button class="cta-btn" (click)="contactUs()">
