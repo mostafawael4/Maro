@@ -15,7 +15,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   loadedImages: Set<number> = new Set();
   visibleImages: Set<number> = new Set();
   isLoading: boolean = true;
+  isAboutVisible: boolean = false;
   private intersectionObserver?: IntersectionObserver;
+  private aboutObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
   constructor(
@@ -36,14 +38,18 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.setupIntersectionObserver();
         this.observeAllImages();
+        this.setupAboutObserver();
       }, 50);
     }
   }
 
   ngOnDestroy() {
-    // Clean up observer
+    // Clean up observers
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
+    }
+    if (this.aboutObserver) {
+      this.aboutObserver.disconnect();
     }
   }
 
@@ -88,6 +94,29 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  setupAboutObserver() {
+    if (!this.isBrowser) return;
+    
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    };
+
+    this.aboutObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          this.isAboutVisible = true;
+        }
+      });
+    }, options);
+
+    const aboutSection = document.querySelector('.about-section');
+    if (aboutSection) {
+      this.aboutObserver.observe(aboutSection);
+    }
+  }
+
   loadLatestImages() {
     this.isLoading = true;
     this.galleryService.getAllImages().subscribe({
@@ -96,11 +125,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.images = images.slice(-10).reverse();
         this.isLoading = false;
         
-        // Re-setup observer after images are loaded (browser only)
+        // Re-setup observers after images are loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
             this.setupIntersectionObserver();
             this.observeAllImages();
+            this.setupAboutObserver();
           }, 100);
         }
       },
