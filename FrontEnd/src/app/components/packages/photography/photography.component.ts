@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PackagesService, PackageCollection, PackageExtra } from '../../../services/packages.service';
 
 @Component({
   selector: 'app-photography',
@@ -8,55 +9,44 @@ import { CommonModule } from '@angular/common';
   templateUrl: './photography.component.html',
   styleUrl: './photography.component.scss'
 })
-export class PhotographyComponent {
+export class PhotographyComponent implements OnInit {
   // Photography packages
-  photographyPackages = [
-    {
-      id: 1,
-      name: 'Collection I',
-      price: '20,000 LE',
-      duration: '14-16 Hours Coverage',
-      features: [
-        '14-16 Hours Coverage',
-        'Unlimited Photos',
-        '3 Photographers Including'
-      ],
-      popular: true
-    },
-    {
-      id: 2,
-      name: 'Collection II',
-      price: '15,000 LE',
-      duration: '10-12 Hours Coverage',
-      features: [
-        '10-12 Hours Coverage',
-        'Unlimited Photos',
-        '2 Photographers Including'
-      ],
-      popular: false
-    },
-    {
-      id: 3,
-      name: 'Collection III',
-      price: '10,000 LE',
-      duration: '5-7 Hours Coverage',
-      features: [
-        '5-7 Hours Coverage',
-        'Unlimited Photos',
-        '1 Photographer Including'
-      ],
-      popular: false
-    }
-  ];
-
+  photographyPackages: PackageCollection[] = [];
+  
   // Extras
-  extras = [
-    { name: 'Extra Photographer', price: '4,000 LE' },
-    { name: 'Extra Hour', price: '3,000 LE' },
-    { name: '1 Film Roll', price: '4,000 LE' }
-  ];
+  extras: PackageExtra[] = [];
 
+  isLoading: boolean = true;
+  errorMessage: string = '';
   selectedPackage: any = null;
+
+  constructor(private packagesService: PackagesService) {}
+
+  ngOnInit(): void {
+    this.loadPhotographyPackages();
+  }
+
+  loadPhotographyPackages(): void {
+    this.isLoading = true;
+    this.packagesService.getAllPackages().subscribe({
+      next: (packages) => {
+        // Find the photography package
+        const photographyPackage = packages.find(pkg => pkg.packageName === 'photography');
+        
+        if (photographyPackage) {
+          this.photographyPackages = photographyPackage.collections;
+          this.extras = photographyPackage.extras;
+        }
+        
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading photography packages:', error);
+        this.errorMessage = 'Failed to load packages. Please try again later.';
+        this.isLoading = false;
+      }
+    });
+  }
 
   selectPackage(pkg: any): void {
     this.selectedPackage = pkg;

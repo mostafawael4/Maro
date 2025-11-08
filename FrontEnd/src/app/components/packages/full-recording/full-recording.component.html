@@ -10,24 +10,35 @@
     <div class="header-decoration"></div>
   </div>
 
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading services...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <p>{{ errorMessage }}</p>
+  </div>
+
   <!-- Services Grid -->
-  <div class="services-container">
+  <div *ngIf="!isLoading && !errorMessage" class="services-container">
     <div class="services-grid">
-      <div *ngFor="let service of services" class="service-card">
+      <div *ngFor="let service of services; let i = index" class="service-card">
         <!-- Service Icon -->
         <div class="service-icon-wrapper">
-          <svg *ngIf="service.icon === 'camera'" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg *ngIf="i === 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          <svg *ngIf="service.icon === 'crane'" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg *ngIf="i !== 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
           </svg>
         </div>
 
         <!-- Service Details -->
         <div class="service-details">
-          <h3 class="service-name">{{ service.name }}</h3>
-          <p class="service-description">{{ service.description }}</p>
+          <h3 class="service-name">{{ service.collectionName }}</h3>
+          <p *ngIf="service.description" class="service-description">{{ service.description }}</p>
           <div class="service-price">{{ service.price }}</div>
         </div>
       </div>

@@ -10,23 +10,35 @@
     <div class="header-decoration"></div>
   </div>
 
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading packages...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <p>{{ errorMessage }}</p>
+  </div>
+
   <!-- Packages Grid -->
-  <div class="packages-container">
+  <div *ngIf="!isLoading && !errorMessage" class="packages-container">
     <div class="packages-grid">
       <div 
-        *ngFor="let package of cinematographyPackages" 
+        *ngFor="let package of cinematographyPackages; let i = index" 
         class="package-card"
-        [class.popular]="package.popular"
+        [class.popular]="i === 0"
       >
         <!-- Package Header -->
         <div class="package-header">
-          <h3 class="package-name">{{ package.name }}</h3>
-          <div class="package-duration">{{ package.duration }}</div>
+          <h3 class="package-name">{{ package.collectionName }}</h3>
+          <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
+          <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
           <div class="package-price">{{ package.price }}</div>
         </div>
 
         <!-- Package Features -->
-        <ul class="package-features">
+        <ul *ngIf="package.features && package.features.length > 0" class="package-features">
           <li *ngFor="let feature of package.features" class="feature-item">
             <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -39,7 +51,7 @@
   </div>
 
   <!-- Extras Section -->
-  <div class="extras-section">
+  <div *ngIf="!isLoading && !errorMessage && extras && extras.length > 0" class="extras-section">
     <h3 class="extras-title">Extras</h3>
     <div class="extras-grid">
       <div *ngFor="let extra of extras" class="extra-card">

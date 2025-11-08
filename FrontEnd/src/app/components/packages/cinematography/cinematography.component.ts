@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PackagesService, PackageCollection, PackageExtra } from '../../../services/packages.service';
 
 @Component({
   selector: 'app-cinematography',
@@ -8,56 +9,44 @@ import { CommonModule } from '@angular/common';
   templateUrl: './cinematography.component.html',
   styleUrl: './cinematography.component.scss'
 })
-export class CinematographyComponent {
+export class CinematographyComponent implements OnInit {
   // Cinematography packages
-  cinematographyPackages = [
-    {
-      id: 1,
-      name: 'Collection I',
-      price: '25,000 LE',
-      duration: '14-16 Hours Coverage',
-      features: [
-        '14-16 Hours Coverage',
-        'Short Film (10-20 Minutes)',
-        '1 Instagram Reel',
-        'Instagram Stories'
-      ],
-      popular: true
-    },
-    {
-      id: 2,
-      name: 'Collection II',
-      price: '15,000 LE',
-      duration: '10-12 Hours Coverage',
-      features: [
-        '10-12 Hours Coverage',
-        'Highlight Video (8-10 Minutes)',
-        '2 Videographers Including'
-      ],
-      popular: false
-    },
-    {
-      id: 3,
-      name: 'Collection III',
-      price: '10,000 LE',
-      duration: '5-7 Hours Coverage',
-      features: [
-        '5-7 Hours Coverage',
-        'Highlight Video (4-7 Minutes)',
-        '1 Videographer Including'
-      ],
-      popular: false
-    }
-  ];
-
+  cinematographyPackages: PackageCollection[] = [];
+  
   // Extras
-  extras = [
-    { name: 'Extra Videographer', price: '4,000 LE' },
-    { name: 'Extra Hour', price: '3,000 LE' },
-    { name: 'Instagram Reel', price: '4,000 LE' }
-  ];
+  extras: PackageExtra[] = [];
 
+  isLoading: boolean = true;
+  errorMessage: string = '';
   selectedPackage: any = null;
+
+  constructor(private packagesService: PackagesService) {}
+
+  ngOnInit(): void {
+    this.loadCinematographyPackages();
+  }
+
+  loadCinematographyPackages(): void {
+    this.isLoading = true;
+    this.packagesService.getAllPackages().subscribe({
+      next: (packages) => {
+        // Find the cinematography package
+        const cinematographyPackage = packages.find(pkg => pkg.packageName === 'cinematography');
+        
+        if (cinematographyPackage) {
+          this.cinematographyPackages = cinematographyPackage.collections;
+          this.extras = cinematographyPackage.extras;
+        }
+        
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading cinematography packages:', error);
+        this.errorMessage = 'Failed to load packages. Please try again later.';
+        this.isLoading = false;
+      }
+    });
+  }
 
   selectPackage(pkg: any): void {
     this.selectedPackage = pkg;

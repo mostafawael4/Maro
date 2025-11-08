@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PackagesService, PackageCollection } from '../../../services/packages.service';
 
 @Component({
   selector: 'app-full-recording',
@@ -8,24 +9,39 @@ import { CommonModule } from '@angular/common';
   templateUrl: './full-recording.component.html',
   styleUrl: './full-recording.component.scss'
 })
-export class FullRecordingComponent {
+export class FullRecordingComponent implements OnInit {
   // Full Recording Services
-  services = [
-    {
-      id: 1,
-      name: '1 Camera Man',
-      description: '4K Quality Recording',
-      price: '5,000 LE',
-      icon: 'camera'
-    },
-    {
-      id: 2,
-      name: 'Crane',
-      description: 'Professional Cinematic Shots',
-      price: '8,000 LE',
-      icon: 'crane'
-    }
-  ];
+  services: PackageCollection[] = [];
+  
+  isLoading: boolean = true;
+  errorMessage: string = '';
+
+  constructor(private packagesService: PackagesService) {}
+
+  ngOnInit(): void {
+    this.loadFullRecordingServices();
+  }
+
+  loadFullRecordingServices(): void {
+    this.isLoading = true;
+    this.packagesService.getAllPackages().subscribe({
+      next: (packages) => {
+        // Find the fullRecording package
+        const fullRecordingPackage = packages.find(pkg => pkg.packageName === 'fullRecording');
+        
+        if (fullRecordingPackage) {
+          this.services = fullRecordingPackage.collections;
+        }
+        
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading full recording services:', error);
+        this.errorMessage = 'Failed to load services. Please try again later.';
+        this.isLoading = false;
+      }
+    });
+  }
 
   contactUs(): void {
     window.open('https://wa.me/201025641261', '_blank');
