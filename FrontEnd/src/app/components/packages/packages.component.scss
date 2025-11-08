@@ -129,6 +129,211 @@
   animation: fadeIn 0.5s ease-out;
 }
 
+// Terms and Conditions Section
+.terms-section {
+  max-width: 1000px;
+  margin: 5rem auto 3rem;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 250, 245, 0.9) 100%);
+  border-radius: 20px;
+  border: 2px solid rgba(139, 58, 58, 0.12);
+  box-shadow: 0 8px 32px rgba(139, 58, 58, 0.08);
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(30px);
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.7s ease-out forwards;
+  }
+
+  @media (max-width: 768px) {
+    margin: 3rem 1rem 2rem;
+    padding: 2rem 1.5rem;
+  }
+}
+
+.terms-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #8B3A3A;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  position: relative;
+  letter-spacing: 1px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+    border-radius: 3px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.6rem;
+  }
+}
+
+.terms-content {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.term-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border-left: 4px solid #B8826B;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-left-color: #8B3A3A;
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(139, 58, 58, 0.1);
+  }
+
+  &.thank-you {
+    border-left-color: #8B3A3A;
+    background: linear-gradient(135deg, rgba(139, 58, 58, 0.05) 0%, rgba(255, 218, 185, 0.08) 100%);
+
+    p {
+      color: #8B3A3A;
+      font-size: 1.05rem;
+    }
+
+    .term-icon {
+      color: #8B3A3A;
+    }
+  }
+
+  .term-icon {
+    width: 28px;
+    height: 28px;
+    color: #B8826B;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #5A5A5A;
+    margin: 0;
+
+    strong {
+      color: #8B3A3A;
+      font-weight: 600;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1.2rem;
+    gap: 1rem;
+
+    .term-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+  }
+}
+
+// Contact CTA Section
+.contact-cta {
+  text-align: center;
+  max-width: 650px;
+  margin: 4rem auto 3rem;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 252, 248, 0.6);
+  border-radius: 16px;
+  border: 2px solid rgba(139, 58, 58, 0.1);
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(30px);
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.7s ease-out forwards;
+    animation-delay: 0.2s; // Slight delay after terms section
+  }
+
+  @media (max-width: 768px) {
+    margin: 3rem 1rem 2rem;
+    padding: 2rem 1.5rem;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.5px;
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  p {
+    font-size: 1rem;
+    color: #6B6B6B;
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+}
+
+.cta-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 1.1rem 2.8rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  .whatsapp-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+}
+
 // Animations
 @keyframes fadeIn {
   0% {
@@ -136,6 +341,17 @@
   }
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

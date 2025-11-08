@@ -18,7 +18,6 @@ export class FullRecordingComponent implements OnInit, AfterViewInit, OnDestroy 
   
   // Animation states
   visibleServices: Set<number> = new Set();
-  visibleCta: boolean = false; // Added for CTA animation
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
@@ -69,8 +68,6 @@ export class FullRecordingComponent implements OnInit, AfterViewInit, OnDestroy 
           setTimeout(() => {
             if (type === 'package') {
               this.visibleServices.add(index);
-            } else if (type === 'cta') {
-              this.visibleCta = true;
             }
           }, 0);
         }
@@ -82,26 +79,16 @@ export class FullRecordingComponent implements OnInit, AfterViewInit, OnDestroy 
     if (!this.isBrowser) return;
     
     const serviceCards = document.querySelectorAll('.service-card');
-    const ctaSection = document.querySelector('.contact-cta'); // Added for CTA animation
     
     serviceCards.forEach((card) => {
       if (this.intersectionObserver) {
         this.intersectionObserver.observe(card as HTMLElement);
       }
     });
-    
-    // Observe CTA section
-    if (ctaSection && this.intersectionObserver) {
-      this.intersectionObserver.observe(ctaSection as HTMLElement);
-    }
   }
   
   isServiceVisible(index: number): boolean {
     return this.visibleServices.has(index);
-  }
-  
-  isCTAVisible(): boolean {
-    return this.visibleCta;
   }
 
   loadFullRecordingServices(): void {
@@ -131,9 +118,5 @@ export class FullRecordingComponent implements OnInit, AfterViewInit, OnDestroy 
         this.isLoading = false;
       }
     });
-  }
-
-  contactUs(): void {
-    window.open('https://wa.me/201025641261', '_blank');
   }
 }

@@ -23,7 +23,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
   // Animation states
   visiblePackages: Set<number> = new Set();
   visibleExtras: Set<number> = new Set();
-  visibleCta: boolean = false; // Added for CTA animation
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
@@ -76,8 +75,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
               this.visiblePackages.add(index);
             } else if (type === 'extra') {
               this.visibleExtras.add(index);
-            } else if (type === 'cta') {
-              this.visibleCta = true;
             }
           }, 0);
         }
@@ -90,7 +87,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
     
     const packageCards = document.querySelectorAll('.package-card');
     const extraCards = document.querySelectorAll('.extra-card');
-    const ctaSection = document.querySelector('.contact-cta'); // Added for CTA animation
     
     packageCards.forEach((card) => {
       if (this.intersectionObserver) {
@@ -103,11 +99,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
         this.intersectionObserver.observe(card as HTMLElement);
       }
     });
-    
-    // Observe CTA section
-    if (ctaSection && this.intersectionObserver) {
-      this.intersectionObserver.observe(ctaSection as HTMLElement);
-    }
   }
   
   isPackageVisible(index: number): boolean {
@@ -116,10 +107,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
   
   isExtraVisible(index: number): boolean {
     return this.visibleExtras.has(index);
-  }
-  
-  isCTAVisible(): boolean {
-    return this.visibleCta;
   }
 
   loadCinematographyPackages(): void {
@@ -154,11 +141,6 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
 
   selectPackage(pkg: any): void {
     this.selectedPackage = pkg;
-  }
-
-  contactUs(): void {
-    // Navigate to contact or open WhatsApp
-    window.open('https://wa.me/201025641261', '_blank');
   }
 }
 
