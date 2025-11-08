@@ -39,6 +39,7 @@
       class="photo-item"
       [attr.data-index]="i"
       [class.animate-in]="isImageVisible(i)"
+      (click)="openImageSlider(i)"
     >
       <img 
         [src]="getImageUrl(image)" 
@@ -56,4 +57,12 @@
     (closeModal)="closeUploadModal()" 
     (uploadComplete)="onUploadComplete()">
   </app-upload-modal>
+
+  <!-- Image Slider Component -->
+  <app-image-slider
+    [images]="images"
+    [currentIndex]="currentImageIndex"
+    [show]="showImageSlider"
+    (close)="closeImageSlider()">
+  </app-image-slider>
 </div>

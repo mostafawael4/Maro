@@ -2,11 +2,12 @@ import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { GalleryService, GalleryImage } from '../../services/gallery.service';
 import { environment } from '../../../environments/environment';
+import { ImageSliderComponent } from '../image-slider/image-slider.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageSliderComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
@@ -16,6 +17,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   visibleImages: Set<number> = new Set();
   isLoading: boolean = true;
   isAboutVisible: boolean = false;
+  showImageSlider: boolean = false;
+  currentImageIndex: number = 0;
   private intersectionObserver?: IntersectionObserver;
   private aboutObserver?: IntersectionObserver;
   private isBrowser: boolean;
@@ -155,5 +158,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isImageLoaded(index: number): boolean {
     return this.loadedImages.has(index);
+  }
+
+  // Image Slider methods
+  openImageSlider(index: number) {
+    this.currentImageIndex = index;
+    this.showImageSlider = true;
+  }
+
+  closeImageSlider() {
+    this.showImageSlider = false;
   }
 }

@@ -4,11 +4,12 @@ import { GalleryService, GalleryImage } from '../../services/gallery.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { UploadModalComponent } from '../upload-modal/upload-modal.component';
+import { ImageSliderComponent } from '../image-slider/image-slider.component';
 
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [CommonModule, UploadModalComponent],
+  imports: [CommonModule, UploadModalComponent, ImageSliderComponent],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
@@ -20,6 +21,8 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage: string = '';
   isAuthenticated: boolean = false;
   showUploadModal: boolean = false;
+  showImageSlider: boolean = false;
+  currentImageIndex: number = 0;
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
@@ -155,5 +158,15 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   onUploadComplete() {
     // Reload gallery images after successful upload
     this.loadGalleryImages();
+  }
+
+  // Image Slider methods
+  openImageSlider(index: number) {
+    this.currentImageIndex = index;
+    this.showImageSlider = true;
+  }
+
+  closeImageSlider() {
+    this.showImageSlider = false;
   }
 }

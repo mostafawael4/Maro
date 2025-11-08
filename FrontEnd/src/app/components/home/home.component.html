@@ -16,6 +16,7 @@
       class="photo-item"
       [attr.data-index]="i"
       [class.animate-in]="isImageVisible(i)"
+      (click)="openImageSlider(i)"
     >
       <img 
         [src]="getImageUrl(image)" 
@@ -50,4 +51,12 @@
       </p>
     </div>
   </div>
+
+  <!-- Image Slider Component -->
+  <app-image-slider
+    [images]="images"
+    [currentIndex]="currentImageIndex"
+    [show]="showImageSlider"
+    (close)="closeImageSlider()">
+  </app-image-slider>
 </div>
