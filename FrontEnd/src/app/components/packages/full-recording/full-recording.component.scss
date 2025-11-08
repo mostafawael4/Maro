@@ -16,15 +16,15 @@
   .spinner {
     width: 50px;
     height: 50px;
-    border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top-color: #8B3A3A;
+    border: 4px solid rgba(107, 31, 31, 0.1);
+    border-top-color: #6B1F1F;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
   
   p {
     margin-top: 20px;
-    color: #8B3A3A;
+    color: #6B1F1F;
     font-size: 1rem;
   }
 }
@@ -55,18 +55,20 @@
 .header-decoration {
   width: 80px;
   height: 3px;
-  background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+  background: linear-gradient(90deg, #6B1F1F 0%, #8B3A3A 50%, #B8826B 100%);
   margin: 0 auto 1.5rem;
   border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(107, 31, 31, 0.25);
 }
 
 .section-title {
   font-family: 'Playfair Display', serif;
   font-size: 2.5rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #6B1F1F;
   margin-bottom: 1rem;
   letter-spacing: 1px;
+  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.1);
   
   @media (max-width: 768px) {
     font-size: 1.8rem;
@@ -91,10 +93,11 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #6B1F1F;
   text-align: center;
   margin-bottom: 2.5rem;
   position: relative;
+  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.08);
   
   &::after {
     content: '';
@@ -104,8 +107,9 @@
     transform: translateX(-50%);
     width: 60px;
     height: 3px;
-    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+    background: linear-gradient(90deg, #6B1F1F 0%, #8B3A3A 50%, #B8826B 100%);
     border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(107, 31, 31, 0.2);
   }
 }
 
@@ -158,7 +162,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #8B3A3A;
+    color: #6B1F1F;
   }
 }
 
@@ -168,7 +172,7 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, #8B3A3A 0%, #B8826B 100%);
+  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -177,11 +181,12 @@
   cursor: pointer;
   margin-top: 1.5rem;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.25);
+  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.3);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 58, 58, 0.35);
+    box-shadow: 0 6px 20px rgba(107, 31, 31, 0.4);
+    background: linear-gradient(135deg, #5A1919 0%, #6B1F1F 100%);
   }
 
   &:active {
@@ -314,9 +319,10 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   font-weight: 700;
-  color: #8B3A3A;
+  color: #6B1F1F;
   letter-spacing: 0.5px;
   margin-top: 0.5rem;
+  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.08);
 }
 
 // Contact CTA - Simple & Clean

@@ -52,9 +52,10 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #6B1F1F;
   margin: 0;
   letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.08);
 
   @media (max-width: 768px) {
     font-size: 1.5rem;
@@ -74,8 +75,8 @@
   border-radius: 8px;
 
   &:hover {
-    background: rgba(139, 58, 58, 0.1);
-    color: #8B3A3A;
+    background: rgba(107, 31, 31, 0.1);
+    color: #6B1F1F;
     transform: scale(1.1);
   }
 }
@@ -101,11 +102,11 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #B8826B;
+    background: #8B3A3A;
     border-radius: 10px;
 
     &:hover {
-      background: #8B3A3A;
+      background: #6B1F1F;
     }
   }
 }
@@ -163,10 +164,11 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.4rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #6B1F1F;
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(139, 58, 58, 0.15);
+  border-bottom: 2px solid rgba(107, 31, 31, 0.15);
+  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.06);
 
   .section-header & {
     margin-bottom: 0;
@@ -213,8 +215,8 @@
 
   &:focus {
     outline: none;
-    border-color: #8B3A3A;
-    box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
+    border-color: #6B1F1F;
+    box-shadow: 0 0 0 3px rgba(107, 31, 31, 0.1);
   }
 
   &::placeholder {
@@ -239,7 +241,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1.2rem;
-  background: linear-gradient(135deg, #8B3A3A 0%, #B8826B 100%);
+  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -247,11 +249,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(139, 58, 58, 0.2);
+  box-shadow: 0 2px 8px rgba(107, 31, 31, 0.25);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(139, 58, 58, 0.3);
+    box-shadow: 0 4px 12px rgba(107, 31, 31, 0.35);
+    background: linear-gradient(135deg, #5A1919 0%, #6B1F1F 100%);
   }
 
   &:active {
@@ -305,7 +308,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #8B3A3A;
+    color: #6B1F1F;
     margin: 0;
   }
 
@@ -458,13 +461,14 @@
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #8B3A3A 0%, #B8826B 100%);
+  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.3);
+  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.35);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 58, 58, 0.4);
+    box-shadow: 0 6px 20px rgba(107, 31, 31, 0.45);
+    background: linear-gradient(135deg, #5A1919 0%, #6B1F1F 100%);
   }
 
   &:active:not(:disabled) {
