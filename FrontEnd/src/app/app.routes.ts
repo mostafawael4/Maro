@@ -7,6 +7,7 @@ import { FullRecordingComponent } from './components/packages/full-recording/ful
 import { GalleryComponent } from './components/gallery/gallery.component';
 import { ContactComponent } from './components/contact/contact.component';
 import { AdminComponent } from './components/admin/admin.component';
+import { FaqsComponent } from './components/faqs/faqs.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -22,6 +23,7 @@ export const routes: Routes = [
         ]
     },
     { path: 'gallery', component: GalleryComponent },
+    { path: 'faqs', component: FaqsComponent },
     { path: 'contact', component: ContactComponent },
     { path: 'admin', component: AdminComponent },
 ];

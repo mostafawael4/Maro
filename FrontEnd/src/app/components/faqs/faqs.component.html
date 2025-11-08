@@ -1,0 +1,48 @@
+<div class="faqs-page">
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">FAQs</h1>
+    <div class="header-decoration"></div>
+  </div>
+
+  <!-- Intro Section -->
+  <div 
+    class="intro-section"
+    [class.animate-in]="isVisible('intro')"
+    [attr.data-type]="'intro'"
+  >
+    <h2 class="intro-title">This is a lot of text... Can we just meet instead?</h2>
+    <p class="intro-text">
+      <strong>Absolutely!</strong> We much prefer a meeting. It's the best way to answer any questions you might have and, 
+      more importantly, to get to know each other. We truly value the relationship with you, knowing we'll be there on the 
+      best day of your life. So, why read all this text when we can sit down and chat? Let's make it personal. After all, 
+      that's what we're all about.
+    </p>
+    <p class="intro-cta">
+      Send us an email including your preferred package, dates, venue, and a little bit about yourself.
+    </p>
+  </div>
+
+  <!-- FAQ Items -->
+  <div class="faqs-container">
+    <div 
+      *ngFor="let faq of faqs; let i = index"
+      class="faq-item"
+      [class.animate-in]="isVisible('faq-' + i)"
+      [attr.data-type]="'faq-' + i"
+      [attr.data-index]="i"
+    >
+      <div class="faq-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div class="faq-content">
+        <h3 class="faq-question">{{ faq.question }}</h3>
+        <p class="faq-answer">{{ faq.answer }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
