@@ -1,11 +1,13 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { PackagesService, PackageCollection, PackageExtra } from '../../../services/packages.service';
+import { PackagesService, PackageCollection, PackageExtra, Package } from '../../../services/packages.service';
+import { AuthService } from '../../../services/auth.service';
+import { EditPackageModalComponent } from '../../edit-package-modal/edit-package-modal.component';
 
 @Component({
   selector: 'app-cinematography',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EditPackageModalComponent],
   templateUrl: './cinematography.component.html',
   styleUrl: './cinematography.component.scss'
 })
@@ -20,6 +22,13 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
   errorMessage: string = '';
   selectedPackage: any = null;
   
+  // Full package data for editing
+  fullPackageData: Package | null = null;
+  
+  // Edit modal
+  showEditModal: boolean = false;
+  isAuthenticated: boolean = false;
+  
   // Animation states
   visiblePackages: Set<number> = new Set();
   visibleExtras: Set<number> = new Set();
@@ -28,6 +37,7 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
 
   constructor(
     private packagesService: PackagesService,
+    private authService: AuthService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -35,6 +45,11 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
 
   ngOnInit(): void {
     this.loadCinematographyPackages();
+    
+    // Check authentication status
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth;
+    });
   }
   
   ngAfterViewInit(): void {
@@ -119,6 +134,7 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
         if (cinematographyPackage) {
           this.cinematographyPackages = cinematographyPackage.collections;
           this.extras = cinematographyPackage.extras;
+          this.fullPackageData = cinematographyPackage; // Store full package data
         }
         
         this.isLoading = false;
@@ -141,6 +157,20 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
 
   selectPackage(pkg: any): void {
     this.selectedPackage = pkg;
+  }
+  
+  // Edit package modal methods
+  openEditModal(): void {
+    this.showEditModal = true;
+  }
+  
+  closeEditModal(): void {
+    this.showEditModal = false;
+  }
+  
+  onPackageSaved(): void {
+    // Reload packages after saving
+    this.loadCinematographyPackages();
   }
 }
 

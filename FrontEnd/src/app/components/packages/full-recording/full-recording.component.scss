@@ -49,6 +49,7 @@
   text-align: center;
   max-width: 700px;
   margin: 0 auto 4rem;
+  position: relative;
 }
 
 .header-decoration {
@@ -77,6 +78,120 @@
   color: #6B6B6B;
   font-style: italic;
   line-height: 1.7;
+}
+
+// Extras Section
+.extras-section {
+  max-width: 1000px;
+  margin: 4rem auto 0;
+  padding: 0 1rem;
+}
+
+.extras-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #8B3A3A;
+  text-align: center;
+  margin-bottom: 2.5rem;
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 100%);
+    border-radius: 3px;
+  }
+}
+
+.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.extra-card {
+  background: #FFFFFF;
+  border: 2px solid rgba(139, 58, 58, 0.12);
+  border-radius: 12px;
+  padding: 1.5rem 1.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.06);
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(20px);
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.5s ease-out forwards;
+    
+    // Stagger animation for each extra
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.08}s;
+      }
+    }
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(139, 58, 58, 0.12);
+    border-color: rgba(139, 58, 58, 0.25);
+  }
+
+  .extra-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #5A5A5A;
+  }
+
+  .extra-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #8B3A3A;
+  }
+}
+
+// Edit Package Button (Admin Only)
+.edit-package-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, #8B3A3A 0%, #B8826B 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.25);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 58, 58, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 // Services Container

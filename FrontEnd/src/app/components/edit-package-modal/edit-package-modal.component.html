@@ -1,0 +1,204 @@
+<div class="modal-overlay" *ngIf="show" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">Edit Package</h2>
+      <button class="close-btn" (click)="closeModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="message success-message">
+        {{ successMessage }}
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="message error-message">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Package Basic Info -->
+      <div class="form-section">
+        <h3 class="section-title">Package Information</h3>
+        <div class="form-group">
+          <label>Package Name (Internal)</label>
+          <input 
+            type="text" 
+            [(ngModel)]="editedPackage.packageName" 
+            class="form-input"
+            placeholder="e.g., cinematography"
+            readonly
+          />
+        </div>
+        <div class="form-group">
+          <label>Display Name</label>
+          <input 
+            type="text" 
+            [(ngModel)]="editedPackage.displayName" 
+            class="form-input"
+            placeholder="e.g., Cinematography Packages"
+          />
+        </div>
+      </div>
+
+      <!-- Collections Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">Collections</h3>
+          <button type="button" class="add-btn" (click)="addCollection()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Collection
+          </button>
+        </div>
+
+        <div *ngFor="let collection of editedPackage.collections; let i = index; trackBy: trackByCollectionIndex" class="collection-card">
+          <div class="card-header">
+            <h4>Collection {{ i + 1 }}</h4>
+            <button type="button" class="remove-btn" (click)="removeCollection(i)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Remove
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Collection Name</label>
+              <input 
+                type="text" 
+                [(ngModel)]="collection.collectionName" 
+                class="form-input"
+                placeholder="e.g., Collection I"
+              />
+            </div>
+            <div class="form-group">
+              <label>Price</label>
+              <input 
+                type="text" 
+                [(ngModel)]="collection.price" 
+                class="form-input"
+                placeholder="e.g., 20,000 LE"
+              />
+            </div>
+          </div>
+
+          <!-- Duration (Only for Cinematography and Photography) -->
+          <div *ngIf="isNotFullRecording()" class="form-row">
+            <div class="form-group">
+              <label>Duration (Optional)</label>
+              <input 
+                type="text" 
+                [(ngModel)]="collection.duration" 
+                class="form-input"
+                placeholder="e.g., 14-16 Hours Coverage"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description (Optional)</label>
+            <textarea 
+              [(ngModel)]="collection.description" 
+              class="form-textarea"
+              placeholder="Brief description..."
+              rows="2"
+            ></textarea>
+          </div>
+
+          <!-- Features (Only for Cinematography and Photography) -->
+          <div *ngIf="isNotFullRecording()" class="form-group">
+            <div class="features-header">
+              <label>Features</label>
+              <button type="button" class="add-feature-btn" (click)="addFeature(i)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Feature
+              </button>
+            </div>
+            <div *ngFor="let feature of collection.features; let j = index; trackBy: trackByFeatureIndex" class="feature-item">
+              <input 
+                type="text" 
+                [(ngModel)]="collection.features[j]" 
+                [name]="'feature_' + i + '_' + j"
+                class="form-input"
+                placeholder="Feature description..."
+              />
+              <button type="button" class="remove-feature-btn" (click)="removeFeature(i, j)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extras Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">Extras</h3>
+          <button type="button" class="add-btn" (click)="addExtra()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Extra
+          </button>
+        </div>
+
+        <div *ngFor="let extra of editedPackage.extras; let i = index; trackBy: trackByExtraIndex" class="extra-card">
+          <div class="form-row">
+            <div class="form-group">
+              <input 
+                type="text" 
+                [(ngModel)]="extra.name" 
+                class="form-input"
+                placeholder="Extra name..."
+              />
+            </div>
+            <div class="form-group">
+              <input 
+                type="text" 
+                [(ngModel)]="extra.price" 
+                class="form-input"
+                placeholder="Price..."
+              />
+            </div>
+            <button type="button" class="remove-btn-icon" (click)="removeExtra(i)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="closeModal()" [disabled]="isSaving">
+        Cancel
+      </button>
+      <button class="save-btn" (click)="savePackage()" [disabled]="isSaving">
+        <span *ngIf="!isSaving">Save Package</span>
+        <span *ngIf="isSaving">Saving...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
