@@ -17,7 +17,7 @@ export class FooterComponent {
     instagram: 'https://www.instagram.com/maro.weddings',
     facebook: '#',
     whatsapp: 'https://wa.me/201025641261', // WhatsApp redirect
-    email: 'info@maroweddings.com'
+    email: 'maroweddings.eg@gmail.com'
   };
 
   // Quick links
