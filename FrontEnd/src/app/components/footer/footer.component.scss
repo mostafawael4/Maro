@@ -67,8 +67,8 @@
 
 // Footer Description
 .footer-description {
-  font-family: 'Playfair Display', serif;
-  color: #6B6B6B;
+  font-family: 'Georgia', serif;
+  color: rgba(0, 0, 0, 0.6);
   font-size: 0.95rem;
   line-height: 1.7;
   font-style: italic;
@@ -79,10 +79,11 @@
 .footer-heading {
   font-family: 'Playfair Display', serif;
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 400;
   color: #8B3A3A;
   margin-bottom: 1.25rem;
   letter-spacing: 1px;
+  font-style: italic;
   position: relative;
   padding-bottom: 0.75rem;
   
@@ -117,8 +118,8 @@
 }
 
 .footer-link {
-  font-family: 'Playfair Display', serif;
-  color: #5A5A5A;
+  font-family: 'Georgia', serif;
+  color: rgba(0, 0, 0, 0.6);
   font-size: 0.95rem;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -150,14 +151,14 @@
 
 // Contact Section
 .footer-contact {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Georgia', serif;
   
   .contact-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
-    color: #5A5A5A;
+    color: rgba(0, 0, 0, 0.6);
 
     @media (max-width: 768px) {
       justify-content: center;
@@ -172,7 +173,7 @@
   }
   
   .contact-link {
-    color: #5A5A5A;
+    color: rgba(0, 0, 0, 0.6);
     text-decoration: none;
     transition: all 0.3s ease;
     font-size: 0.95rem;
@@ -255,15 +256,15 @@
 }
 
 .copyright {
-  font-family: 'Playfair Display', serif;
-  color: #7A7A7A;
+  font-family: 'Georgia', serif;
+  color: rgba(0, 0, 0, 0.5);
   font-size: 0.9rem;
   margin: 0;
   letter-spacing: 0.5px;
 }
 
 .tagline {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Georgia', serif;
   color: #8B3A3A;
   font-size: 0.85rem;
   font-style: italic;

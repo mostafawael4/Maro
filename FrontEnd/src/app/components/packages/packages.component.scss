@@ -12,6 +12,7 @@
   margin: 0 auto 3rem;
   padding: 2rem 2rem 3rem;
   position: relative;
+  animation: fadeIn 0.8s ease-out;
 
   &::after {
     content: '';
@@ -29,31 +30,42 @@
 
 .page-title {
   font-family: 'Playfair Display', serif;
-  font-size: 3.5rem;
-  font-weight: 600;
-  color: #6B1F1F;
-  margin-bottom: 1.5rem;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.1);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: #8B3A3A;
+  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
+  font-style: italic;
   
   @media (max-width: 768px) {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
 }
 
 .page-description {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
-  color: #6B6B6B;
+  font-family: 'Georgia', serif;
+  font-size: 1rem;
+  color: rgba(0, 0, 0, 0.6);
   font-style: italic;
-  line-height: 1.8;
+  line-height: 1.6;
   letter-spacing: 0.5px;
   max-width: 700px;
   margin: 0 auto;
 
   @media (max-width: 768px) {
-    font-size: 1rem;
+    font-size: 0.95rem;
     padding: 0 1rem;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -161,13 +173,13 @@
 .terms-title {
   font-family: 'Playfair Display', serif;
   font-size: 2rem;
-  font-weight: 600;
-  color: #6B1F1F;
+  font-weight: 400;
+  color: #8B3A3A;
+  font-style: italic;
   text-align: center;
   margin-bottom: 2.5rem;
   position: relative;
   letter-spacing: 1px;
-  text-shadow: 0 2px 4px rgba(107, 31, 31, 0.08);
 
   &::after {
     content: '';
