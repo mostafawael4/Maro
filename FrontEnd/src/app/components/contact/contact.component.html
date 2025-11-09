@@ -1,1 +1,87 @@
-<p>contact works!</p>
+<div class="contact-container">
+  <!-- Decorative Elements -->
+  <div class="decorative-line top-line"></div>
+  
+  <div class="contact-wrapper">
+    <!-- Header Section -->
+    <div class="contact-header">
+      <h1 class="contact-title">Let's Create Magic Together</h1>
+      <p class="contact-subtitle">Share your vision and let us capture your perfect moment</p>
+    </div>
+
+    <!-- Contact Form -->
+    <div class="form-section">
+      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
+        
+        <div class="form-row">
+          <div class="form-field">
+            <input
+              type="text"
+              id="name"
+              formControlName="name"
+              class="form-input"
+              placeholder="Your Name"
+              [class.error]="name?.invalid && name?.touched"
+            />
+            <label for="name" class="floating-label">Name</label>
+            <span *ngIf="name?.invalid && name?.touched" class="error-text">Required</span>
+          </div>
+
+          <div class="form-field">
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              class="form-input"
+              placeholder="your.email&#64;example.com"
+              [class.error]="email?.invalid && email?.touched"
+            />
+            <label for="email" class="floating-label">Email</label>
+            <span *ngIf="email?.invalid && email?.touched" class="error-text">
+              {{ email?.errors?.['email'] ? 'Invalid email' : 'Required' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <textarea
+            id="message"
+            formControlName="message"
+            class="form-textarea"
+            rows="4"
+            placeholder="Tell us about your special day..."
+            [class.error]="message?.invalid && message?.touched"
+          ></textarea>
+          <label for="message" class="floating-label">Message</label>
+          <span *ngIf="message?.invalid && message?.touched" class="error-text">Required</span>
+        </div>
+
+        <!-- Messages -->
+        <div *ngIf="submitSuccess" class="alert success-alert">
+          <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Email client opened! Send the email to complete your inquiry.</span>
+        </div>
+
+        <div *ngIf="submitError && contactForm.invalid" class="alert error-alert">
+          <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>Please fill all fields correctly</span>
+        </div>
+
+        <button
+          type="submit"
+          class="submit-btn"
+          [disabled]="isSubmitting"
+        >
+          <span *ngIf="!isSubmitting">Send Message</span>
+          <span *ngIf="isSubmitting">Sending...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="decorative-line bottom-line"></div>
+</div>
