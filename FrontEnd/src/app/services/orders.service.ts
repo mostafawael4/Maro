@@ -1,0 +1,63 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface OrderImage {
+  filename: string;
+  url: string;
+  uploadedAt: string;
+  _id: string;
+}
+
+export interface Order {
+  _id: string;
+  email: string;
+  clientName: string;
+  notes?: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  images: OrderImage[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export interface OrdersResponse {
+  ok: boolean;
+  orders: Order[];
+}
+
+export interface SingleOrderResponse {
+  ok: boolean;
+  order: Order;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class OrdersService {
+  private apiUrl = `${environment.apiUrl}/orders`;
+
+  constructor(private http: HttpClient) { }
+
+  getOrders(): Observable<OrdersResponse> {
+    return this.http.get<OrdersResponse>(this.apiUrl, { withCredentials: true });
+  }
+
+  getOrderById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`, { withCredentials: true });
+  }
+
+  uploadOrderImages(orderId: string, files: File[]): Observable<any> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { withCredentials: true });
+  }
+
+  getOrdersByEmail(email: string): Observable<SingleOrderResponse> {
+    return this.http.get<SingleOrderResponse>(`${this.apiUrl}/view/by-email?email=${email}`);
+  }
+}
+
