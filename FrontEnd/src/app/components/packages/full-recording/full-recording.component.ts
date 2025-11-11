@@ -47,7 +47,7 @@ export class FullRecordingComponent implements OnInit, AfterViewInit, OnDestroy 
     
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
     });
   }
   

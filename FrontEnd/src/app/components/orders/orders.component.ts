@@ -39,7 +39,7 @@ export class OrdersComponent implements OnInit {
   ngOnInit(): void {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
       if (this.isAuthenticated) {
         this.loadOrders();
       } else {

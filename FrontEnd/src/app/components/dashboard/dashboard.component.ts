@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { OrdersService, Order } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,12 +13,13 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   loading = true;
   error = '';
   isAuthenticated = false;
   updatingOrderId: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private ordersService: OrdersService,
@@ -25,13 +28,24 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Check authentication
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+    // Wait for auth check to complete, then load orders
+    combineLatest([
+      this.authService.authCheckComplete$,
+      this.authService.isAuthenticated$
+    ]).pipe(
+      filter(([authCheckDone, _]) => authCheckDone), // Only proceed when auth check is done
+      takeUntil(this.destroy$)
+    ).subscribe(([_, isAuth]) => {
+      this.isAuthenticated = isAuth ?? false;
+      
+      // Load orders - let the API handle authentication
+      this.loadOrders();
     });
-    
-    // Always try to load orders - let the API handle authentication
-    this.loadOrders();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadOrders(): void {

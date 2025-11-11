@@ -25,7 +25,7 @@ export class AdminComponent implements OnInit {
   ngOnInit(): void {
     // Check if already authenticated
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
     });
   }
 

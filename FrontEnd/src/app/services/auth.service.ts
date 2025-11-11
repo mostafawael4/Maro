@@ -9,8 +9,10 @@ import { environment } from '../../environments/environment';
 })
 export class AuthService {
   private apiUrl = `${environment.apiUrl}/admin`;
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private isAuthenticatedSubject = new BehaviorSubject<boolean | null>(null);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  private authCheckComplete = new BehaviorSubject<boolean>(false);
+  public authCheckComplete$ = this.authCheckComplete.asObservable();
 
   constructor(private http: HttpClient) {
     // Check if already authenticated on init
@@ -43,10 +45,14 @@ export class AuthService {
         next: (response: any) => {
           if (response.ok) {
             this.isAuthenticatedSubject.next(true);
+          } else {
+            this.isAuthenticatedSubject.next(false);
           }
+          this.authCheckComplete.next(true);
         },
         error: () => {
           this.isAuthenticatedSubject.next(false);
+          this.authCheckComplete.next(true);
         }
       });
   }

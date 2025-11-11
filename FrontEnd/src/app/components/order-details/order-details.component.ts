@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrdersService, Order, OrderImage } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-order-details',
@@ -12,12 +14,13 @@ import { environment } from '../../../environments/environment';
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
-export class OrderDetailsComponent implements OnInit {
+export class OrderDetailsComponent implements OnInit, OnDestroy {
   order: Order | null = null;
   loading = true;
   error = '';
   baseUrl = environment.apiUrl;
   isAuthenticated = false;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -27,9 +30,15 @@ export class OrderDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Check authentication status
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+    // Wait for auth check to complete, then load order data
+    combineLatest([
+      this.authService.authCheckComplete$,
+      this.authService.isAuthenticated$
+    ]).pipe(
+      filter(([authCheckDone, _]) => authCheckDone), // Only proceed when auth check is done
+      takeUntil(this.destroy$)
+    ).subscribe(([_, isAuth]) => {
+      this.isAuthenticated = isAuth ?? false;
       
       const orderId = this.route.snapshot.paramMap.get('id');
       const userEmail = this.route.snapshot.queryParamMap.get('email');
@@ -53,6 +62,11 @@ export class OrderDetailsComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadOrderById(orderId: string): void {

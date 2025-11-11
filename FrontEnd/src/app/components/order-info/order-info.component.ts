@@ -29,7 +29,7 @@ export class OrderInfoComponent implements OnInit {
   ngOnInit(): void {
     // Check authentication
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
     });
 
     // Get order ID and load order

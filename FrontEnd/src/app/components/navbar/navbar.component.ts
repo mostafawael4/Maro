@@ -22,7 +22,7 @@ export class NavbarComponent {
   ) {
     // Subscribe to authentication state
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
     });
   }
 
