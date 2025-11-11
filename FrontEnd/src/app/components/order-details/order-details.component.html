@@ -56,11 +56,18 @@
       <h2>Order Photos</h2>
       <div class="gallery-grid">
         <div *ngFor="let image of order.images; let i = index" class="gallery-item">
-          <img [src]="getImageUrl(image)" [alt]="'Order photo ' + (i + 1)" loading="lazy">
+          <img [src]="getImageUrl(image)" [alt]="'Order photo ' + (i + 1)" loading="lazy" (click)="openImageSlider(i)">
           <div class="image-overlay">
             <span class="image-filename">{{ image.filename }}</span>
             <span class="image-date">{{ image.uploadedAt | date: 'short' }}</span>
           </div>
+          <button class="download-btn" (click)="downloadImage(image, $event)" title="Download image">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -76,4 +83,12 @@
       <p>Photos will be added to this order soon.</p>
     </div>
   </div>
+
+  <!-- Image Slider -->
+  <app-image-slider
+    [images]="getSliderImages()"
+    [currentIndex]="currentImageIndex"
+    [show]="showImageSlider"
+    (close)="closeImageSlider()">
+  </app-image-slider>
 </div>

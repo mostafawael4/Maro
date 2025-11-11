@@ -6,11 +6,13 @@ import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { combineLatest, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
+import { ImageSliderComponent } from '../image-slider/image-slider.component';
+import { GalleryImage } from '../../services/gallery.service';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageSliderComponent],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
@@ -20,6 +22,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   error = '';
   baseUrl = environment.apiUrl;
   isAuthenticated = false;
+  showImageSlider = false;
+  currentImageIndex = 0;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -126,6 +130,56 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
         return '#28A745';
       default:
         return '#6c757d';
+    }
+  }
+
+  openImageSlider(index: number) {
+    this.currentImageIndex = index;
+    this.showImageSlider = true;
+  }
+
+  closeImageSlider() {
+    this.showImageSlider = false;
+  }
+
+  getSliderImages(): GalleryImage[] {
+    if (!this.order?.images) return [];
+    return this.order.images.map(img => ({
+      _id: img.filename,
+      filename: img.filename,
+      url: img.url,
+      uploadedAt: new Date(img.uploadedAt)
+    }));
+  }
+
+  async downloadImage(image: OrderImage, event: Event) {
+    event.stopPropagation(); // Prevent opening the slider
+    
+    try {
+      const imageUrl = this.getImageUrl(image);
+      
+      // Fetch the image as a blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Create a blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = image.filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      alert('Failed to download image. Please try again.');
     }
   }
 }
