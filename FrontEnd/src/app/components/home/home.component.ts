@@ -16,10 +16,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   loadedImages: Set<number> = new Set();
   visibleImages: Set<number> = new Set();
   isLoading: boolean = true;
+  isStoryVisible: boolean = false;
   isAboutVisible: boolean = false;
   showImageSlider: boolean = false;
   currentImageIndex: number = 0;
   private intersectionObserver?: IntersectionObserver;
+  private storyObserver?: IntersectionObserver;
   private aboutObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
@@ -41,6 +43,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.setupIntersectionObserver();
         this.observeAllImages();
+        this.setupStoryObserver();
         this.setupAboutObserver();
       }, 50);
     }
@@ -50,6 +53,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     // Clean up observers
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
+    }
+    if (this.storyObserver) {
+      this.storyObserver.disconnect();
     }
     if (this.aboutObserver) {
       this.aboutObserver.disconnect();
@@ -97,6 +103,29 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  setupStoryObserver() {
+    if (!this.isBrowser) return;
+    
+    const options = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    };
+
+    this.storyObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          this.isStoryVisible = true;
+        }
+      });
+    }, options);
+
+    const storySection = document.querySelector('.who-we-are-section');
+    if (storySection) {
+      this.storyObserver.observe(storySection);
+    }
+  }
+
   setupAboutObserver() {
     if (!this.isBrowser) return;
     
@@ -133,6 +162,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           setTimeout(() => {
             this.setupIntersectionObserver();
             this.observeAllImages();
+            this.setupStoryObserver();
             this.setupAboutObserver();
           }, 100);
         }
