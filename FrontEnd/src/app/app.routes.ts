@@ -10,6 +10,8 @@ import { AdminComponent } from './components/admin/admin.component';
 import { FaqsComponent } from './components/faqs/faqs.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { OrderInfoComponent } from './components/order-info/order-info.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -28,6 +30,8 @@ export const routes: Routes = [
     { path: 'faqs', component: FaqsComponent },
     { path: 'orders', component: OrdersComponent },
     { path: 'order-details/:id', component: OrderDetailsComponent },
+    { path: 'dashboard', component: DashboardComponent },
+    { path: 'order-info/:id', component: OrderInfoComponent },
     { path: 'contact', component: ContactComponent },
     { path: 'admin', component: AdminComponent },
 ];

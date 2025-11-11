@@ -15,7 +15,7 @@ export interface Order {
   email: string;
   clientName: string;
   notes?: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: 'pending' | 'in-progress' | 'done';
   images: OrderImage[];
   createdAt: string;
   updatedAt: string;
@@ -58,6 +58,10 @@ export class OrdersService {
 
   getOrdersByEmail(email: string): Observable<SingleOrderResponse> {
     return this.http.get<SingleOrderResponse>(`${this.apiUrl}/view/by-email?email=${email}`);
+  }
+
+  updateOrderStatus(orderId: string, status: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${orderId}/status`, { status }, { withCredentials: true });
   }
 }
 
