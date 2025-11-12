@@ -232,8 +232,8 @@ router.delete("/:orderId", requireAdminAuth,
     }
   }
 );
-
-router.delete("/deletemedia/:orderId", requireAdminAuth, 
+// DELETE /deletemedia/:orderId (admin only) - delete order files[] from the server and from db by file name
+router.delete("/:orderId/deletemedia", requireAdminAuth, 
   async (req, res) => {
     try {
       const { orderId } = req.params;
@@ -287,6 +287,5 @@ router.delete("/deletemedia/:orderId", requireAdminAuth,
     }
   }
 );
-
 
 module.exports = router;
