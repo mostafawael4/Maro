@@ -14,11 +14,24 @@ const LOG_DIR = process.env.LOGGING_PATH;
 
 const ADMIN_INITIAL_PASSWORD = process.env.ADMIN_INITIAL_PASSWORD;
 
+const SMTP_HOST = process.env.SMTP_HOST
+const SMTP_PORT = process.env.SMTP_PORT
+const SMTP_USER = process.env.SMTP_USER
+const SMTP_PASS = process.env.SMTP_PASS
+const FROM_EMAIL = process.env.FROM_EMAIL
+const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
+
 module.exports = {
   PORT,
   MONGO_URI,
   SESSION_SECRET,
   UPLOAD_DIR,
   LOG_DIR,
-  ADMIN_INITIAL_PASSWORD
+  ADMIN_INITIAL_PASSWORD,
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_USER,
+  SMTP_PASS,
+  FROM_EMAIL,
+  CONTACT_RECEIVER
 };
