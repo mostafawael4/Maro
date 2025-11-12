@@ -6,6 +6,7 @@ const uploadService = require("../services/upload.service");
 const multer = require("multer");
 const allowedExtensions = require("../config/allowed_extensions.json");
 const logger = require("../utils/logger");
+const { handleMulterErrors } = require("../middleware/upload").default;
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -30,7 +31,13 @@ router.post("/", async (req, res) => {
 router.get("/", requireAdminAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
-    logger.info(`Listed all orders by ${req.session && req.session.adminId ? req.session.adminId : "unknown admin"}`);
+    logger.info(
+      `Listed all orders by ${
+        req.session && req.session.adminId
+          ? req.session.adminId
+          : "unknown admin"
+      }`
+    );
     return res.json({ ok: true, orders: list });
   } catch (err) {
     logger.error(`GET /orders failed: ${err.stack || err}`);
@@ -49,7 +56,9 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
     logger.info(`Order fetched: ${req.params.orderId}`);
     return res.json({ ok: true, order });
   } catch (err) {
-    logger.error(`GET /orders/${req.params.orderId} failed: ${err.stack || err}`);
+    logger.error(
+      `GET /orders/${req.params.orderId} failed: ${err.stack || err}`
+    );
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
@@ -59,7 +68,9 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
   try {
     const { status } = req.body;
     if (!["pending", "in-progress", "done"].includes(status)) {
-      logger.warn(`Invalid status "${status}" set attempt on order ${req.params.orderId}`);
+      logger.warn(
+        `Invalid status "${status}" set attempt on order ${req.params.orderId}`
+      );
       return res.status(400).json({ ok: false, message: "Invalid status" });
     }
     const updated = await Order.findByIdAndUpdate(
@@ -70,7 +81,9 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
     logger.info(`Order ${req.params.orderId} status updated to "${status}"`);
     return res.json({ ok: true, order: updated });
   } catch (err) {
-    logger.error(`PUT /orders/${req.params.orderId}/status failed: ${err.stack || err}`);
+    logger.error(
+      `PUT /orders/${req.params.orderId}/status failed: ${err.stack || err}`
+    );
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
@@ -82,19 +95,17 @@ const uploadMemory = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
   fileFilter: (req, file, cb) => {
-    const allowed = [
-      ...allowedExtensions.images,
-      ...allowedExtensions.videos,
-    ];
+    const allowed = [...allowedExtensions.images, ...allowedExtensions.videos];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
   },
-});
+}).array("media", 50);
 
 router.post(
   "/:orderId/upload",
   requireAdminAuth,
-  uploadMemory.array("images", 50), // files available on req.files as Buffer
+  uploadMemory, // Apply Multer middleware
+  handleMulterErrors, // Handle Multer errors
   async (req, res) => {
     try {
       const orderId = req.params.orderId;
@@ -103,7 +114,7 @@ router.post(
         logger.warn(`Upload attempted to non-existent order ${orderId}`);
         return res.status(404).json({ ok: false, message: "Order not found" });
       }
-      
+
       const files = req.files || [];
       if (!files.length) {
         logger.warn(`Upload attempt to order ${orderId} with no files`);
@@ -113,8 +124,13 @@ router.post(
 
       // Save each file using the uploadService
       const fileObjs = files.map((f) => {
-        const url = uploadService.saveFile(orderId, f.buffer, f.originalname, { isGallery: false, isFilm: false });
-        logger.info(`Saved file "${f.originalname}" for order ${orderId} (URL: ${url})`);
+        const url = uploadService.saveFile(orderId, f.buffer, f.originalname, {
+          isGallery: false,
+          isFilm: false,
+        });
+        logger.info(
+          `Saved file "${f.originalname}" for order ${orderId} (URL: ${url})`
+        );
         return {
           filename: url.split("/").pop(),
           url,
@@ -125,10 +141,16 @@ router.post(
       order.images.push(...fileObjs);
       await order.save();
 
-      logger.info(`Files added to order ${orderId}: [${fileObjs.map(f => f.filename).join(", ")}]`);
+      logger.info(
+        `Files added to order ${orderId}: [${fileObjs
+          .map((f) => f.filename)
+          .join(", ")}]`
+      );
       return res.json({ ok: true, added: fileObjs, order });
     } catch (err) {
-      logger.error(`POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`);
+      logger.error(
+        `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`
+      );
       return res.status(500).json({ ok: false, message: "Server error" });
     }
   }
