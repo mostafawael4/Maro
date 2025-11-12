@@ -12,14 +12,21 @@ const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = req
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
   try {
-    const { email, clientName, notes } = req.body;
+    const { email, clientName, notes, orderForm } = req.body;
     if (!email) {
       logger.warn("Attempt to create order without email", { body: req.body });
       return res.status(400).json({ ok: false, message: "Email required" });
     }
-
+    if (orderForm && typeof orderForm !== "object") {
+      return res.status(400).json({ ok: false, message: "Invalid order form format" });
+    }
     // create an order; you may want to check duplicates or generate a separate order code
-    const order = await Order.create({ email, clientName, notes });
+    const order = await Order.create({
+      email,
+      clientName,
+      notes,
+      orderForm, // store all wedding form data here
+    });
     logger.info(`Order created: ${order._id} for email ${email}`);
     return res.json({ ok: true, order });
   } catch (err) {
