@@ -11,26 +11,13 @@ const connectDB = require('./config/db');
 const Admin = require('./models/admin');
 const bcrypt = require('bcryptjs');
 
-const adminRoutes = require('./routes/admin');
-const orderRoutes = require('./routes/orders');
-const logsRoutes = require('./routes/logs');
-const galleryRoutes = require('./routes/gallery');
-const filmsRoutes = require('./routes/films');
-const packagesRoutes = require('./routes/packages');
+const Credentials  = require('./config/Credentials.js');
 
-const PORT = process.env.PORT || 4000;
-const DB_USER = process.env.DB_USER || '';
-const DB_PASSWORD = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || '';
-const DB_HOST = process.env.DB_HOST || '';
-const DB_CLUSTER = process.env.DB_CLUSTER || '';
-const MONGO_URI = `mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}?appName=${DB_CLUSTER}`;
-const SESSION_SECRET = process.env.SESSION_SECRET || '';
-const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
+const allRoutes = require('./routes/routes');
 
 (async () => {
   try {
-    await connectDB(MONGO_URI);
+    await connectDB(Credentials.MONGO_URI);
 
     const app = express();
 
@@ -38,7 +25,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
     app.use(bodyParser.urlencoded({ extended: true }));
 
     // create a write stream for requests
-    const accessLogStream = fs.createWriteStream(path.join(process.env.LOG_DIR || './logs', 'access.log'), { flags: 'a' });
+    const accessLogStream = fs.createWriteStream(path.join(Credentials.LOG_DIR || './logs', 'access.log'), { flags: 'a' });
 
     // log every request to console & file
     app.use(morgan('combined', { stream: accessLogStream }));
@@ -46,30 +33,24 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
 
     // sessions (using MongoStore)
     app.use(session({
-      secret: SESSION_SECRET,
+      secret: Credentials.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       cookie: { maxAge: 1000 * 60 * 60 * 8 }, // 8 hours
-      store: MongoStore.create({ mongoUrl: MONGO_URI })
+      store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI })
     }));
 
-    // serve uploaded images statically
-    app.use('/uploads', express.static(path.resolve(UPLOAD_DIR)));
-
     // routes
-    app.use('/admin', adminRoutes);
-    app.use('/orders', orderRoutes);
-    app.use('/logs', logsRoutes);
-    app.use('/gallery', galleryRoutes);
-    app.use('/films', filmsRoutes);
-    app.use('/packages', packagesRoutes);
+    app.use('/', allRoutes);
+    
+    // serve uploaded images statically
+    app.use('/uploads', express.static(path.resolve(Credentials.UPLOAD_DIR)));
 
-    app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
 
     // initial admin creation if ADMIN_INITIAL_PASSWORD env provided and no admin exists
-    const initialPassword = process.env.ADMIN_INITIAL_PASSWORD;
+    const initialPassword = Credentials.ADMIN_INITIAL_PASSWORD;
     if (initialPassword) {
       const existing = await Admin.findOne({});
       if (!existing) {
@@ -80,8 +61,8 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
       }
     }
 
-    app.listen(PORT, () => {
-      logger.info(`Server listening on http://localhost:${PORT}`);
+    app.listen(Credentials.PORT, () => {
+      logger.info(`Server listening on http://localhost:${Credentials.PORT}`);
     });
 
   } catch (err) {
