@@ -6,7 +6,7 @@ const OrderSchema = new mongoose.Schema({
   clientName: { type: String },
   notes: { type: String },
   status: { type: String, enum: ['pending','in-progress','done'], default: 'pending' },
-  images: [{ filename: String, url: String, uploadedAt: Date }],
+  media: [{ filename: String, url: String, uploadedAt: Date }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
