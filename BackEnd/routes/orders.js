@@ -7,6 +7,7 @@ const multer = require("multer");
 const allowedExtensions = require("../config/allowed_extensions.json");
 const logger = require("../utils/logger");
 const { handleMulterErrors } = require("../middleware/upload").default;
+const { getOrderFilesPaths, deleteOrderfolder } = require("../services/order.service")
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -138,7 +139,7 @@ router.post(
         };
       });
 
-      order.images.push(...fileObjs);
+      order.media.push(...fileObjs);
       await order.save();
 
       logger.info(
@@ -179,40 +180,56 @@ router.get("/view/by-email", async (req, res) => {
   }
 });
 
-/* // GET /home/recent-random?limit=6 - return random images from recent orders for homepage
-router.get("/home/recent-random", async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 6;
-
-    // strategy:
-    // 1. take recent orders (e.g. latest 50)
-    // 2. collect all image entries
-    // 3. return up to `limit` random images
-    const recent = await Order.find({})
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
-    const images = recent.flatMap((o) =>
-      (o.images || []).map((img) => ({ ...img, orderId: o._id }))
-    );
-    if (images.length === 0) {
-      logger.info("Requested homepage recent-random images; none found.");
-      return res.json({ ok: true, images: [] });
+// GET /orders/by-email?email=... (admin only) - returns ALL orders for a given email
+router.get("/view/orders-by-email", requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { email } = req.query;
+      if (!email) {
+        return res.status(400).json({ ok: false, message: "Email required" });
+      }
+      const orders = await Order.find({ email }).sort({ createdAt: -1 }).lean();
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({ ok: false, message: "No orders found for email" });
+      }
+      logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
+      return res.json({ ok: true, orders });
+    } catch (err) {
+      logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
+      return res.status(500).json({ ok: false, message: "Server error" });
     }
-
-    // shuffle and pick `limit`
-    for (let i = images.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [images[i], images[j]] = [images[j], images[i]];
-    }
-
-    const selected = images.slice(0, Math.min(limit, images.length));
-    logger.info(`Returned ${selected.length} random images for homepage from ${images.length} candidates`);
-    return res.json({ ok: true, images: selected });
-  } catch (err) {
-    logger.error(`GET /orders/home/recent-random failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error" });
   }
-});
- */
+);
+
+router.delete("/:orderId", requireAdminAuth, 
+  async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      if (!orderId) {
+        return res.status(400).json({ ok: false, message: "orderId is required" });
+      }
+      
+      // Use deleteOrderFiles service to remove folder
+      try {
+        await deleteOrderfolder(orderId);
+      } catch (deleteErr) {
+        logger.error(`Error deleting order files for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
+        return res.status(500).json({ ok: false, message: "Failed to delete order files", error: deleteErr.message || deleteErr });
+      }
+
+      // Delete the order from the database
+      const deleted = await Order.findByIdAndDelete(orderId);
+      if (!deleted) {
+        return res.status(404).json({ ok: false, message: "Order not found" });
+      }
+
+      logger.info(`Order and associated files deleted for orderId: ${orderId}`);
+      return res.json({ ok: true, orderId });
+    } catch (error) {
+      logger.error(`DELETE /orders/:orderId failed: ${error.stack || error.message || error}`);
+      return res.status(500).json({ ok: false, message: "Server error" });
+    }
+  }
+);
+
 module.exports = router;
