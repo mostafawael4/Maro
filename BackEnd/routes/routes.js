@@ -8,6 +8,7 @@ const galleryRoutes = require('./gallery');
 const filmsRoutes = require('./films');
 const packagesRoutes = require('./packages');
 const feedbacksRoutes = require('./feedbacks');
+const contactUS =  require("./contactUs");
 
 // Mount all sub-routes under /
 router.use('/admin', adminRoutes);
@@ -17,5 +18,6 @@ router.use('/gallery', galleryRoutes);
 router.use('/films', filmsRoutes);
 router.use('/packages', packagesRoutes);
 router.use('/feedbacks', feedbacksRoutes);
+router.use("/contact", contactUS);
 
 module.exports = router;
