@@ -7,7 +7,7 @@ const multer = require("multer");
 const allowedExtensions = require("../config/allowed_extensions.json");
 const logger = require("../utils/logger");
 const { handleMulterErrors } = require("../middleware/upload").default;
-const { getOrderFilesPaths, deleteOrderfolder } = require("../services/order.service")
+const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../services/order.service")
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -201,6 +201,7 @@ router.get("/view/orders-by-email", requireAdminAuth,
   }
 );
 
+// DELETE /:orderId (admin only) - delete order folder from the server and delete the order from db
 router.delete("/:orderId", requireAdminAuth, 
   async (req, res) => {
     try {
@@ -231,5 +232,61 @@ router.delete("/:orderId", requireAdminAuth,
     }
   }
 );
+
+router.delete("/deletemedia/:orderId", requireAdminAuth, 
+  async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { filenames } = req.body;
+      if (!orderId) {
+        return res.status(400).json({ ok: false, message: "orderId is required" });
+      }
+      if (filenames.length <= 0){
+        return res.status(400).json({ ok: false, message: "filenames array is required" });
+      }
+
+      // use getOrderFilesPaths to get all files for the order
+      let filePaths;
+      try {
+        filePaths = await getOrderFilesPaths(orderId);
+      } catch (error) {
+        logger.error(`Error getting order file paths for orderId ${orderId}: ${error.stack || error.message || error}`);
+        return res.status(500).json({ ok: false, message: "Failed to fetch order file paths", error: error.message || error });
+      }
+
+      // Validate that all filenames in the array exist in the order's files
+      const missingFiles = filenames.filter(filename => !filePaths.includes(filename));
+      if (missingFiles.length > 0) {
+        logger.error(`Files not found for orderId ${orderId}: ${missingFiles.join(", ")}`);
+        return res.status(400).json({ ok: false, message: `Files do not exist for order id ${orderId}: ${missingFiles.join(", ")}`});
+      }
+
+      // Attempt to delete each requested file, collect failed deletions
+      const failedDeletions = [];
+      for (const filename of filenames) {
+        try {
+          await deleteOrderFileByFileName(orderId, filename);
+        } catch (deleteErr) {
+          logger.error(`Error deleting file ${filename} for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
+          failedDeletions.push({ filename, error: deleteErr.message || deleteErr });
+        }
+      }
+
+      if (failedDeletions.length > 0) {
+        return res.status(500).json({ 
+          ok: false, 
+          message: `Failed to delete some files for order id ${orderId}`, 
+          failedFiles: failedDeletions 
+        });
+      }
+
+      return res.json({ ok: true, orderId });
+    } catch (error) {
+      logger.error(`DELETE /orders/:orderId failed: ${error.stack || error.message || error}`);
+      return res.status(500).json({ ok: false, message: "Server error" });
+    }
+  }
+);
+
 
 module.exports = router;
