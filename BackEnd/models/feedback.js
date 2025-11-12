@@ -1,0 +1,8 @@
+const mongoose = require('mongoose');
+
+const FeedbackSchema = new mongoose.Schema({
+  feedback: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: true });
+
+module.exports = FeedbackSchema;
