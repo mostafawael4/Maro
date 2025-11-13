@@ -141,8 +141,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   getSliderImages(): GalleryImage[] {
-    if (!this.order?.images) return [];
-    return this.order.images.map(img => ({
+    if (!this.order?.media) return [];
+    return this.order.media.map(img => ({
       _id: img.filename,
       filename: img.filename,
       url: img.url,

@@ -77,9 +77,9 @@ export class OrdersComponent implements OnInit {
   }
 
   getFirstImage(order: Order): string {
-    if (order.images && order.images.length > 0) {
-      // Images are now objects with filename property
-      const firstImage = order.images[0];
+    if (order.media && order.media.length > 0) {
+      // Media are now objects with filename property
+      const firstImage = order.media[0];
       return `${this.baseUrl}${firstImage.url}`;
     }
     return 'assets/images/placeholder.jpg'; // Default placeholder

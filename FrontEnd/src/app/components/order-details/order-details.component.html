@@ -26,36 +26,35 @@
 
   <!-- Order Details -->
   <div *ngIf="order && !loading" class="order-content">
-    <!-- Order Header -->
+    <!-- Order Header - Simplified -->
     <div class="order-header">
       <div class="header-info">
-        <h1>{{ order.clientName }}</h1>
+        <h1>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h1>
         <p class="client-email">{{ order.email }}</p>
-        <span class="status-badge" [style.background-color]="getStatusColor(order.status)">
-          {{ order.status }}
-        </span>
       </div>
       <div class="order-meta">
         <div class="meta-item">
-          <span class="meta-label">Total Photos:</span>
-          <span class="meta-value">{{ order.images.length }}</span>
+          <span class="meta-label">Status:</span>
+          <span class="status-badge" [style.background-color]="getStatusColor(order.status)">
+            {{ order.status }}
+          </span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">Order Date:</span>
+          <span class="meta-label">Created Date:</span>
           <span class="meta-value">{{ order.createdAt | date: 'MMM dd, yyyy' }}</span>
         </div>
-        <div *ngIf="order.notes" class="meta-item notes">
-          <span class="meta-label">Notes:</span>
-          <span class="meta-value">{{ order.notes }}</span>
+        <div class="meta-item">
+          <span class="meta-label">Total Media:</span>
+          <span class="meta-value">{{ order.media.length }}</span>
         </div>
       </div>
     </div>
 
     <!-- Images Gallery -->
-    <div class="images-gallery" *ngIf="order.images.length > 0">
+    <div class="images-gallery" *ngIf="order.media.length > 0">
       <h2>Order Photos</h2>
       <div class="gallery-grid">
-        <div *ngFor="let image of order.images; let i = index" class="gallery-item">
+        <div *ngFor="let image of order.media; let i = index" class="gallery-item">
           <img [src]="getImageUrl(image)" [alt]="'Order photo ' + (i + 1)" loading="lazy" (click)="openImageSlider(i)">
           <div class="image-overlay">
             <span class="image-filename">{{ image.filename }}</span>
@@ -73,7 +72,7 @@
     </div>
 
     <!-- Empty Images State -->
-    <div *ngIf="order.images.length === 0" class="empty-images">
+    <div *ngIf="order.media.length === 0" class="empty-images">
       <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
         <circle cx="8.5" cy="8.5" r="1.5"/>

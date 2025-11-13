@@ -7,19 +7,68 @@ export interface OrderImage {
   filename: string;
   url: string;
   uploadedAt: string;
-  _id: string;
+  _id?: string;
+}
+
+export interface OrderFormVendors {
+  photographers?: string[];
+  cinematographers?: string[];
+  makeupArtist?: string;
+  hairStylist?: string;
+  dressDesigner?: string;
+  eventPlanner?: string;
+  dj?: string;
+  lighting?: string;
+  entertainment?: string;
+  others?: string;
+}
+
+export interface OrderFormFilmEditing {
+  includeAccessoriesShots?: boolean;
+  editSequence?: 'chronological' | 'random' | 'no-preference';
+  stylePreference?: string[];
+  highlightPreference?: string[];
+  teaserStyleLinks?: string[];
+}
+
+export interface OrderForm {
+  _id?: string;
+  brideAndGroomNames?: string;
+  eventDate?: string;
+  eventType?: string[];
+  eventVenue?: string;
+  timelineOfDay?: string;
+  shootersStartTime?: string;
+  shootersEndTime?: string;
+  coupleDescription?: string;
+  moodBoardLinks?: string[];
+  favoriteSongs?: string[];
+  specialMoments?: string;
+  excludeShots?: string;
+  vendors?: OrderFormVendors;
+  filmEditing?: OrderFormFilmEditing;
+  socialMediaInspiration?: string[];
+  tiktokIdeas?: string[];
+}
+
+export interface Feedback {
+  _id?: string;
+  feedback: string;
+  createdAt?: string;
 }
 
 export interface Order {
   _id: string;
   email: string;
-  clientName: string;
+  clientName?: string;
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
-  images: OrderImage[];
+  media: OrderImage[];
+  orderForm?: OrderForm;
+  feedbacks?: Feedback[];
   createdAt: string;
   updatedAt: string;
-  __v: number;
+  __v?: number;
 }
 
 export interface OrdersResponse {
@@ -51,7 +100,7 @@ export class OrdersService {
   uploadOrderImages(orderId: string, files: File[]): Observable<any> {
     const formData = new FormData();
     files.forEach(file => {
-      formData.append('images', file);
+      formData.append('media', file); // Changed from 'images' to 'media' to match backend
     });
     return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { withCredentials: true });
   }

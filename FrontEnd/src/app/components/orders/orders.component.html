@@ -123,12 +123,12 @@
         >
           <div class="order-overlay">
             <div class="order-info">
-              <h3>{{ order.clientName }}</h3>
+              <h3>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h3>
               <p class="order-email">{{ order.email }}</p>
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ order.images.length }} photos</p>
+              <p class="order-count">{{ order.media.length }} photos</p>
             </div>
           </div>
         </div>
@@ -198,12 +198,12 @@
         >
           <div class="order-overlay">
             <div class="order-info">
-              <h3>{{ order.clientName }}</h3>
+              <h3>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h3>
               <p class="order-email">{{ order.email }}</p>
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ order.images.length }} photos</p>
+              <p class="order-count">{{ order.media.length }} photos</p>
             </div>
           </div>
         </div>
