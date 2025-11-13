@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const OrderFormSchema = require('./orderForm')
+const FeedbackSchema = require('./feedback')
 
 const OrderSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
@@ -6,9 +8,11 @@ const OrderSchema = new mongoose.Schema({
   clientName: { type: String },
   notes: { type: String },
   status: { type: String, enum: ['pending','in-progress','done'], default: 'pending' },
-  images: [{ filename: String, url: String, uploadedAt: Date }],
+  media: [{ filename: String, url: String, uploadedAt: Date }],
+  feedbacks: [FeedbackSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  orderForm: OrderFormSchema,
 });
 
 OrderSchema.pre('save', function(next){
