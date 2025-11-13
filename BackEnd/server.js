@@ -48,7 +48,11 @@ const allRoutes = require('./routes/routes');
       secret: Credentials.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
-      cookie: { maxAge: 1000 * 60 * 60 * 8 }, // 8 hours
+      cookie: { 
+        maxAge: 1000 * 60 * 60 * 8,// 8 hours
+        secure: Credentials.NODE_ENV === 'production', // only true online
+        sameSite: Credentials.NODE_ENV === 'production' ? 'none' : 'lax'
+      }, 
       store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI })
     }));
 

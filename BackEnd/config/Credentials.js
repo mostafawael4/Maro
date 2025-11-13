@@ -1,3 +1,5 @@
+const NODE_ENV = process.env.NODE_ENV;
+
 const PORT = process.env.PORT || 4000;
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 4000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 4000;
@@ -24,6 +26,7 @@ const FROM_EMAIL = process.env.FROM_EMAIL
 const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
 
 module.exports = {
+  NODE_ENV,
   PORT,
   SERVER_ORIGIN,
   FRONTEND_ORIGIN,
