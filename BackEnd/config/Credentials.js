@@ -1,4 +1,6 @@
 const PORT = process.env.PORT || 4000;
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 4000;
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 4000;
 
 const DB_USER = process.env.DB_USER || '';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
@@ -23,6 +25,8 @@ const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
 
 module.exports = {
   PORT,
+  SERVER_ORIGIN,
+  FRONTEND_ORIGIN,
   MONGO_URI,
   SESSION_SECRET,
   UPLOAD_DIR,

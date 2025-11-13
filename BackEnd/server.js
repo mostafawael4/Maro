@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bodyParser = require('body-parser');
@@ -23,6 +24,17 @@ const allRoutes = require('./routes/routes');
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
+
+    // Configure CORS
+    app.use(cors({
+      origin: [
+        `${Credentials.SERVER_ORIGIN}`,
+        `${Credentials.FRONTEND_ORIGIN}`,
+      ], // your Angular app origin
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true, // if you’re using cookies or auth headers
+    }));
 
     // create a write stream for requests
     const accessLogStream = fs.createWriteStream(path.join(Credentials.LOG_DIR || './logs', 'access.log'), { flags: 'a' });
