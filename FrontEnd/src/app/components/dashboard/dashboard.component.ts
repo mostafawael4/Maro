@@ -25,22 +25,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private ordersService: OrdersService,
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+    // Get initial auth state immediately (synchronous from localStorage)
+    this.isAuthenticated = this.authService.isAuthenticatedValue;
+  }
 
   ngOnInit(): void {
-    // Wait for auth check to complete, then load orders
-    combineLatest([
-      this.authService.authCheckComplete$,
-      this.authService.isAuthenticated$
-    ]).pipe(
-      filter(([authCheckDone, _]) => authCheckDone), // Only proceed when auth check is done
-      takeUntil(this.destroy$)
-    ).subscribe(([_, isAuth]) => {
+    // Subscribe to auth changes
+    this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
-      
-      // Load orders - let the API handle authentication
-      this.loadOrders();
     });
+
+    // Load orders immediately (localStorage auth is already set)
+    this.loadOrders();
   }
 
   ngOnDestroy(): void {

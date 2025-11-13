@@ -31,41 +31,39 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     private router: Router,
     private ordersService: OrdersService,
     private authService: AuthService
-  ) {}
+  ) {
+    // Get initial auth state immediately (synchronous from localStorage)
+    this.isAuthenticated = this.authService.isAuthenticatedValue;
+  }
 
   ngOnInit(): void {
-    // Wait for auth check to complete, then load order data
-    combineLatest([
-      this.authService.authCheckComplete$,
-      this.authService.isAuthenticated$
-    ]).pipe(
-      filter(([authCheckDone, _]) => authCheckDone), // Only proceed when auth check is done
-      takeUntil(this.destroy$)
-    ).subscribe(([_, isAuth]) => {
+    // Subscribe to auth changes
+    this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
-      
-      const orderId = this.route.snapshot.paramMap.get('id');
-      const userEmail = this.route.snapshot.queryParamMap.get('email');
-      
-      if (!orderId) {
-        this.error = 'Order ID not found';
-        this.loading = false;
-        return;
-      }
-      
-      // Admin users: use getOrderById
-      if (this.isAuthenticated) {
-        this.loadOrderById(orderId);
-      } 
-      // Normal users: use getOrdersByEmail
-      else if (userEmail) {
-        this.loadOrderByEmail(userEmail, orderId);
-      } 
-      else {
-        this.error = 'Access denied';
-        this.loading = false;
-      }
     });
+
+    // Load order data immediately (localStorage auth is already set)
+    const orderId = this.route.snapshot.paramMap.get('id');
+    const userEmail = this.route.snapshot.queryParamMap.get('email');
+    
+    if (!orderId) {
+      this.error = 'Order ID not found';
+      this.loading = false;
+      return;
+    }
+    
+    // Admin users: use getOrderById
+    if (this.isAuthenticated) {
+      this.loadOrderById(orderId);
+    } 
+    // Normal users: use getOrdersByEmail
+    else if (userEmail) {
+      this.loadOrderByEmail(userEmail, orderId);
+    } 
+    else {
+      this.error = 'Access denied';
+      this.loading = false;
+    }
   }
 
   ngOnDestroy(): void {

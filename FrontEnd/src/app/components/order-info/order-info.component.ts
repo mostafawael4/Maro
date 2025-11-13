@@ -24,10 +24,13 @@ export class OrderInfoComponent implements OnInit {
     private router: Router,
     private ordersService: OrdersService,
     private authService: AuthService
-  ) {}
+  ) {
+    // Get initial auth state immediately (synchronous from localStorage)
+    this.isAuthenticated = this.authService.isAuthenticatedValue;
+  }
 
   ngOnInit(): void {
-    // Check authentication
+    // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
     });
