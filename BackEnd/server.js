@@ -44,7 +44,8 @@ const allRoutes = require('./routes/routes');
     app.use('/', allRoutes);
     
     // serve uploaded images statically
-    app.use('/uploads', express.static(path.resolve(Credentials.UPLOAD_DIR)));
+    const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR) 
+    app.use('/uploads', express.static(uploadsDir));
 
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
