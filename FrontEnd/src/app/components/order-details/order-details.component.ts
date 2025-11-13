@@ -24,6 +24,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   showImageSlider = false;
   currentImageIndex = 0;
+  mediaFilter: 'all' | 'images' | 'videos' = 'all';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -114,6 +115,13 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     return `${this.baseUrl}${image.url}`;
   }
 
+  isVideo(file: OrderImage): boolean {
+    if (!file.filename) return false;
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
+    const ext = file.filename.toLowerCase().substring(file.filename.lastIndexOf('.'));
+    return videoExtensions.includes(ext);
+  }
+
   goBack(): void {
     this.router.navigate(['/orders']);
   }
@@ -132,8 +140,38 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   openImageSlider(index: number) {
-    this.currentImageIndex = index;
+    // Find the clicked media in the filtered array
+    const clickedMedia = this.getFilteredMedia()[index];
+    if (!clickedMedia) return;
+    
+    // Find this media in the full media array (for slider - includes both images and videos)
+    const allMedia = this.order?.media || [];
+    const actualIndex = allMedia.findIndex(m => m.filename === clickedMedia.filename);
+    
+    this.currentImageIndex = actualIndex >= 0 ? actualIndex : 0;
     this.showImageSlider = true;
+  }
+
+  setMediaFilter(filter: 'all' | 'images' | 'videos') {
+    this.mediaFilter = filter;
+  }
+
+  getFilteredMedia(): OrderImage[] {
+    if (!this.order?.media) return [];
+    if (this.mediaFilter === 'all') return this.order.media;
+    if (this.mediaFilter === 'images') return this.order.media.filter(m => !this.isVideo(m));
+    if (this.mediaFilter === 'videos') return this.order.media.filter(m => this.isVideo(m));
+    return this.order.media;
+  }
+
+  getImagesCount(): number {
+    if (!this.order?.media) return 0;
+    return this.order.media.filter(m => !this.isVideo(m)).length;
+  }
+
+  getVideosCount(): number {
+    if (!this.order?.media) return 0;
+    return this.order.media.filter(m => this.isVideo(m)).length;
   }
 
   closeImageSlider() {
@@ -142,6 +180,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   getSliderImages(): GalleryImage[] {
     if (!this.order?.media) return [];
+    // Include both images and videos in the slider
     return this.order.media.map(img => ({
       _id: img.filename,
       filename: img.filename,
@@ -150,14 +189,14 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     }));
   }
 
-  async downloadImage(image: OrderImage, event: Event) {
+  async downloadImage(media: OrderImage, event: Event) {
     event.stopPropagation(); // Prevent opening the slider
     
     try {
-      const imageUrl = this.getImageUrl(image);
+      const mediaUrl = this.getImageUrl(media);
       
-      // Fetch the image as a blob
-      const response = await fetch(imageUrl);
+      // Fetch the media file as a blob
+      const response = await fetch(mediaUrl);
       const blob = await response.blob();
       
       // Create a blob URL
@@ -166,7 +205,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = image.filename;
+      link.download = media.filename;
       
       // Trigger download
       document.body.appendChild(link);
@@ -176,8 +215,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Error downloading image:', error);
-      alert('Failed to download image. Please try again.');
+      console.error('Error downloading media:', error);
+      alert(`Failed to download ${this.isVideo(media) ? 'video' : 'image'}. Please try again.`);
     }
   }
 }

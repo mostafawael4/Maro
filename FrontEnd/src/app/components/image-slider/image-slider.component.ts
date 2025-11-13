@@ -82,6 +82,13 @@ export class ImageSliderComponent {
     return image.url;
   }
 
+  isVideo(image: GalleryImage): boolean {
+    if (!image.filename) return false;
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
+    const ext = image.filename.toLowerCase().substring(image.filename.lastIndexOf('.'));
+    return videoExtensions.includes(ext);
+  }
+
   // Prevent closing when clicking on the image
   onImageClick(event: Event) {
     event.stopPropagation();

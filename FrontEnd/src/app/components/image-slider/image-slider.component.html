@@ -23,16 +23,28 @@
       </svg>
     </button>
 
-    <!-- Image Display -->
+    <!-- Media Display -->
     <div class="image-wrapper" (click)="onImageClick($event)">
+      <!-- Video Player -->
+      <video 
+        *ngIf="getCurrentImage() && isVideo(getCurrentImage()!)"
+        [src]="getImageUrl(getCurrentImage()!)"
+        controls
+        preload="metadata"
+        class="slider-video"
+        (click)="$event.stopPropagation()">
+        Your browser does not support the video tag.
+      </video>
+      
+      <!-- Image -->
       <img 
-        *ngIf="getCurrentImage()" 
+        *ngIf="getCurrentImage() && !isVideo(getCurrentImage()!)" 
         [src]="getImageUrl(getCurrentImage()!)" 
         [alt]="getCurrentImage()!.filename"
         class="slider-image"
       />
       
-      <!-- Image Counter -->
+      <!-- Media Counter -->
       <div class="image-counter">
         {{ currentIndex + 1 }} / {{ images.length }}
       </div>

@@ -113,7 +113,7 @@ export class OrdersComponent implements OnInit {
     event.stopPropagation(); // Prevent opening order details
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = 'image/*,video/*'; // Accept both images and videos
     input.multiple = true;
     input.onchange = (e: any) => {
       const files = e.target.files;

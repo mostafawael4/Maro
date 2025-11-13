@@ -128,7 +128,7 @@
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ order.media.length }} photos</p>
+              <p class="order-count">{{ (order.media || []).length }} photos</p>
             </div>
           </div>
         </div>
@@ -203,7 +203,7 @@
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ order.media.length }} photos</p>
+              <p class="order-count">{{ (order.media || []).length }} photos</p>
             </div>
           </div>
         </div>

@@ -38,7 +38,7 @@
           <td class="client-name">{{ order.clientName }}</td>
           <td class="client-email">{{ order.email }}</td>
           <td>{{ formatDate(order.createdAt) }}</td>
-          <td class="photos-count">{{ order.media.length }}</td>
+          <td class="photos-count">{{ (order.media || []).length }}</td>
           <td>
             <span class="status-badge" [ngClass]="getStatusClass(order.status)">
               {{ order.status }}

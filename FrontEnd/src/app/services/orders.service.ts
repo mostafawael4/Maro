@@ -63,7 +63,7 @@ export interface Order {
   clientName?: string;
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
-  media: OrderImage[];
+  media?: OrderImage[]; // Made optional to handle cases where backend might not send it
   orderForm?: OrderForm;
   feedbacks?: Feedback[];
   createdAt: string;
