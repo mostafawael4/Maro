@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env --inspect  --watch-path=./  ./server.js",
+    "start": "node --env-file=.env ./server.js",
+    "watch": "node --env-file=.env --inspect  --watch-path=./  ./server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
