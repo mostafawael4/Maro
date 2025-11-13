@@ -1,58 +1,74 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrdersService, Order, OrderImage } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { combineLatest, Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
+import { ImageSliderComponent } from '../image-slider/image-slider.component';
+import { GalleryImage } from '../../services/gallery.service';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageSliderComponent],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
-export class OrderDetailsComponent implements OnInit {
+export class OrderDetailsComponent implements OnInit, OnDestroy {
   order: Order | null = null;
   loading = true;
   error = '';
   baseUrl = environment.apiUrl;
   isAuthenticated = false;
+  showImageSlider = false;
+  currentImageIndex = 0;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private ordersService: OrdersService,
     private authService: AuthService
-  ) {}
+  ) {
+    // Get initial auth state immediately (synchronous from localStorage)
+    this.isAuthenticated = this.authService.isAuthenticatedValue;
+  }
 
   ngOnInit(): void {
-    // Check authentication status
+    // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
-      
-      const orderId = this.route.snapshot.paramMap.get('id');
-      const userEmail = this.route.snapshot.queryParamMap.get('email');
-      
-      if (!orderId) {
-        this.error = 'Order ID not found';
-        this.loading = false;
-        return;
-      }
-      
-      // Admin users: use getOrderById
-      if (this.isAuthenticated) {
-        this.loadOrderById(orderId);
-      } 
-      // Normal users: use getOrdersByEmail
-      else if (userEmail) {
-        this.loadOrderByEmail(userEmail, orderId);
-      } 
-      else {
-        this.error = 'Access denied';
-        this.loading = false;
-      }
+      this.isAuthenticated = isAuth ?? false;
     });
+
+    // Load order data immediately (localStorage auth is already set)
+    const orderId = this.route.snapshot.paramMap.get('id');
+    const userEmail = this.route.snapshot.queryParamMap.get('email');
+    
+    if (!orderId) {
+      this.error = 'Order ID not found';
+      this.loading = false;
+      return;
+    }
+    
+    // Admin users: use getOrderById
+    if (this.isAuthenticated) {
+      this.loadOrderById(orderId);
+    } 
+    // Normal users: use getOrdersByEmail
+    else if (userEmail) {
+      this.loadOrderByEmail(userEmail, orderId);
+    } 
+    else {
+      this.error = 'Access denied';
+      this.loading = false;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadOrderById(orderId: string): void {
@@ -112,6 +128,56 @@ export class OrderDetailsComponent implements OnInit {
         return '#28A745';
       default:
         return '#6c757d';
+    }
+  }
+
+  openImageSlider(index: number) {
+    this.currentImageIndex = index;
+    this.showImageSlider = true;
+  }
+
+  closeImageSlider() {
+    this.showImageSlider = false;
+  }
+
+  getSliderImages(): GalleryImage[] {
+    if (!this.order?.images) return [];
+    return this.order.images.map(img => ({
+      _id: img.filename,
+      filename: img.filename,
+      url: img.url,
+      uploadedAt: new Date(img.uploadedAt)
+    }));
+  }
+
+  async downloadImage(image: OrderImage, event: Event) {
+    event.stopPropagation(); // Prevent opening the slider
+    
+    try {
+      const imageUrl = this.getImageUrl(image);
+      
+      // Fetch the image as a blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Create a blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = image.filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      alert('Failed to download image. Please try again.');
     }
   }
 }

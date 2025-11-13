@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, AfterViewInit, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -11,22 +11,41 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.scss'
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, AfterViewInit {
   password: string = '';
   errorMessage: string = '';
   isLoading: boolean = false;
   isAuthenticated: boolean = false;
+  isClientReady: boolean = false; // Hide content until client-side is ready
 
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) {}
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    // In browser: get auth state immediately and mark as ready
+    // This prevents SSR flash because we have the correct state from localStorage
+    if (isPlatformBrowser(this.platformId)) {
+      this.isAuthenticated = this.authService.isAuthenticatedValue;
+      // Mark as ready immediately since we have the correct auth state
+      this.isClientReady = true;
+    }
+    // On server: isClientReady stays false, so nothing renders (prevents SSR mismatch)
+  }
 
   ngOnInit(): void {
-    // Check if already authenticated
+    // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated = isAuth ?? false;
     });
+  }
+
+  ngAfterViewInit(): void {
+    // Fallback: ensure isClientReady is set if we're in browser
+    // This handles edge cases where constructor check might have failed
+    if (isPlatformBrowser(this.platformId) && !this.isClientReady) {
+      this.isClientReady = true;
+    }
   }
 
   onSubmit(): void {
