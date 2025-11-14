@@ -61,14 +61,14 @@
           <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
-          <span>Email client opened! Send the email to complete your inquiry.</span>
+          <span>Form submitted successfully! We'll get back to you soon.</span>
         </div>
 
-        <div *ngIf="submitError && contactForm.invalid" class="alert error-alert">
+        <div *ngIf="submitError" class="alert error-alert">
           <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-          <span>Please fill all fields correctly</span>
+          <span>{{ errorMessage || 'Please fill all fields correctly' }}</span>
         </div>
 
         <button
