@@ -7,46 +7,271 @@
     </p>
   </div>
 
-  <!-- Package Categories Navigation -->
-  <div class="categories-nav">
-    <button 
-      class="category-btn" 
-      [class.active]="isActive('cinematography')"
-      (click)="switchSection('cinematography')"
-    >
-      <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-      </svg>
-      Cinematography
-    </button>
-
-    <button 
-      class="category-btn" 
-      [class.active]="isActive('photography')"
-      (click)="switchSection('photography')"
-    >
-      <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-      Photography
-    </button>
-
-    <button 
-      class="category-btn" 
-      [class.active]="isActive('fullrecording')"
-      (click)="switchSection('fullrecording')"
-    >
-      <svg class="category-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-      </svg>
-      Full Recording
-    </button>
-  </div>
-
-  <!-- Package Content (Router Outlet for child routes) -->
+  <!-- Package Content -->
   <div class="package-content">
-    <router-outlet></router-outlet>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading packages...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="errorMessage && !isLoading" class="error-container">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- Cinematography Section -->
+    <section *ngIf="!isLoading && !errorMessage && cinematographyPackage" class="cinematography-section">
+      <!-- Header -->
+      <div class="section-header">
+        <div class="header-decoration"></div>
+        <h2 class="section-title">{{ cinematographyPackage.displayName || 'Cinematography Packages' }}</h2>
+        <p class="section-subtitle">
+          Your love story deserves to be told with cinematic elegance. 
+          Choose the perfect package to capture every precious moment.
+        </p>
+        <div class="header-decoration"></div>
+        
+        <!-- Edit Package Button (Admin Only) -->
+        <button 
+          *ngIf="isAuthenticated" 
+          class="edit-package-btn"
+          (click)="openEditModal('cinematography')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Package
+        </button>
+      </div>
+
+      <!-- Packages Grid -->
+      <div class="packages-container">
+        <div class="packages-grid">
+          <div 
+            *ngFor="let package of cinematographyPackage.collections; let i = index" 
+            class="package-card"
+            [class.popular]="i === 0"
+            [class.animate-in]="isPackageVisible('cinematography', i)"
+            [attr.data-index]="'cinematography-' + i"
+            [attr.data-type]="'package'"
+          >
+            <!-- Package Header -->
+            <div class="package-header">
+              <h3 class="package-name">{{ package.collectionName }}</h3>
+              <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
+              <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
+              <div class="package-price">{{ package.price }}</div>
+            </div>
+
+            <!-- Package Features -->
+            <ul *ngIf="package.features && package.features.length > 0" class="package-features">
+              <li *ngFor="let feature of package.features" class="feature-item">
+                <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{{ feature }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extras Section -->
+      <div *ngIf="cinematographyPackage.extras && cinematographyPackage.extras.length > 0" class="extras-section">
+        <h3 class="extras-title">Extras</h3>
+        <div class="extras-grid">
+          <div 
+            *ngFor="let extra of cinematographyPackage.extras; let i = index" 
+            class="extra-card"
+            [class.animate-in]="isExtraVisible('cinematography', i)"
+            [attr.data-index]="'cinematography-' + i"
+            [attr.data-type]="'extra'"
+          >
+            <div class="extra-name">{{ extra.name }}</div>
+            <div class="extra-price">{{ extra.price }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Edit Package Modal -->
+      <app-edit-package-modal
+        *ngIf="cinematographyPackage"
+        [package]="cinematographyPackage"
+        [show]="showCinematographyModal"
+        (close)="closeEditModal('cinematography')"
+        (saved)="onPackageSaved()">
+      </app-edit-package-modal>
+    </section>
+
+    <!-- Photography Section -->
+    <section *ngIf="!isLoading && !errorMessage && photographyPackage" class="photography-section">
+      <!-- Header -->
+      <div class="section-header">
+        <div class="header-decoration"></div>
+        <h2 class="section-title">{{ photographyPackage.displayName || 'Photography Packages' }}</h2>
+        <p class="section-subtitle">
+          Capture every precious moment with our professional photography services. 
+          Unlimited photos to preserve your memories forever.
+        </p>
+        <div class="header-decoration"></div>
+        
+        <!-- Edit Package Button (Admin Only) -->
+        <button 
+          *ngIf="isAuthenticated" 
+          class="edit-package-btn"
+          (click)="openEditModal('photography')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Package
+        </button>
+      </div>
+
+      <!-- Packages Grid -->
+      <div class="packages-container">
+        <div class="packages-grid">
+          <div 
+            *ngFor="let package of photographyPackage.collections; let i = index" 
+            class="package-card"
+            [class.popular]="i === 0"
+            [class.animate-in]="isPackageVisible('photography', i)"
+            [attr.data-index]="'photography-' + i"
+            [attr.data-type]="'package'"
+          >
+            <!-- Package Header -->
+            <div class="package-header">
+              <h3 class="package-name">{{ package.collectionName }}</h3>
+              <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
+              <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
+              <div class="package-price">{{ package.price }}</div>
+            </div>
+
+            <!-- Package Features -->
+            <ul *ngIf="package.features && package.features.length > 0" class="package-features">
+              <li *ngFor="let feature of package.features" class="feature-item">
+                <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{{ feature }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extras Section -->
+      <div *ngIf="photographyPackage.extras && photographyPackage.extras.length > 0" class="extras-section">
+        <h3 class="extras-title">Extras</h3>
+        <div class="extras-grid">
+          <div 
+            *ngFor="let extra of photographyPackage.extras; let i = index" 
+            class="extra-card"
+            [class.animate-in]="isExtraVisible('photography', i)"
+            [attr.data-index]="'photography-' + i"
+            [attr.data-type]="'extra'"
+          >
+            <div class="extra-name">{{ extra.name }}</div>
+            <div class="extra-price">{{ extra.price }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Edit Package Modal -->
+      <app-edit-package-modal
+        *ngIf="photographyPackage"
+        [package]="photographyPackage"
+        [show]="showPhotographyModal"
+        (close)="closeEditModal('photography')"
+        (saved)="onPackageSaved()">
+      </app-edit-package-modal>
+    </section>
+
+    <!-- Full Recording Section -->
+    <section *ngIf="!isLoading && !errorMessage && fullRecordingPackage" class="full-recording-section">
+      <!-- Header -->
+      <div class="section-header">
+        <div class="header-decoration"></div>
+        <h2 class="section-title">{{ fullRecordingPackage.displayName || 'Full Recording (Videography)' }}</h2>
+        <p class="section-subtitle">
+          Professional 4K quality recording services for your special moments. 
+          Capture every detail with cinematic precision.
+        </p>
+        <div class="header-decoration"></div>
+        
+        <!-- Edit Package Button (Admin Only) -->
+        <button 
+          *ngIf="isAuthenticated" 
+          class="edit-package-btn"
+          (click)="openEditModal('fullRecording')"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Package
+        </button>
+      </div>
+
+      <!-- Services Grid -->
+      <div class="services-container">
+        <div class="services-grid">
+          <div 
+            *ngFor="let service of fullRecordingPackage.collections; let i = index" 
+            class="service-card"
+            [class.animate-in]="isPackageVisible('fullRecording', i)"
+            [attr.data-index]="'fullRecording-' + i"
+            [attr.data-type]="'package'"
+          >
+            <!-- Service Icon -->
+            <div class="service-icon-wrapper">
+              <svg *ngIf="i === 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <svg *ngIf="i !== 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+            </div>
+
+            <!-- Service Details -->
+            <div class="service-details">
+              <h3 class="service-name">{{ service.collectionName }}</h3>
+              <p *ngIf="service.description" class="service-description">{{ service.description }}</p>
+              <div class="service-price">{{ service.price }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extras Section -->
+      <div *ngIf="fullRecordingPackage.extras && fullRecordingPackage.extras.length > 0" class="extras-section">
+        <h3 class="extras-title">Extras</h3>
+        <div class="extras-grid">
+          <div 
+            *ngFor="let extra of fullRecordingPackage.extras; let i = index" 
+            class="extra-card"
+            [class.animate-in]="isExtraVisible('fullRecording', i)"
+            [attr.data-index]="'fullRecording-' + i"
+            [attr.data-type]="'extra'"
+          >
+            <div class="extra-name">{{ extra.name }}</div>
+            <div class="extra-price">{{ extra.price }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Edit Package Modal -->
+      <app-edit-package-modal
+        *ngIf="fullRecordingPackage"
+        [package]="fullRecordingPackage"
+        [show]="showFullRecordingModal"
+        (close)="closeEditModal('fullRecording')"
+        (saved)="onPackageSaved()">
+      </app-edit-package-modal>
+    </section>
     
     <!-- Terms and Conditions Section -->
     <div 

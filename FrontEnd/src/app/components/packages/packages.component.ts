@@ -1,44 +1,57 @@
-import { Component, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { PackagesService, PackageCollection, PackageExtra, Package } from '../../services/packages.service';
+import { AuthService } from '../../services/auth.service';
+import { EditPackageModalComponent } from '../edit-package-modal/edit-package-modal.component';
 
 @Component({
   selector: 'app-packages',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, EditPackageModalComponent],
   templateUrl: './packages.component.html',
   styleUrl: './packages.component.scss'
 })
-export class PackagesComponent implements AfterViewInit, OnDestroy {
+export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
+  // All packages data
+  cinematographyPackage: Package | null = null;
+  photographyPackage: Package | null = null;
+  fullRecordingPackage: Package | null = null;
+
+  // Loading and error states
+  isLoading: boolean = true;
+  errorMessage: string = '';
+
+  // Authentication
+  isAuthenticated: boolean = false;
+
+  // Edit modals
+  showCinematographyModal: boolean = false;
+  showPhotographyModal: boolean = false;
+  showFullRecordingModal: boolean = false;
+
   // Animation states
   visibleTerms: boolean = false;
   visibleCta: boolean = false;
+  visiblePackages: Set<string> = new Set();
+  visibleExtras: Set<string> = new Set();
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
-  private routerSubscription: any;
 
   constructor(
-    private router: Router,
+    private packagesService: PackagesService,
+    private authService: AuthService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    this.loadAllPackages();
     
-    // Re-observe elements when route changes
-    if (this.isBrowser) {
-      this.routerSubscription = this.router.events.pipe(
-        filter(event => event instanceof NavigationEnd)
-      ).subscribe(() => {
-        // Reset animation states on route change
-        this.visibleTerms = false;
-        this.visibleCta = false;
-        
-        // Re-observe elements after route content loads
-        setTimeout(() => {
-          this.observeAllElements();
-        }, 300);
-      });
-    }
+    // Check authentication status
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth ?? false;
+    });
   }
 
   ngAfterViewInit(): void {
@@ -56,11 +69,6 @@ export class PackagesComponent implements AfterViewInit, OnDestroy {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
     }
-    
-    // Clean up router subscription
-    if (this.routerSubscription) {
-      this.routerSubscription.unsubscribe();
-    }
   }
 
   setupIntersectionObserver(): void {
@@ -77,12 +85,17 @@ export class PackagesComponent implements AfterViewInit, OnDestroy {
         if (entry.isIntersecting) {
           const element = entry.target as HTMLElement;
           const type = element.getAttribute('data-type');
+          const index = element.getAttribute('data-index') || '';
 
           setTimeout(() => {
             if (type === 'terms') {
               this.visibleTerms = true;
             } else if (type === 'cta') {
               this.visibleCta = true;
+            } else if (type === 'package') {
+              this.visiblePackages.add(index);
+            } else if (type === 'extra') {
+              this.visibleExtras.add(index);
             }
           }, 0);
         }
@@ -95,6 +108,9 @@ export class PackagesComponent implements AfterViewInit, OnDestroy {
 
     const termsSection = document.querySelector('.terms-section');
     const ctaSection = document.querySelector('.contact-cta');
+    const packageCards = document.querySelectorAll('.package-card');
+    const extraCards = document.querySelectorAll('.extra-card');
+    const serviceCards = document.querySelectorAll('.service-card');
 
     if (termsSection && this.intersectionObserver) {
       this.intersectionObserver.observe(termsSection as HTMLElement);
@@ -103,6 +119,50 @@ export class PackagesComponent implements AfterViewInit, OnDestroy {
     if (ctaSection && this.intersectionObserver) {
       this.intersectionObserver.observe(ctaSection as HTMLElement);
     }
+
+    packageCards.forEach((card) => {
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(card as HTMLElement);
+      }
+    });
+
+    extraCards.forEach((card) => {
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(card as HTMLElement);
+      }
+    });
+
+    serviceCards.forEach((card) => {
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(card as HTMLElement);
+      }
+    });
+  }
+
+  loadAllPackages(): void {
+    this.isLoading = true;
+    this.packagesService.getAllPackages().subscribe({
+      next: (packages) => {
+        this.cinematographyPackage = packages.find(pkg => pkg.packageName === 'cinematography') || null;
+        this.photographyPackage = packages.find(pkg => pkg.packageName === 'photography') || null;
+        this.fullRecordingPackage = packages.find(pkg => pkg.packageName === 'fullRecording') || null;
+        
+        this.isLoading = false;
+        
+        // Re-setup observer after data is loaded (browser only)
+        if (this.isBrowser) {
+          setTimeout(() => {
+            this.setupIntersectionObserver();
+            this.observeAllElements();
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading packages:', error);
+        this.errorMessage = 'Failed to load packages. Please try again later.';
+        this.isLoading = false;
+      }
+    });
   }
 
   isTermsVisible(): boolean {
@@ -113,14 +173,38 @@ export class PackagesComponent implements AfterViewInit, OnDestroy {
     return this.visibleCta;
   }
 
-  // Switch between different package types
-  switchSection(section: string): void {
-    this.router.navigate(['/packages', section]);
+  isPackageVisible(packageType: string, index: number): boolean {
+    return this.visiblePackages.has(`${packageType}-${index}`);
   }
 
-  // Check if a route is active
-  isActive(route: string): boolean {
-    return this.router.url.includes(route);
+  isExtraVisible(packageType: string, index: number): boolean {
+    return this.visibleExtras.has(`${packageType}-${index}`);
+  }
+
+  // Edit package modal methods
+  openEditModal(packageType: string): void {
+    if (packageType === 'cinematography') {
+      this.showCinematographyModal = true;
+    } else if (packageType === 'photography') {
+      this.showPhotographyModal = true;
+    } else if (packageType === 'fullRecording') {
+      this.showFullRecordingModal = true;
+    }
+  }
+
+  closeEditModal(packageType: string): void {
+    if (packageType === 'cinematography') {
+      this.showCinematographyModal = false;
+    } else if (packageType === 'photography') {
+      this.showPhotographyModal = false;
+    } else if (packageType === 'fullRecording') {
+      this.showFullRecordingModal = false;
+    }
+  }
+
+  onPackageSaved(): void {
+    // Reload packages after saving
+    this.loadAllPackages();
   }
 
   // Open WhatsApp contact
