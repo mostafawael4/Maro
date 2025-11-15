@@ -1,0 +1,48 @@
+<div class="feedbacks-container">
+  <div class="header">
+    <h1>Client Feedbacks</h1>
+    <p>Read what our clients have to say about their experience</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading feedbacks...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <p>{{ error }}</p>
+    <button class="btn-retry" (click)="loadFeedbacks()">Try Again</button>
+  </div>
+
+  <!-- Feedbacks List -->
+  <div *ngIf="!loading && !error" class="feedbacks-list">
+    <div *ngIf="feedbacks.length === 0" class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <h3>No Feedbacks Yet</h3>
+      <p>Feedbacks from clients will appear here once they submit them.</p>
+    </div>
+
+    <div *ngFor="let feedback of feedbacks" class="feedback-card">
+      <div class="feedback-quote">
+        <svg class="quote-icon quote-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
+          <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
+        </svg>
+        <p class="feedback-message">{{ feedback.feedbackText }}</p>
+        <svg class="quote-icon quote-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 3c-3 0-7 1-7 8v8c0 1.25.756 2.017 2 2h4c1.25 0 2-.75 2-1.972V13c0-1.25-.75-2-2-2h-.75c0-2.25-.25-4 2.75-4V3c0-1 0-1-1-1z"/>
+          <path d="M9 3C6 3 2 4 2 11v8c0 1.25.757 2.017 2 2h4c1.25 0 2-.75 2-1.972V13c0-1.25-.75-2-2-2h-.75c0-2.25.25-4-2.75-4V3c0-1 0-1 1-1z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>

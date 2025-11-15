@@ -168,6 +168,30 @@
           <h3 class="groom-name">{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h3>
           <p class="event-date" *ngIf="order.orderForm?.eventDate">{{ formatEventDate(order.orderForm?.eventDate || '') }}</p>
         </div>
+
+        <!-- Feedback Section -->
+        <div class="feedback-section">
+          <textarea 
+            [(ngModel)]="feedbackTexts[order._id]"
+            placeholder="Write your feedback here..."
+            class="feedback-input"
+            rows="3"
+            [disabled]="submittingFeedback[order._id]"
+          ></textarea>
+          <button 
+            class="feedback-submit-btn"
+            (click)="submitFeedback(order._id, feedbackTexts[order._id] || '')"
+            [disabled]="!feedbackTexts[order._id] || !feedbackTexts[order._id].trim() || submittingFeedback[order._id]"
+          >
+            <span *ngIf="!submittingFeedback[order._id]">Submit Feedback</span>
+            <span *ngIf="submittingFeedback[order._id]" class="feedback-loading">
+              <div class="mini-spinner"></div>
+              Submitting...
+            </span>
+          </button>
+          <p *ngIf="feedbackSuccess[order._id]" class="feedback-success">{{ feedbackSuccess[order._id] }}</p>
+          <p *ngIf="feedbackError[order._id]" class="feedback-error">{{ feedbackError[order._id] }}</p>
+        </div>
       </div>
     </div>
 
@@ -258,6 +282,30 @@
         <div class="order-info-below">
           <h3 class="groom-name">{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h3>
           <p class="event-date" *ngIf="order.orderForm?.eventDate">{{ formatEventDate(order.orderForm?.eventDate || '') }}</p>
+        </div>
+
+        <!-- Feedback Section -->
+        <div class="feedback-section">
+          <textarea 
+            [(ngModel)]="feedbackTexts[order._id]"
+            placeholder="Write your feedback here..."
+            class="feedback-input"
+            rows="3"
+            [disabled]="submittingFeedback[order._id]"
+          ></textarea>
+          <button 
+            class="feedback-submit-btn"
+            (click)="submitFeedback(order._id, feedbackTexts[order._id] || '')"
+            [disabled]="!feedbackTexts[order._id] || !feedbackTexts[order._id].trim() || submittingFeedback[order._id]"
+          >
+            <span *ngIf="!submittingFeedback[order._id]">Submit Feedback</span>
+            <span *ngIf="submittingFeedback[order._id]" class="feedback-loading">
+              <div class="mini-spinner"></div>
+              Submitting...
+            </span>
+          </button>
+          <p *ngIf="feedbackSuccess[order._id]" class="feedback-success">{{ feedbackSuccess[order._id] }}</p>
+          <p *ngIf="feedbackError[order._id]" class="feedback-error">{{ feedbackError[order._id] }}</p>
         </div>
       </div>
     </div>

@@ -35,6 +35,12 @@ export class OrdersComponent implements OnInit {
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
 
+  // Feedback
+  feedbackTexts: { [orderId: string]: string } = {};
+  submittingFeedback: { [orderId: string]: boolean } = {};
+  feedbackSuccess: { [orderId: string]: string } = {};
+  feedbackError: { [orderId: string]: string } = {};
+
   constructor(
     private ordersService: OrdersService,
     private authService: AuthService,
@@ -251,6 +257,40 @@ export class OrdersComponent implements OnInit {
         this.orderIdToDelete = null;
         setTimeout(() => {
           this.error = '';
+        }, 5000);
+      }
+    });
+  }
+
+  submitFeedback(orderId: string, feedback: string): void {
+    if (!feedback.trim()) {
+      return;
+    }
+
+    this.submittingFeedback[orderId] = true;
+    this.feedbackError[orderId] = '';
+    this.feedbackSuccess[orderId] = '';
+
+    this.ordersService.submitFeedback(orderId, feedback).subscribe({
+      next: (response) => {
+        if (response.ok) {
+          this.feedbackSuccess[orderId] = 'Feedback submitted successfully!';
+          // Clear the feedback text
+          this.feedbackTexts[orderId] = '';
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            this.feedbackSuccess[orderId] = '';
+          }, 3000);
+        }
+        this.submittingFeedback[orderId] = false;
+      },
+      error: (err) => {
+        console.error('Error submitting feedback:', err);
+        this.feedbackError[orderId] = 'Failed to submit feedback. Please try again.';
+        this.submittingFeedback[orderId] = false;
+        // Clear error message after 5 seconds
+        setTimeout(() => {
+          this.feedbackError[orderId] = '';
         }, 5000);
       }
     });

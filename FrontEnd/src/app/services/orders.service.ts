@@ -127,5 +127,24 @@ export class OrdersService {
       withCredentials: true
     });
   }
+
+  submitFeedback(orderId: string, feedback: string): Observable<any> {
+    // The endpoint is /feedbacks/:orderId/feedback based on backend routes
+    return this.http.post<any>(`${environment.apiUrl}/feedbacks/${orderId}/feedback`, 
+      { feedback },
+      { withCredentials: true }
+    );
+  }
+
+  getAllFeedbacks(feedbackCounts?: number): Observable<any> {
+    // The endpoint is /feedbacks/all-feedbacks based on backend routes
+    let url = `${environment.apiUrl}/feedbacks/all-feedbacks`;
+    if (feedbackCounts) {
+      url += `?feedbackCounts=${feedbackCounts}`;
+    }
+    return this.http.get<any>(url, {
+      withCredentials: true
+    });
+  }
 }
 

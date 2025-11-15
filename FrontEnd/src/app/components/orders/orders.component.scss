@@ -608,6 +608,100 @@
   }
 }
 
+// Feedback Section
+.feedback-section {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(107, 31, 31, 0.1);
+
+  .feedback-input {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid rgba(107, 31, 31, 0.2);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-family: 'Georgia', serif;
+    background: white;
+    color: #333;
+    resize: vertical;
+    min-height: 80px;
+    transition: all 0.3s ease;
+    margin-bottom: 0.75rem;
+
+    &:focus {
+      outline: none;
+      border-color: #8B3A3A;
+      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
+    }
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.4);
+      font-style: italic;
+    }
+
+    &:disabled {
+      background: rgba(0, 0, 0, 0.05);
+      cursor: not-allowed;
+    }
+  }
+
+  .feedback-submit-btn {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(107, 31, 31, 0.2);
+    font-family: 'Georgia', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(107, 31, 31, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .feedback-loading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+
+  .feedback-success {
+    margin-top: 0.75rem;
+    color: #28A745;
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .feedback-error {
+    margin-top: 0.75rem;
+    color: #dc2626;
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: center;
+  }
+}
+
 // Empty State
 .empty-state {
   display: flex;
