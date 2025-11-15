@@ -296,6 +296,20 @@
         height: 16px;
       }
     }
+
+    &.delete-btn {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: white;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+      }
+    }
   }
 }
 

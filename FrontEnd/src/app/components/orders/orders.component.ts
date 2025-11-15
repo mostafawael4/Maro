@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { OrdersService, Order } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, DeleteModalComponent],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.scss'
 })
@@ -29,6 +30,10 @@ export class OrdersComponent implements OnInit {
   showEmailModal = false;
   userEmail = '';
   emailError = '';
+  
+  // Delete modal
+  showDeleteModal = false;
+  orderIdToDelete: string | null = null;
 
   constructor(
     private ordersService: OrdersService,
@@ -199,5 +204,44 @@ export class OrdersComponent implements OnInit {
     this.orders = [];
     this.filteredOrders = [];
     this.showEmailModal = true;
+  }
+
+  onDeleteClick(event: Event, orderId: string): void {
+    event.stopPropagation(); // Prevent opening order details
+    this.orderIdToDelete = orderId;
+    this.showDeleteModal = true;
+  }
+
+  onConfirmDelete(): void {
+    if (this.orderIdToDelete) {
+      this.deleteOrder(this.orderIdToDelete);
+    }
+  }
+
+  onCancelDelete(): void {
+    this.showDeleteModal = false;
+    this.orderIdToDelete = null;
+  }
+
+  deleteOrder(orderId: string): void {
+    this.showDeleteModal = false;
+    this.ordersService.deleteOrder(orderId).subscribe({
+      next: (response) => {
+        if (response.ok) {
+          // Remove the order from the arrays
+          this.orders = this.orders.filter(order => order._id !== orderId);
+          this.filteredOrders = this.filteredOrders.filter(order => order._id !== orderId);
+        }
+        this.orderIdToDelete = null;
+      },
+      error: (err) => {
+        console.error('Error deleting order:', err);
+        this.error = 'Failed to delete order. Please try again.';
+        this.orderIdToDelete = null;
+        setTimeout(() => {
+          this.error = '';
+        }, 5000);
+      }
+    });
   }
 }

@@ -5,11 +5,12 @@ import { OrdersService, Order } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { combineLatest, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, DeleteModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -19,6 +20,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   error = '';
   isAuthenticated = false;
   updatingOrderId: string | null = null;
+  showDeleteModal = false;
+  orderIdToDelete: string | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -110,6 +113,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
+    });
+  }
+
+  onDeleteClick(orderId: string): void {
+    this.orderIdToDelete = orderId;
+    this.showDeleteModal = true;
+  }
+
+  onConfirmDelete(): void {
+    if (this.orderIdToDelete) {
+      this.deleteOrder(this.orderIdToDelete);
+    }
+  }
+
+  onCancelDelete(): void {
+    this.showDeleteModal = false;
+    this.orderIdToDelete = null;
+  }
+
+  deleteOrder(orderId: string): void {
+    this.showDeleteModal = false;
+    this.ordersService.deleteOrder(orderId).subscribe({
+      next: (response) => {
+        if (response.ok) {
+          // Remove the order from the list
+          this.orders = this.orders.filter(order => order._id !== orderId);
+        }
+        this.orderIdToDelete = null;
+      },
+      error: (err) => {
+        this.error = 'Failed to delete order';
+        console.error('Error deleting order:', err);
+        this.orderIdToDelete = null;
+        setTimeout(() => {
+          this.error = '';
+        }, 5000);
+      }
     });
   }
 }

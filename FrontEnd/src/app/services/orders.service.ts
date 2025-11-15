@@ -116,5 +116,9 @@ export class OrdersService {
   createOrder(orderData: { email: string; clientName?: string; notes?: string; orderForm?: OrderForm }): Observable<any> {
     return this.http.post<any>(this.apiUrl, orderData);
   }
+
+  deleteOrder(orderId: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${orderId}`, { withCredentials: true });
+  }
 }
 
