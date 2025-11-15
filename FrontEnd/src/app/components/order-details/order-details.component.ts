@@ -9,11 +9,12 @@ import { takeUntil, filter } from 'rxjs/operators';
 import { ImageSliderComponent } from '../image-slider/image-slider.component';
 import { GalleryImage } from '../../services/gallery.service';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { VideoPosterSelectorComponent } from '../video-poster-selector/video-poster-selector.component';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent],
+  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent, VideoPosterSelectorComponent],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
@@ -29,6 +30,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   showDeleteModal = false;
   mediaToDelete: OrderImage | null = null;
   deletingMedia = false;
+  showVideoPosterSelector = false;
+  selectedVideoForThumbnail: OrderImage | null = null;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -266,5 +269,40 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   onCancelDeleteMedia(): void {
     this.showDeleteModal = false;
     this.mediaToDelete = null;
+  }
+
+  onSelectVideoThumbnail(media: OrderImage, event: Event): void {
+    event.stopPropagation();
+    if (!this.isAuthenticated || !this.isVideo(media)) return;
+    this.selectedVideoForThumbnail = media;
+    this.showVideoPosterSelector = true;
+  }
+
+  onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
+    if (!this.order || !this.selectedVideoForThumbnail || !this.order.media) return;
+    
+    // Update the media item with the new thumbnail
+    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+    if (mediaIndex !== -1 && this.order.media[mediaIndex]) {
+      this.order.media[mediaIndex].thumbnail = data.thumbnail;
+      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+    }
+    
+    // Reload order to get updated data
+    if (this.isAuthenticated && this.order._id) {
+      this.loadOrderById(this.order._id);
+    }
+  }
+
+  onCloseVideoPosterSelector(): void {
+    this.showVideoPosterSelector = false;
+    this.selectedVideoForThumbnail = null;
+  }
+
+  getVideoThumbnailUrl(media: OrderImage): string {
+    if (media.thumbnail) {
+      return `${this.baseUrl}${media.thumbnail}`;
+    }
+    return '';
   }
 }

@@ -8,7 +8,13 @@ const OrderSchema = new mongoose.Schema({
   clientName: { type: String },
   notes: { type: String },
   status: { type: String, enum: ['pending','in-progress','done'], default: 'pending' },
-  media: [{ filename: String, url: String, uploadedAt: Date }],
+  media: [{ 
+    filename: String, 
+    url: String, 
+    uploadedAt: Date,
+    thumbnail: { type: String, default: null }, // Thumbnail URL for videos
+    thumbnailFilename: { type: String, default: null } // Thumbnail filename for videos
+  }],
   feedbacks: [FeedbackSchema],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

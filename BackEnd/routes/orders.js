@@ -7,7 +7,8 @@ const multer = require("multer");
 const allowedExtensions = require("../config/allowed_extensions.json");
 const logger = require("../utils/logger");
 const { handleMulterErrors } = require("../middleware/upload").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../services/order.service")
+const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../services/order.service");
+const { extractOrderVideoThumbnail, getVideoDuration } = require("../services/videoThumbnail.service");
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -131,7 +132,7 @@ router.post(
       }
 
       // Save each file using the uploadService
-      const fileObjs = files.map((f) => {
+      const fileObjs = await Promise.all(files.map(async (f) => {
         const url = uploadService.saveFile(orderId, f.buffer, f.originalname, {
           isGallery: false,
           isFilm: false,
@@ -139,12 +140,29 @@ router.post(
         logger.info(
           `Saved file "${f.originalname}" for order ${orderId} (URL: ${url})`
         );
-        return {
+        
+        const fileObj = {
           filename: url.split("/").pop(),
           url,
           uploadedAt: new Date(),
         };
-      });
+
+        // Check if it's a video file and extract thumbnail automatically
+        const isVideo = allowedExtensions.videos.includes(f.mimetype);
+        if (isVideo) {
+          try {
+            const thumbnailResult = await extractOrderVideoThumbnail(orderId, fileObj.filename, 1);
+            fileObj.thumbnail = thumbnailResult.thumbnailUrl;
+            fileObj.thumbnailFilename = thumbnailResult.thumbnailFilename;
+            logger.info(`Thumbnail extracted for video ${fileObj.filename}`);
+          } catch (thumbErr) {
+            logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${thumbErr.message}`);
+            // Continue without thumbnail if extraction fails
+          }
+        }
+
+        return fileObj;
+      }));
 
       order.media.push(...fileObjs);
       await order.save();
@@ -294,5 +312,90 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
     }
   }
 );
+
+// GET /orders/:orderId/video/:filename/duration - admin only: get video duration
+router.get("/:orderId/video/:filename/duration", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId, filename } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    const videoFile = order.media.find(m => m.filename === filename);
+    if (!videoFile) {
+      return res.status(404).json({ ok: false, message: "Video not found in order" });
+    }
+
+    const path = require("path");
+    const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
+    const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
+
+    const fs = require("fs");
+    if (!fs.existsSync(videoPath)) {
+      return res.status(404).json({ ok: false, message: "Video file not found on server" });
+    }
+
+    const duration = await getVideoDuration(videoPath);
+    return res.json({ ok: true, duration });
+  } catch (err) {
+    logger.error(`GET /orders/:orderId/video/:filename/duration failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+});
+
+// POST /orders/:orderId/video/:filename/thumbnail - admin only: extract thumbnail at specific time
+router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId, filename } = req.params;
+    const { timeInSeconds } = req.body; // Time in seconds (default: 1)
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    const videoFile = order.media.find(m => m.filename === filename);
+    if (!videoFile) {
+      return res.status(404).json({ ok: false, message: "Video not found in order" });
+    }
+
+    const time = timeInSeconds && timeInSeconds > 0 ? timeInSeconds : 1;
+    const thumbnailResult = await extractOrderVideoThumbnail(orderId, filename, time);
+
+    // Update the video file in the order with the new thumbnail
+    const mediaIndex = order.media.findIndex(m => m.filename === filename);
+    if (mediaIndex !== -1) {
+      // Delete old thumbnail if exists
+      if (order.media[mediaIndex].thumbnailFilename) {
+        const path = require("path");
+        const fs = require("fs");
+        const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
+        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
+        if (fs.existsSync(oldThumbPath)) {
+          try {
+            fs.unlinkSync(oldThumbPath);
+          } catch (err) {
+            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+          }
+        }
+      }
+
+      order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
+      order.media[mediaIndex].thumbnailFilename = thumbnailResult.thumbnailFilename;
+      await order.save();
+    }
+
+    logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId} at ${time}s`);
+    return res.json({ 
+      ok: true, 
+      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnailFilename: thumbnailResult.thumbnailFilename
+    });
+  } catch (err) {
+    logger.error(`POST /orders/:orderId/video/:filename/thumbnail failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+});
 
 module.exports = router;

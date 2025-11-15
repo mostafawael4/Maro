@@ -8,6 +8,8 @@ export interface OrderImage {
   url: string;
   uploadedAt: string;
   _id?: string;
+  thumbnail?: string;
+  thumbnailFilename?: string;
 }
 
 export interface OrderFormVendors {
@@ -152,6 +154,21 @@ export class OrdersService {
     return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${orderId}/${feedbackId}`, {
       withCredentials: true
     });
+  }
+
+  getVideoDuration(orderId: string, filename: string): Observable<{ ok: boolean; duration: number }> {
+    return this.http.get<{ ok: boolean; duration: number }>(
+      `${this.apiUrl}/${orderId}/video/${filename}/duration`,
+      { withCredentials: true }
+    );
+  }
+
+  extractVideoThumbnail(orderId: string, filename: string, timeInSeconds: number): Observable<{ ok: boolean; thumbnail: string; thumbnailFilename: string }> {
+    return this.http.post<{ ok: boolean; thumbnail: string; thumbnailFilename: string }>(
+      `${this.apiUrl}/${orderId}/video/${filename}/thumbnail`,
+      { timeInSeconds },
+      { withCredentials: true }
+    );
   }
 }
 
