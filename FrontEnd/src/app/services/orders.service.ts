@@ -120,5 +120,12 @@ export class OrdersService {
   deleteOrder(orderId: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${orderId}`, { withCredentials: true });
   }
+
+  deleteOrderMedia(orderId: string, filenames: string[]): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${orderId}/deletemedia`, {
+      body: { filenames },
+      withCredentials: true
+    });
+  }
 }
 

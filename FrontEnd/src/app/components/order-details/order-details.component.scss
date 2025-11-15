@@ -354,6 +354,50 @@
     }
   }
 
+  .delete-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+
+    svg {
+      color: #dc2626;
+      transition: transform 0.3s ease;
+    }
+
+    &:hover:not(:disabled) {
+      background: #dc2626;
+      transform: translateY(-10px) scale(1.1);
+      box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
+
+      svg {
+        color: white;
+      }
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(-10px) scale(0.95);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
   &:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 24px rgba(107, 31, 31, 0.2);
@@ -366,7 +410,8 @@
       opacity: 1;
     }
 
-    .download-btn {
+    .download-btn,
+    .delete-btn {
       opacity: 1;
       transform: translateY(0);
     }

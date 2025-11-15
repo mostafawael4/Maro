@@ -8,11 +8,12 @@ import { combineLatest, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { ImageSliderComponent } from '../image-slider/image-slider.component';
 import { GalleryImage } from '../../services/gallery.service';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule, ImageSliderComponent],
+  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
@@ -25,6 +26,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   showImageSlider = false;
   currentImageIndex = 0;
   mediaFilter: 'all' | 'images' | 'videos' = 'all';
+  showDeleteModal = false;
+  mediaToDelete: OrderImage | null = null;
+  deletingMedia = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -218,5 +222,49 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       console.error('Error downloading media:', error);
       alert(`Failed to download ${this.isVideo(media) ? 'video' : 'image'}. Please try again.`);
     }
+  }
+
+  onDeleteMediaClick(media: OrderImage, event: Event): void {
+    event.stopPropagation(); // Prevent opening the slider
+    if (!this.isAuthenticated) return;
+    this.mediaToDelete = media;
+    this.showDeleteModal = true;
+  }
+
+  onConfirmDeleteMedia(): void {
+    if (!this.mediaToDelete || !this.order) return;
+    
+    const orderId = this.order._id;
+    this.deletingMedia = true;
+    this.ordersService.deleteOrderMedia(orderId, [this.mediaToDelete.filename]).subscribe({
+      next: (response) => {
+        if (response.ok) {
+          // Remove the media from the order
+          if (this.order?.media) {
+            this.order.media = this.order.media.filter(m => m.filename !== this.mediaToDelete?.filename);
+          }
+          // Reload the order to get updated data
+          this.loadOrderById(orderId);
+        }
+        this.showDeleteModal = false;
+        this.mediaToDelete = null;
+        this.deletingMedia = false;
+      },
+      error: (err) => {
+        console.error('Error deleting media:', err);
+        this.error = 'Failed to delete media. Please try again.';
+        this.showDeleteModal = false;
+        this.mediaToDelete = null;
+        this.deletingMedia = false;
+        setTimeout(() => {
+          this.error = '';
+        }, 5000);
+      }
+    });
+  }
+
+  onCancelDeleteMedia(): void {
+    this.showDeleteModal = false;
+    this.mediaToDelete = null;
   }
 }
