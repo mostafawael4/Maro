@@ -16,56 +16,65 @@
         <a 
           *ngIf="isAuthenticated"
           routerLink="/dashboard" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Dashboard
         </a>
         <a 
           routerLink="/" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: true}"
           class="nav-link-desktop"
         >
           Home
         </a>
         <a 
           routerLink="/packages" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Packages
         </a>
         <a 
           routerLink="/gallery" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Gallery
         </a>
         <a 
           routerLink="/faqs" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           FAQs
         </a>
         <a 
           routerLink="/orders" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Orders
         </a>
         <a 
           routerLink="/feedbacks" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Feedbacks
         </a>
         <a 
           routerLink="/contact" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-desktop"
-          
         >
           Contact Us
         </a>
@@ -113,8 +122,9 @@
       <div class="py-4 space-y-2 border-t" style="border-top-color: rgba(200, 155, 123, 0.15);">
         <a 
           routerLink="/" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: true}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -127,8 +137,9 @@
         
         <a 
           routerLink="/packages" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -141,8 +152,9 @@
         
         <a 
           routerLink="/gallery" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -155,8 +167,9 @@
         
         <a 
           routerLink="/faqs" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -170,8 +183,9 @@
         <a 
           *ngIf="isAuthenticated"
           routerLink="/dashboard" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -184,8 +198,9 @@
         
         <a 
           routerLink="/orders" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -198,8 +213,9 @@
         
         <a 
           routerLink="/feedbacks" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
@@ -212,8 +228,9 @@
         
         <a 
           routerLink="/contact" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          
           (click)="closeMobileMenu()"
         >
           <span class="flex items-center">
