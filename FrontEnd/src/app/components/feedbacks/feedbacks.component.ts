@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OrdersService } from '../../services/orders.service';
+import { AuthService } from '../../services/auth.service';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 interface FeedbackItem {
   orderId: string;
@@ -13,7 +15,7 @@ interface FeedbackItem {
 @Component({
   selector: 'app-feedbacks',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DeleteModalComponent],
   templateUrl: './feedbacks.component.html',
   styleUrl: './feedbacks.component.scss'
 })
@@ -21,10 +23,24 @@ export class FeedbacksComponent implements OnInit {
   feedbacks: FeedbackItem[] = [];
   loading = true;
   error = '';
+  isAuthenticated = false;
+  
+  // Delete modal
+  showDeleteModal = false;
+  feedbackToDelete: { orderId: string; feedbackId: string } | null = null;
+  deletingFeedback = false;
 
-  constructor(private ordersService: OrdersService) {}
+  constructor(
+    private ordersService: OrdersService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    // Check authentication status for admin features
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth ?? false;
+    });
+    
     this.loadFeedbacks();
   }
 
@@ -59,5 +75,53 @@ export class FeedbacksComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  onDeleteClick(event: Event, feedback: FeedbackItem): void {
+    event.stopPropagation();
+    if (!feedback.feedbackId || !feedback.orderId) {
+      console.error('Feedback ID or Order ID is missing');
+      return;
+    }
+    this.feedbackToDelete = {
+      orderId: feedback.orderId,
+      feedbackId: feedback.feedbackId
+    };
+    this.showDeleteModal = true;
+  }
+
+  onDeleteConfirm(): void {
+    if (!this.feedbackToDelete) return;
+    
+    this.deletingFeedback = true;
+    this.ordersService.deleteFeedback(
+      this.feedbackToDelete.orderId,
+      this.feedbackToDelete.feedbackId
+    ).subscribe({
+      next: (response) => {
+        if (response.ok) {
+          // Remove feedback from local array
+          this.feedbacks = this.feedbacks.filter(
+            fb => !(fb.orderId === this.feedbackToDelete!.orderId && 
+                   fb.feedbackId === this.feedbackToDelete!.feedbackId)
+          );
+          this.showDeleteModal = false;
+          this.feedbackToDelete = null;
+        } else {
+          this.error = response.message || 'Failed to delete feedback';
+        }
+        this.deletingFeedback = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to delete feedback. Please try again.';
+        this.deletingFeedback = false;
+        console.error('Error deleting feedback:', err);
+      }
+    });
+  }
+
+  onDeleteCancel(): void {
+    this.showDeleteModal = false;
+    this.feedbackToDelete = null;
   }
 }

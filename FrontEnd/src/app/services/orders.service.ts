@@ -146,5 +146,12 @@ export class OrdersService {
       withCredentials: true
     });
   }
+
+  deleteFeedback(orderId: string, feedbackId: string): Observable<any> {
+    // The endpoint is /feedbacks/:orderId/:feedbackId based on backend routes
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${orderId}/${feedbackId}`, {
+      withCredentials: true
+    });
+  }
 }
 
