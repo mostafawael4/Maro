@@ -39,17 +39,21 @@
       </div>
     </div>
 
-    <!-- Client Information Card -->
+    <!-- Basic Information Section -->
     <div class="details-card">
-      <h2>Client Information</h2>
+      <h2 class="section-title">Basic Information</h2>
       <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Email Address</span>
+          <span class="info-value">{{ order.email }}</span>
+        </div>
         <div class="info-item">
           <span class="info-label">Client Name</span>
           <span class="info-value">{{ order.clientName || 'N/A' }}</span>
         </div>
-        <div class="info-item">
-          <span class="info-label">Email Address</span>
-          <span class="info-value">{{ order.email }}</span>
+        <div class="info-item full-width" *ngIf="order.notes">
+          <span class="info-label">Notes</span>
+          <span class="info-value">{{ order.notes }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">Order Created</span>
@@ -59,10 +63,6 @@
           <span class="info-label">Last Updated</span>
           <span class="info-value">{{ formatDate(order.updatedAt) }}</span>
         </div>
-        <div class="info-item full-width" *ngIf="order.notes">
-          <span class="info-label">Notes</span>
-          <span class="info-value">{{ order.notes }}</span>
-        </div>
         <div class="info-item">
           <span class="info-label">Total Media</span>
           <span class="info-value">{{ (order.media || []).length }}</span>
@@ -70,12 +70,12 @@
       </div>
     </div>
 
-    <!-- Order Form Information -->
+    <!-- Event Details Section -->
     <div class="details-card" *ngIf="order.orderForm">
-      <h2>Event Details</h2>
+      <h2 class="section-title">Event Details</h2>
       <div class="info-grid">
         <div class="info-item" *ngIf="order.orderForm.brideAndGroomNames">
-          <span class="info-label">Bride & Groom Names</span>
+          <span class="info-label">Bride & Groom's names</span>
           <span class="info-value">{{ order.orderForm.brideAndGroomNames }}</span>
         </div>
         <div class="info-item" *ngIf="order.orderForm.eventDate">
@@ -90,6 +90,10 @@
           <span class="info-label">Event Venue</span>
           <span class="info-value">{{ order.orderForm.eventVenue }}</span>
         </div>
+        <div class="info-item full-width" *ngIf="order.orderForm.timelineOfDay">
+          <span class="info-label">Timeline of the Day</span>
+          <span class="info-value">{{ order.orderForm.timelineOfDay }}</span>
+        </div>
         <div class="info-item" *ngIf="order.orderForm.shootersStartTime">
           <span class="info-label">Shooters Start Time</span>
           <span class="info-value">{{ order.orderForm.shootersStartTime }}</span>
@@ -98,28 +102,43 @@
           <span class="info-label">Shooters End Time</span>
           <span class="info-value">{{ order.orderForm.shootersEndTime }}</span>
         </div>
-        <div class="info-item full-width" *ngIf="order.orderForm.timelineOfDay">
-          <span class="info-label">Timeline of Day</span>
-          <span class="info-value">{{ order.orderForm.timelineOfDay }}</span>
-        </div>
+      </div>
+    </div>
+
+    <!-- Couple Information Section -->
+    <div class="details-card" *ngIf="order.orderForm && (order.orderForm.coupleDescription || order.orderForm.moodBoardLinks || order.orderForm.favoriteSongs || order.orderForm.specialMoments || order.orderForm.excludeShots)">
+      <h2 class="section-title">Couple Information</h2>
+      <div class="info-grid">
         <div class="info-item full-width" *ngIf="order.orderForm.coupleDescription">
-          <span class="info-label">Couple Description</span>
+          <span class="info-label">Describe yourself as a couple; your hobbies, activities you like to do together, things you both share, etc</span>
           <span class="info-value">{{ order.orderForm.coupleDescription }}</span>
         </div>
+        <div class="info-item full-width" *ngIf="order.orderForm.moodBoardLinks && order.orderForm.moodBoardLinks.length > 0">
+          <span class="info-label">Share your mood board/inspiration pics</span>
+          <div class="info-value">
+            <a *ngFor="let link of order.orderForm.moodBoardLinks" [href]="link" target="_blank" class="link-item">{{ link }}</a>
+          </div>
+        </div>
+        <div class="info-item full-width" *ngIf="order.orderForm.favoriteSongs && order.orderForm.favoriteSongs.length > 0">
+          <span class="info-label">Share with us some of your favorite tracks/songs so that we could get to know your music taste.</span>
+          <div class="info-value">
+            <span *ngFor="let song of order.orderForm.favoriteSongs" class="list-item">{{ song }}</span>
+          </div>
+        </div>
         <div class="info-item full-width" *ngIf="order.orderForm.specialMoments">
-          <span class="info-label">Special Moments</span>
+          <span class="info-label">Share any planned special moments in your event so that we make sure it's covered.</span>
           <span class="info-value">{{ order.orderForm.specialMoments }}</span>
         </div>
         <div class="info-item full-width" *ngIf="order.orderForm.excludeShots">
-          <span class="info-label">Exclude Shots</span>
+          <span class="info-label">If there is any part that you would prefer not to include, please let us know</span>
           <span class="info-value">{{ order.orderForm.excludeShots }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Vendors Information -->
+    <!-- Vendors Section -->
     <div class="details-card" *ngIf="order.orderForm?.vendors">
-      <h2>Vendors</h2>
+      <h2 class="section-title">Vendors</h2>
       <div class="info-grid">
         <div class="info-item" *ngIf="order.orderForm?.vendors?.photographers && (order.orderForm?.vendors?.photographers?.length ?? 0) > 0">
           <span class="info-label">Photographers</span>
@@ -164,61 +183,47 @@
       </div>
     </div>
 
-    <!-- Film Editing Preferences -->
+    <!-- Film Editing Details Section -->
     <div class="details-card" *ngIf="order.orderForm?.filmEditing">
-      <h2>Film Editing Preferences</h2>
+      <h2 class="section-title">Film Editing Details</h2>
       <div class="info-grid">
         <div class="info-item" *ngIf="order.orderForm?.filmEditing?.includeAccessoriesShots !== undefined">
-          <span class="info-label">Include Accessories Shots</span>
+          <span class="info-label">We usually include shots of the bride and groom accessories during the getting ready part, however, would you like to have separate shots for your accessories alone?</span>
           <span class="info-value">{{ order.orderForm?.filmEditing?.includeAccessoriesShots ? 'Yes' : 'No' }}</span>
         </div>
         <div class="info-item" *ngIf="order.orderForm?.filmEditing?.editSequence">
-          <span class="info-label">Edit Sequence</span>
-          <span class="info-value">{{ order.orderForm?.filmEditing?.editSequence }}</span>
+          <span class="info-label">Would you prefer your film to be edited in a chronological or random sequence?</span>
+          <span class="info-value">
+            <span *ngIf="order.orderForm?.filmEditing?.editSequence === 'chronological'">Chronological sequence of events</span>
+            <span *ngIf="order.orderForm?.filmEditing?.editSequence === 'random'">Uniquely random sequence of events</span>
+            <span *ngIf="order.orderForm?.filmEditing?.editSequence === 'no-preference'">No preference, whatever fits within my film storyline</span>
+          </span>
         </div>
         <div class="info-item" *ngIf="order.orderForm?.filmEditing?.stylePreference && order.orderForm?.filmEditing?.stylePreference?.length! > 0">
-          <span class="info-label">Style Preference</span>
+          <span class="info-label">We usually craft the style & direction of your film depending on your actual event day's vibes. Yet, if you have a preference from the below categories, please choose it and we'll do our best to match it.</span>
           <span class="info-value">{{ order.orderForm?.filmEditing?.stylePreference?.join(', ') }}</span>
         </div>
-        <div class="info-item" *ngIf="order.orderForm?.filmEditing?.highlightPreference && order.orderForm?.filmEditing?.highlightPreference?.length! > 0">
-          <span class="info-label">Highlight Preference</span>
+        <div class="info-item full-width" *ngIf="order.orderForm?.filmEditing?.highlightPreference && order.orderForm?.filmEditing?.highlightPreference?.length! > 0">
+          <span class="info-label">We guarantee that all your special moments with family & friends will be covered, yet, some couples* have personalized preferences about what to highlight more in their wedding film, so help us get a better understanding of yours.</span>
           <span class="info-value">{{ order.orderForm?.filmEditing?.highlightPreference?.join(', ') }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Links and Inspiration -->
-    <div class="details-card" *ngIf="order.orderForm && (order.orderForm?.moodBoardLinks?.length! > 0 || order.orderForm?.favoriteSongs?.length! > 0 || order.orderForm?.socialMediaInspiration?.length! > 0 || order.orderForm?.tiktokIdeas?.length! > 0 || order.orderForm?.filmEditing?.teaserStyleLinks?.length! > 0)">
-      <h2>Links & Inspiration</h2>
+    <!-- Social Media Inspiration Section -->
+    <div class="details-card" *ngIf="order.orderForm && (order.orderForm?.socialMediaInspiration?.length! > 0 || order.orderForm?.tiktokIdeas?.length! > 0)">
+      <h2 class="section-title">Social Media Inspiration</h2>
       <div class="info-grid">
-        <div class="info-item full-width" *ngIf="order.orderForm?.moodBoardLinks && order.orderForm?.moodBoardLinks?.length! > 0">
-          <span class="info-label">Mood Board Links</span>
-          <div class="info-value">
-            <a *ngFor="let link of order.orderForm.moodBoardLinks!" [href]="link" target="_blank" class="link-item">{{ link }}</a>
-          </div>
-        </div>
-        <div class="info-item full-width" *ngIf="order.orderForm?.favoriteSongs && order.orderForm?.favoriteSongs?.length! > 0">
-          <span class="info-label">Favorite Songs</span>
-          <div class="info-value">
-            <span *ngFor="let song of order.orderForm.favoriteSongs!" class="list-item">{{ song }}</span>
-          </div>
-        </div>
         <div class="info-item full-width" *ngIf="order.orderForm?.socialMediaInspiration && order.orderForm?.socialMediaInspiration?.length! > 0">
-          <span class="info-label">Social Media Inspiration</span>
+          <span class="info-label">If you have seen any content on social media that you liked and would like us to take it (or part of it) as a reference for your film, please share it.</span>
           <div class="info-value">
             <a *ngFor="let link of order.orderForm.socialMediaInspiration!" [href]="link" target="_blank" class="link-item">{{ link }}</a>
           </div>
         </div>
         <div class="info-item full-width" *ngIf="order.orderForm?.tiktokIdeas && order.orderForm?.tiktokIdeas?.length! > 0">
-          <span class="info-label">TikTok Ideas</span>
+          <span class="info-label">Do you have any Tiktok or Reels that you would like to recreate on your day?</span>
           <div class="info-value">
             <a *ngFor="let link of order.orderForm.tiktokIdeas!" [href]="link" target="_blank" class="link-item">{{ link }}</a>
-          </div>
-        </div>
-        <div class="info-item full-width" *ngIf="order.orderForm?.filmEditing?.teaserStyleLinks && order.orderForm.filmEditing?.teaserStyleLinks?.length! > 0">
-          <span class="info-label">Teaser Style Links</span>
-          <div class="info-value">
-            <a *ngFor="let link of (order.orderForm?.filmEditing?.teaserStyleLinks || [])" [href]="link" target="_blank" class="link-item">{{ link }}</a>
           </div>
         </div>
       </div>
@@ -226,7 +231,7 @@
 
     <!-- Feedback Section -->
     <div class="details-card" *ngIf="order.feedbacks && order.feedbacks.length > 0">
-      <h2>Feedback</h2>
+      <h2 class="section-title">Feedback</h2>
       <div class="feedback-list">
         <div *ngFor="let feedback of order.feedbacks" class="feedback-item">
           <p class="feedback-text">{{ feedback.feedback }}</p>

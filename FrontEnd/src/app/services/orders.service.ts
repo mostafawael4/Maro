@@ -112,5 +112,9 @@ export class OrdersService {
   updateOrderStatus(orderId: string, status: string): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/${orderId}/status`, { status }, { withCredentials: true });
   }
+
+  createOrder(orderData: { email: string; clientName?: string; notes?: string; orderForm?: OrderForm }): Observable<any> {
+    return this.http.post<any>(this.apiUrl, orderData);
+  }
 }
 

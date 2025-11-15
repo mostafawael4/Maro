@@ -9,6 +9,7 @@ import { OrdersComponent } from './components/orders/orders.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { OrderInfoComponent } from './components/order-info/order-info.component';
+import { CreateOrderComponent } from './components/create-order/create-order.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -17,6 +18,7 @@ export const routes: Routes = [
     { path: 'gallery', component: GalleryComponent },
     { path: 'faqs', component: FaqsComponent },
     { path: 'orders', component: OrdersComponent },
+    { path: 'create-order', component: CreateOrderComponent },
     { path: 'order-details/:id', component: OrderDetailsComponent },
     { path: 'dashboard', component: DashboardComponent },
     { path: 'order-info/:id', component: OrderInfoComponent },
