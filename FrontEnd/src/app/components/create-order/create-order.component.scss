@@ -37,7 +37,6 @@
 }
 
 // Messages
-.success-message,
 .error-message {
   display: flex;
   align-items: center;
@@ -51,16 +50,6 @@
     width: 24px;
     height: 24px;
     flex-shrink: 0;
-  }
-}
-
-.success-message {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-
-  .success-icon {
-    color: #28a745;
   }
 }
 

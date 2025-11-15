@@ -6,13 +6,13 @@
       <p class="page-description">Fill in the details below to create a new order</p>
     </div>
 
-    <!-- Success Message -->
-    <div *ngIf="submitSuccess" class="success-message">
-      <svg class="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-      </svg>
-      <p>Order created successfully! Redirecting to orders page...</p>
-    </div>
+    <!-- Success Modal -->
+    <app-success-modal
+      [isOpen]="submitSuccess"
+      title="Order Created Successfully!"
+      message="Your order has been created successfully. You will be redirected to the orders page."
+      (close)="onSuccessModalClose()"
+    ></app-success-modal>
 
     <!-- Error Message -->
     <div *ngIf="submitError" class="error-message">

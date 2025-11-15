@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { OrdersService, OrderForm, OrderFormVendors, OrderFormFilmEditing } from '../../services/orders.service';
+import { SuccessModalComponent } from '../success-modal/success-modal.component';
 
 @Component({
   selector: 'app-create-order',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SuccessModalComponent],
   templateUrl: './create-order.component.html',
   styleUrl: './create-order.component.scss'
 })
@@ -290,9 +291,6 @@ export class CreateOrderComponent implements OnInit {
       next: (response) => {
         this.isSubmitting = false;
         this.submitSuccess = true;
-        setTimeout(() => {
-          this.router.navigate(['/orders']);
-        }, 2000);
       },
       error: (error) => {
         this.isSubmitting = false;
@@ -404,6 +402,11 @@ export class CreateOrderComponent implements OnInit {
   }
 
   onCancel(): void {
+    this.router.navigate(['/orders']);
+  }
+
+  onSuccessModalClose(): void {
+    this.submitSuccess = false;
     this.router.navigate(['/orders']);
   }
 }
