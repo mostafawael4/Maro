@@ -114,6 +114,17 @@ export class OrdersComponent implements OnInit {
     }
   }
 
+  formatEventDate(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  }
+
   onUploadClick(event: Event, orderId: string): void {
     event.stopPropagation(); // Prevent opening order details
     const input = document.createElement('input');

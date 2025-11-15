@@ -104,54 +104,69 @@
     <div *ngIf="!loading && !error && filteredOrders.length > 0" class="orders-grid">
       <div 
         *ngFor="let order of filteredOrders" 
-        class="order-circle"
+        class="order-card"
         [class.uploading]="uploadingOrderId === order._id"
       >
-        <!-- Delete Icon (Admin Only) -->
-        <button 
-          class="delete-icon"
-          (click)="onDeleteClick($event, order._id)"
-          title="Delete this order"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            <line x1="10" y1="11" x2="10" y2="17"/>
-            <line x1="14" y1="11" x2="14" y2="17"/>
-          </svg>
-        </button>
+        <!-- Order Circle Container -->
+        <div class="order-circle-wrapper">
+          <!-- Delete Icon (Admin Only) -->
+          <button 
+            class="action-icon delete-icon"
+            (click)="onDeleteClick($event, order._id)"
+            title="Delete this order"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+          </button>
 
-        <!-- Upload Icon (Admin Only) -->
-        <button 
-          class="upload-icon"
-          (click)="onUploadClick($event, order._id)"
-          [disabled]="uploadingOrderId === order._id"
-          title="Upload images to this order"
-        >
-          <svg *ngIf="uploadingOrderId !== order._id" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <div *ngIf="uploadingOrderId === order._id" class="mini-spinner"></div>
-        </button>
+          <!-- Upload Icon (Admin Only) -->
+          <button 
+            class="action-icon upload-icon"
+            (click)="onUploadClick($event, order._id)"
+            [disabled]="uploadingOrderId === order._id"
+            title="Upload images to this order"
+          >
+            <svg *ngIf="uploadingOrderId !== order._id" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <div *ngIf="uploadingOrderId === order._id" class="mini-spinner"></div>
+          </button>
 
-        <!-- Order Circle Content -->
-        <div 
-          class="order-circle-content"
-          (click)="openOrderDetails(order._id)"
-          [style.background-image]="'url(' + getFirstImage(order) + ')'"
-        >
-          <div class="order-overlay">
-            <div class="order-info">
-              <h3>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h3>
-              <p class="order-email">{{ order.email }}</p>
+          <!-- View Icon -->
+          <button 
+            class="action-icon view-icon"
+            (click)="openOrderDetails(order._id)"
+            title="View order details"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+
+          <!-- Order Circle Content -->
+          <div 
+            class="order-circle-content"
+            [style.background-image]="'url(' + getFirstImage(order) + ')'"
+          >
+            <div class="order-overlay">
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ (order.media || []).length }} photos</p>
             </div>
           </div>
+        </div>
+
+        <!-- Client Info Below Circle -->
+        <div class="order-info-below">
+          <h3 class="groom-name">{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h3>
+          <p class="event-date" *ngIf="order.orderForm?.eventDate">{{ formatEventDate(order.orderForm?.eventDate || '') }}</p>
         </div>
       </div>
     </div>
@@ -210,23 +225,39 @@
     <div *ngIf="!loading && !error && orders.length > 0" class="orders-grid">
       <div 
         *ngFor="let order of orders" 
-        class="order-circle"
+        class="order-card"
       >
-        <div 
-          class="order-circle-content"
-          (click)="openOrderDetails(order._id)"
-          [style.background-image]="'url(' + getFirstImage(order) + ')'"
-        >
-          <div class="order-overlay">
-            <div class="order-info">
-              <h3>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h3>
-              <p class="order-email">{{ order.email }}</p>
+        <!-- Order Circle Container -->
+        <div class="order-circle-wrapper">
+          <!-- View Icon -->
+          <button 
+            class="action-icon view-icon"
+            (click)="openOrderDetails(order._id)"
+            title="View order details"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+
+          <!-- Order Circle Content -->
+          <div 
+            class="order-circle-content"
+            [style.background-image]="'url(' + getFirstImage(order) + ')'"
+          >
+            <div class="order-overlay">
               <span class="order-status" [style.background-color]="getStatusColor(order.status)">
                 {{ order.status }}
               </span>
-              <p class="order-count">{{ (order.media || []).length }} photos</p>
             </div>
           </div>
+        </div>
+
+        <!-- Client Info Below Circle -->
+        <div class="order-info-below">
+          <h3 class="groom-name">{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h3>
+          <p class="event-date" *ngIf="order.orderForm?.eventDate">{{ formatEventDate(order.orderForm?.eventDate || '') }}</p>
         </div>
       </div>
     </div>

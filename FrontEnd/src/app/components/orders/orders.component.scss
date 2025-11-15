@@ -436,11 +436,11 @@
   }
 }
 
-// Order Circle Container
-.order-circle {
-  position: relative;
-  width: 100%;
-  padding-bottom: 100%; // Creates a square aspect ratio
+// Order Card Container
+.order-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition: all 0.4s ease;
 
   &.uploading {
@@ -449,49 +449,20 @@
   }
 }
 
-// Delete Icon Button
-.delete-icon {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  border: 3px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-
-  svg {
-    color: white;
-    width: 22px;
-    height: 22px;
-  }
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-  }
-
-  &:active {
-    transform: scale(1.05);
-  }
+// Order Circle Wrapper
+.order-circle-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%; // Creates a square aspect ratio
+  margin-bottom: 1.5rem;
 }
 
-// Upload Icon Button
-.upload-icon {
+// Action Icons (Delete, Upload, View) - Show on hover
+.action-icon {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
   border: 3px solid white;
   display: flex;
   align-items: center;
@@ -499,17 +470,19 @@
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: scale(0.8);
 
   svg {
     color: white;
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
   &:hover:not(:disabled) {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(107, 31, 31, 0.4);
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
   }
 
   &:active:not(:disabled) {
@@ -520,6 +493,33 @@
     cursor: not-allowed;
     opacity: 0.6;
   }
+}
+
+// Show icons on hover
+.order-card:hover .action-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+// Delete Icon
+.delete-icon {
+  top: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+// Upload Icon
+.upload-icon {
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+}
+
+// View Icon
+.view-icon {
+  bottom: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
 }
 
 .mini-spinner {
@@ -542,7 +542,6 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  cursor: pointer;
   overflow: hidden;
   transition: all 0.4s ease;
   box-shadow: 0 8px 24px rgba(107, 31, 31, 0.15);
@@ -551,10 +550,6 @@
   &:hover {
     transform: scale(1.05);
     box-shadow: 0 12px 32px rgba(107, 31, 31, 0.25);
-
-    .order-overlay {
-      opacity: 1;
-    }
   }
 }
 
@@ -564,51 +559,52 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(107, 31, 31, 0.85) 0%, rgba(139, 58, 58, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(107, 31, 31, 0.7) 0%, rgba(139, 58, 58, 0.75) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.4s ease;
   border-radius: 50%;
-}
-
-.order-info {
-  text-align: center;
-  color: white;
-  padding: 20px;
-
-  h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    letter-spacing: 0.5px;
-  }
-
-  .order-email {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-bottom: 0.75rem;
-  }
 
   .order-status {
     display: inline-block;
-    padding: 0.35rem 0.9rem;
+    padding: 0.4rem 1rem;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
     color: white;
   }
+}
 
-  .order-count {
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    opacity: 0.95;
+.order-circle-content:hover .order-overlay {
+  opacity: 1;
+}
+
+// Client Info Below Circle
+.order-info-below {
+  text-align: center;
+  width: 100%;
+
+  .groom-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    margin: 0 0 0.4rem 0;
+    letter-spacing: 0.5px;
     font-style: italic;
+    line-height: 1.3;
+  }
+
+  .event-date {
+    font-size: 0.9rem;
+    color: rgba(0, 0, 0, 0.6);
+    font-style: italic;
+    margin: 0;
+    font-family: 'Georgia', serif;
   }
 }
 
