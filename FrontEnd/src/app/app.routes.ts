@@ -11,6 +11,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { OrderInfoComponent } from './components/order-info/order-info.component';
 import { CreateOrderComponent } from './components/create-order/create-order.component';
 import { FeedbacksComponent } from './components/feedbacks/feedbacks.component';
+import { NotFoundComponent } from './components/not-found/not-found.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -26,4 +27,5 @@ export const routes: Routes = [
     { path: 'contact', component: ContactComponent },
     { path: 'admin', component: AdminComponent },
     { path: 'feedbacks', component: FeedbacksComponent },
+    { path: '**', component: NotFoundComponent }, // 404 - must be last
 ];
