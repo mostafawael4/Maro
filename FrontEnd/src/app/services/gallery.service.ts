@@ -31,5 +31,13 @@ export class GalleryService {
     });
     return this.http.post(`${this.apiUrl}/upload`, formData, { withCredentials: true });
   }
+
+  // Delete an image from gallery (requires admin authentication)
+  deleteImage(fileName: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/delete`, {
+      body: { fileName },
+      withCredentials: true
+    });
+  }
 }
 

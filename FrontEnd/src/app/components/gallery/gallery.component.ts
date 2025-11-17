@@ -5,11 +5,12 @@ import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { UploadModalComponent } from '../upload-modal/upload-modal.component';
 import { ImageSliderComponent } from '../image-slider/image-slider.component';
+import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
   selector: 'app-gallery',
   standalone: true,
-  imports: [CommonModule, UploadModalComponent, ImageSliderComponent],
+  imports: [CommonModule, UploadModalComponent, ImageSliderComponent, DeleteModalComponent],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
@@ -23,6 +24,9 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   showUploadModal: boolean = false;
   showImageSlider: boolean = false;
   currentImageIndex: number = 0;
+  showDeleteModal: boolean = false;
+  imageToDelete: GalleryImage | null = null;
+  deletingImageId: string | null = null;
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
@@ -168,5 +172,64 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeImageSlider() {
     this.showImageSlider = false;
+  }
+
+  // Delete modal methods
+  onDeleteClick(image: GalleryImage, event: Event): void {
+    event.stopPropagation(); // Prevent opening the image slider when clicking delete
+    this.imageToDelete = image;
+    this.showDeleteModal = true;
+  }
+
+  onConfirmDelete(): void {
+    if (this.imageToDelete) {
+      this.deleteImage(this.imageToDelete);
+    }
+  }
+
+  onCancelDelete(): void {
+    this.showDeleteModal = false;
+    this.imageToDelete = null;
+  }
+
+  // Delete image method
+  deleteImage(image: GalleryImage): void {
+    this.showDeleteModal = false;
+    this.deletingImageId = image._id;
+    
+    this.galleryService.deleteImage(image.filename).subscribe({
+      next: () => {
+        // Find the index before deletion
+        const index = this.images.findIndex(img => img._id === image._id);
+        
+        // Remove the image from the array
+        this.images = this.images.filter(img => img._id !== image._id);
+        this.deletingImageId = null;
+        this.imageToDelete = null;
+        
+        // Clean up loaded/visible images tracking
+        if (index !== -1) {
+          this.loadedImages.delete(index);
+          this.visibleImages.delete(index);
+        }
+        
+        // Re-observe images after deletion (browser only)
+        if (this.isBrowser) {
+          setTimeout(() => {
+            this.observeAllImages();
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting image:', error);
+        alert('Failed to delete image. Please try again.');
+        this.deletingImageId = null;
+        this.imageToDelete = null;
+      }
+    });
+  }
+
+  isDeleting(imageId: string): boolean {
+    return this.deletingImageId === imageId;
   }
 }
