@@ -1,6 +1,6 @@
 <div *ngIf="isOpen" class="success-modal-overlay" (click)="onOverlayClick()">
   <div class="success-modal" (click)="$event.stopPropagation()">
-    <div class="modal-header">
+    <div class="modal-header" [class.error-header]="type === 'error'">
       <h2>{{ title }}</h2>
       <button class="close-btn" (click)="onClose()" aria-label="Close">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -10,15 +10,18 @@
       </button>
     </div>
     <div class="modal-body">
-      <div class="success-icon">
+      <div class="success-icon" [class.error-icon]="type === 'error'">
         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          <path *ngIf="type === 'error'" stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line *ngIf="type === 'error'" x1="12" y1="9" x2="12" y2="13" stroke-linecap="round" stroke-linejoin="round"/>
+          <line *ngIf="type === 'error'" x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="round" stroke-linejoin="round"/>
+          <path *ngIf="type === 'success'" stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
       <p class="modal-message">{{ message }}</p>
     </div>
     <div class="modal-footer">
-      <button class="btn-ok" (click)="onClose()">OK</button>
+      <button class="btn-ok" [class.btn-error]="type === 'error'" (click)="onClose()">OK</button>
     </div>
   </div>
 </div>

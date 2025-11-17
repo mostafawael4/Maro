@@ -10,11 +10,12 @@ import { ImageSliderComponent } from '../image-slider/image-slider.component';
 import { GalleryImage } from '../../services/gallery.service';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { VideoPosterSelectorComponent } from '../video-poster-selector/video-poster-selector.component';
+import { BackgroundImageSelectorComponent } from '../background-image-selector/background-image-selector.component';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent, VideoPosterSelectorComponent],
+  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent, VideoPosterSelectorComponent, BackgroundImageSelectorComponent],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
@@ -32,6 +33,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   deletingMedia = false;
   showVideoPosterSelector = false;
   selectedVideoForThumbnail: OrderImage | null = null;
+  showBackgroundImageSelector = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -304,5 +306,31 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       return `${this.baseUrl}${media.thumbnail}`;
     }
     return '';
+  }
+
+  onSelectBackgroundImage(): void {
+    if (!this.isAuthenticated || !this.order) return;
+    this.showBackgroundImageSelector = true;
+  }
+
+  onBackgroundImageSelected(data: { backgroundImage: string; backgroundImageFilename: string }): void {
+    if (!this.order) return;
+    
+    this.order.backgroundImage = data.backgroundImage;
+    this.order.backgroundImageFilename = data.backgroundImageFilename;
+    
+    // Reload order to get updated data
+    if (this.isAuthenticated && this.order._id) {
+      this.loadOrderById(this.order._id);
+    }
+  }
+
+  onCloseBackgroundImageSelector(): void {
+    this.showBackgroundImageSelector = false;
+  }
+
+  getImageOnlyMedia(): OrderImage[] {
+    if (!this.order?.media) return [];
+    return this.order.media.filter(m => !this.isVideo(m));
   }
 }

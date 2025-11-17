@@ -65,6 +65,8 @@ export interface Order {
   clientName?: string;
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
+  backgroundImage?: string; // Background image URL for order
+  backgroundImageFilename?: string; // Background image filename
   media?: OrderImage[]; // Made optional to handle cases where backend might not send it
   orderForm?: OrderForm;
   feedbacks?: Feedback[];
@@ -167,6 +169,14 @@ export class OrdersService {
     return this.http.post<{ ok: boolean; thumbnail: string; thumbnailFilename: string }>(
       `${this.apiUrl}/${orderId}/video/${filename}/thumbnail`,
       { timeInSeconds },
+      { withCredentials: true }
+    );
+  }
+
+  updateOrderBackgroundImage(orderId: string, filename: string): Observable<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }> {
+    return this.http.put<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }>(
+      `${this.apiUrl}/${orderId}/background-image`,
+      { filename },
       { withCredentials: true }
     );
   }

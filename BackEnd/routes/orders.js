@@ -400,4 +400,53 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
   }
 });
 
+// PUT /orders/:orderId/background-image - admin only: set background image from order's media
+router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filename } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ ok: false, message: "orderId is required" });
+    }
+
+    if (!filename) {
+      return res.status(400).json({ ok: false, message: "filename is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    // Verify that the filename exists in the order's media (must be an image, not video)
+    const mediaItem = order.media.find(m => m.filename === filename);
+    if (!mediaItem) {
+      return res.status(404).json({ ok: false, message: "File not found in order media" });
+    }
+
+    // Check if it's an image (not a video)
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
+    const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    if (videoExtensions.includes(ext)) {
+      return res.status(400).json({ ok: false, message: "Background image must be an image file, not a video" });
+    }
+
+    // Update the order's background image
+    order.backgroundImage = mediaItem.url;
+    order.backgroundImageFilename = filename;
+    await order.save();
+
+    logger.info(`Background image set for order ${orderId}: ${filename}`);
+    return res.json({ 
+      ok: true, 
+      backgroundImage: order.backgroundImage,
+      backgroundImageFilename: order.backgroundImageFilename
+    });
+  } catch (err) {
+    logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+});
+
 module.exports = router;

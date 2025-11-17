@@ -88,6 +88,11 @@ export class OrdersComponent implements OnInit {
   }
 
   getFirstImage(order: Order): string {
+    // If order has a background image set, use it
+    if (order.backgroundImage) {
+      return `${this.baseUrl}${order.backgroundImage}`;
+    }
+    // Otherwise, use the first image from media
     if (order.media && order.media.length > 0) {
       // Media are now objects with filename property
       const firstImage = order.media[0];
