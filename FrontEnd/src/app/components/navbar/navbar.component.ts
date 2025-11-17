@@ -14,11 +14,12 @@ export class NavbarComponent {
   isMobileMenuOpen = false;
   isScrolled = false;
   isAuthenticated = false;
+  isDropdownOpen = false;
   @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    public router: Router
   ) {
     // Subscribe to authentication state
     this.authService.isAuthenticated$.subscribe(isAuth => {
@@ -49,6 +50,14 @@ export class NavbarComponent {
         console.error('Logout error:', error);
       }
     });
+  }
+
+  openDropdown(): void {
+    this.isDropdownOpen = true;
+  }
+
+  closeDropdown(): void {
+    this.isDropdownOpen = false;
   }
 
 }

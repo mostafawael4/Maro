@@ -12,16 +12,45 @@
       </div>
 
       <!-- Desktop Navigation Menu -->
-      <div class="hidden lg:flex items-center space-x-8 custom-links">
-        <a 
+      <div class="hidden lg:flex items-center space-x-6 custom-links">
+        <!-- Dashboard/Calendar Dropdown -->
+        <div 
           *ngIf="isAuthenticated"
-          routerLink="/dashboard" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
+          class="relative dropdown-container"
+          (mouseenter)="openDropdown()"
+          (mouseleave)="closeDropdown()"
         >
-          Dashboard
-        </a>
+          <a 
+            class="nav-link-desktop dropdown-trigger"
+            [class.active]="router.url.includes('/dashboard') || router.url.includes('/calendar')"
+          >
+            Admin Control
+            <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </a>
+          <div 
+            class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[160px] z-50"
+            style="background-color: rgba(255, 250, 245, 0.98); border: 1px solid rgba(200, 155, 123, 0.2); margin-top: 4px;"
+          >
+            <a 
+              routerLink="/dashboard" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2"
+            >
+              Dashboard
+            </a>
+            <a 
+              routerLink="/calendar" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2"
+            >
+              Calendar
+            </a>
+          </div>
+        </div>
         <a 
           routerLink="/" 
           routerLinkActive="active"
@@ -45,15 +74,6 @@
           class="nav-link-desktop"
         >
           Gallery
-        </a>
-        <a 
-          *ngIf="isAuthenticated"
-          routerLink="/calendar" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
-          Calendar
         </a>
         <a 
           routerLink="/faqs" 
@@ -124,9 +144,11 @@
 
     <!-- Mobile Navigation Menu -->
     <div 
-      class="lg:hidden transition-all duration-300 ease-in-out overflow-hidden"
+      class="lg:hidden transition-all duration-300 ease-in-out"
       [class.max-h-0]="!isMobileMenuOpen"
-      [class.max-h-96]="isMobileMenuOpen"
+      [class.overflow-hidden]="!isMobileMenuOpen"
+      [class.overflow-y-auto]="isMobileMenuOpen"
+      [class.max-h-[calc(100vh-5rem)]]="isMobileMenuOpen"
     >
       <div class="py-4 space-y-2 border-t" style="border-top-color: rgba(200, 155, 123, 0.15);">
         <a 
