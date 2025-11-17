@@ -139,7 +139,6 @@
 .navbar-logo-img {
   // Apply dark burgundy color to logo
   filter: brightness(0) saturate(100%) invert(10%) sepia(85%) saturate(4200%) hue-rotate(340deg) brightness(75%) contrast(115%);
-  margin-left: 151px;
 }
 
 // CTA Button Enhancement
@@ -163,12 +162,33 @@
   }
 }
 
-// Responsive Adjustments
-@media (max-width: 768px) {
-  .navbar-cinematic {
-    padding: 0 1rem;
+// Navbar Container Padding - Match Home Page Photo Grid Section
+.navbar-cinematic {
+  .container {
+    padding-left: 120px;
+    padding-right: 120px;
+    max-width: 1400px;
+    margin: 0 auto;
+
+    @media (max-width: 1200px) {
+      padding-left: 60px;
+      padding-right: 60px;
+    }
+
+    @media (max-width: 1024px) {
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+
+    @media (max-width: 768px) {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
   }
-  
+}
+
+// Responsive Adjustments
+@media (max-width: 1024px) {
   .nav-link-mobile {
     margin: 0.25rem 0;
     border-radius: 0.5rem;
@@ -235,6 +255,4 @@ button:focus-visible {
   }
 }
 
-.custom-links {
-  margin-right: 144px;
-}
+

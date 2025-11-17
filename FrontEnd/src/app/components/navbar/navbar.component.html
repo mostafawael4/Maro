@@ -12,7 +12,7 @@
       </div>
 
       <!-- Desktop Navigation Menu -->
-      <div class="hidden md:flex items-center space-x-8 custom-links">
+      <div class="hidden lg:flex items-center space-x-8 custom-links">
         <a 
           *ngIf="isAuthenticated"
           routerLink="/dashboard" 
@@ -98,7 +98,7 @@
 
       <!-- Mobile Menu Button -->
       <button 
-        class="md:hidden p-2 rounded-lg transition-colors duration-200"
+        class="lg:hidden p-2 rounded-lg transition-colors duration-200"
         style="color: #333333;"
         (click)="toggleMobileMenu()"
         [attr.aria-expanded]="isMobileMenuOpen"
@@ -123,7 +123,7 @@
 
     <!-- Mobile Navigation Menu -->
     <div 
-      class="md:hidden transition-all duration-300 ease-in-out overflow-hidden"
+      class="lg:hidden transition-all duration-300 ease-in-out overflow-hidden"
       [class.max-h-0]="!isMobileMenuOpen"
       [class.max-h-96]="isMobileMenuOpen"
     >
