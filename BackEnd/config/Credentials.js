@@ -14,6 +14,8 @@ const MONGO_URI = `mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
 const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || '.';
+const UPLOAD_DIR_GALLERY = process.env.UPLOAD_DIR_GALLERY || '.';
+const UPLOAD_DIR_FILMS = process.env.UPLOAD_DIR_GALLERY || '.';
 
 const LOG_DIR = process.env.LOGGING_PATH;
 
@@ -38,6 +40,8 @@ module.exports = {
   SESSION_SECRET,
   UPLOAD_DIR,
   UPLOAD_DIR_ORDERS,
+  UPLOAD_DIR_GALLERY,
+  UPLOAD_DIR_FILMS,
   LOG_DIR,
   FFMPEG_PATH,
   FFPROBE_PATH,
