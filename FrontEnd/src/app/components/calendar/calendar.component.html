@@ -1,0 +1,172 @@
+<section class="calendar-page">
+  <div class="calendar-hero">
+    <div>
+      <p class="eyebrow">Wedding Production Timeline</p>
+      <h1>Event Calendar</h1>
+      <p class="subtitle">
+        Track every ceremony, shoot, and delivery milestone in a single cinematic view.
+        Event tiles highlight groom names for quick reference before the big day.
+      </p>
+    </div>
+    <div class="hero-card">
+      <p class="hero-title">Ready-to-host calendar</p>
+      <p class="hero-text">
+        Drop this component anywhere in your site to showcase confirmed event days.
+        All groom names, event titles, and venues stay in sync with your dashboard data.
+      </p>
+    </div>
+  </div>
+
+  <div class="calendar-layout" *ngIf="!isLoading; else loadingState">
+    <div class="calendar-board">
+      <header class="calendar-header">
+        <button type="button" class="nav-btn" (click)="previousMonth()" aria-label="Previous month">
+          ‹
+        </button>
+        <div class="month-label">
+          {{ currentDate | date:'MMMM yyyy' }}
+        </div>
+        <button type="button" class="nav-btn" (click)="nextMonth()" aria-label="Next month">
+          ›
+        </button>
+      </header>
+
+      <div class="weekdays">
+        <span *ngFor="let weekday of weekdays">{{ weekday }}</span>
+      </div>
+
+      <div class="calendar-grid">
+        <ng-container *ngFor="let week of weeks; trackBy: trackByWeek">
+          <button
+            *ngFor="let day of week; trackBy: trackByDay"
+            type="button"
+            class="day-cell"
+            [class.other-month]="!day.isCurrentMonth"
+            [class.today]="day.isToday"
+            [class.selected]="day.isSelected"
+            (click)="selectDay(day)"
+          >
+            <span class="date-label">{{ day.date.getDate() }}</span>
+            <div class="event-dots" *ngIf="day.events.length > 0">
+              <span
+                class="event-dot"
+                *ngFor="let event of day.events | slice:0:3"
+                [style.background]="event.color || '#c084fc'"
+                [attr.title]="event.title + ' • ' + event.groomName"
+              ></span>
+              <span class="extra-count" *ngIf="day.events.length > 3">+{{ day.events.length - 3 }}</span>
+            </div>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="calendar-details">
+      <section class="selected-day">
+        <header>
+          <p class="eyebrow">Selected Date</p>
+          <h2>
+            {{ selectedDate?.date | date:'EEEE, MMM d' }}
+          </h2>
+        </header>
+
+        <ng-container *ngIf="selectedEvents.length > 0; else emptyDay">
+          <article class="event-card" *ngFor="let event of selectedEvents">
+            <div class="event-accent" [style.background]="event.color || '#c084fc'"></div>
+            <div class="event-data-grid">
+              <div class="event-field">
+                <span class="event-key">Event</span>
+                <span class="event-value">{{ event.title }}</span>
+              </div>
+              <div class="event-field">
+                <span class="event-key">Groom</span>
+                <span class="event-value">{{ event.groomName }}</span>
+              </div>
+              <div class="event-field" *ngIf="event.brideName">
+                <span class="event-key">Bride</span>
+                <span class="event-value">{{ event.brideName }}</span>
+              </div>
+              <div class="event-field" *ngIf="event.location">
+                <span class="event-key">Venue</span>
+                <span class="event-value">{{ event.location }}</span>
+              </div>
+              <div class="event-field" *ngIf="event.notes">
+                <span class="event-key">Notes</span>
+                <span class="event-value">{{ event.notes }}</span>
+              </div>
+              <div class="event-field">
+                <span class="event-key">Booking ID</span>
+                <span class="event-value monospace">{{ event.id }}</span>
+              </div>
+            </div>
+          </article>
+        </ng-container>
+        <ng-template #emptyDay>
+          <div class="empty-state">
+            <p>No confirmed events on this date.</p>
+            <span>Tap an event day in the calendar to see groom details.</span>
+          </div>
+        </ng-template>
+      </section>
+
+      <section class="upcoming-events">
+        <header>
+          <p class="eyebrow">Next up</p>
+          <h3>Upcoming highlights</h3>
+        </header>
+
+        <ng-container *ngIf="upcomingEvents.length > 0; else noUpcoming">
+          <div class="upcoming-list">
+            <article class="upcoming-item" *ngFor="let event of upcomingEvents">
+              <div class="upcoming-date">
+                <span>{{ event.date | date:'MMM' }}</span>
+                <strong>{{ event.date | date:'d' }}</strong>
+              </div>
+              <div class="upcoming-data">
+                <div class="event-field">
+                  <span class="event-key">Event</span>
+                  <span class="event-value">{{ event.title }}</span>
+                </div>
+                <div class="event-field">
+                  <span class="event-key">Groom</span>
+                  <span class="event-value">{{ event.groomName }}</span>
+                </div>
+                <div class="event-field" *ngIf="event.brideName">
+                  <span class="event-key">Bride</span>
+                  <span class="event-value">{{ event.brideName }}</span>
+                </div>
+                <div class="event-field" *ngIf="event.location">
+                  <span class="event-key">Venue</span>
+                  <span class="event-value">{{ event.location }}</span>
+                </div>
+                <div class="event-field">
+                  <span class="event-key">Booking ID</span>
+                  <span class="event-value monospace">{{ event.id }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </ng-container>
+        <ng-template #noUpcoming>
+          <div class="empty-state">
+            <p>No upcoming events to display.</p>
+            <span>Add new bookings from the dashboard to populate this list.</span>
+          </div>
+        </ng-template>
+      </section>
+    </div>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="loading-card">
+      <p>Loading calendar…</p>
+    </div>
+  </ng-template>
+
+  <div *ngIf="errorMessage" class="error-banner">
+    {{ errorMessage }}
+  </div>
+</section>
+
+
+x
