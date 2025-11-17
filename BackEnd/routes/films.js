@@ -2,12 +2,15 @@ const express = require("express");
 const multer = require("multer");
 const Film = require("../models/Film");
 const router = express.Router();
+const Credential = require("../config/Credentials")
+const path  = require("path");
 const uploadService = require("../services/upload.service");
 const allowedExtensions = require("../config/allowed_extensions");
-const { handleMulterErrors } = require("../middleware/upload").default;
 const logger = require("../utils/logger");
+const { handleMulterErrors } = require("../middleware/upload").default;
+const { deleteFileByPath } = require("../utils/fileProccess");
 
-// ✅ Upload video with description
+// Upload video with description
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
 const uploadMemory = multer({
   storage,
@@ -55,7 +58,7 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
   }
 });
 
-// ✅ Get all films
+// Get all films
 router.get("/", async (req, res) => {
   logger.info("Fetching all films.");
   try {
@@ -67,5 +70,73 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch films" });
   }
 });
+
+// Delete a film by _id or filename
+router.delete("/delete", async (req, res) => {
+  const { id, fileName } = req.body;
+  let filmToDelete = null;
+  let identifier;
+
+  if (id) {
+    identifier = id;
+    logger.info(`Received request to delete film by id: ${id}`);
+  } else if (fileName) {
+    identifier = fileName;
+    logger.info(`Received request to delete film by fileName: ${fileName}`);
+  } else {
+    logger.warn(`No id or fileName provided for film delete`);
+    return res.status(400).json({ error: "Must provide either id or fileName" });
+  }
+
+  try {
+    // First, find the record (but don't delete yet)
+    if (id) {
+      const isObjectId = /^[a-f\d]{24}$/i.test(id);
+      if (isObjectId) {
+        logger.info(`Trying to find film by _id: ${id}`);
+        filmToDelete = await Film.findById(id);
+      }
+    }
+    if (!filmToDelete && fileName) {
+      logger.info(`Trying to find film by filename: ${fileName}`);
+      filmToDelete = await Film.findOne({ filename: fileName });
+    }
+
+    if (!filmToDelete) {
+      logger.warn(
+        `Film not found for delete: ${identifier}`
+      );
+      return res.status(404).json({ error: "Film not found" });
+    }
+
+    // Now, remove the file from disk before deleting the DB record
+    const uploadsDir = Credential.UPLOAD_DIR_FILMS;
+    const filePath = path.resolve(uploadsDir, filmToDelete.filename);
+    try {
+      await deleteFileByPath(filePath);
+      logger.info(`Deleted film file from disk: ${filmToDelete.filename}`);
+    } catch (fileErr) {
+      logger.error(`Failed to delete film file from disk (${filmToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete film file from disk: ${fileErr.message}` });
+    }
+
+    // Now delete the DB record
+    let deletedFilm = null;
+    if (filmToDelete._id) {
+      deletedFilm = await Film.findByIdAndDelete(filmToDelete._id);
+    } else if (filmToDelete.filename) {
+      deletedFilm = await Film.findOneAndDelete({ filename: filmToDelete.filename });
+    }
+
+    logger.info(
+      `Film deleted successfully: ${deletedFilm?.filename || deletedFilm?._id}`
+    );
+    res.json({ ok: true, deletedFilm });
+  } catch (err) {
+    logger.error("Failed to delete film:", err);
+    res.status(500).json({ error: "Failed to delete film" });
+  }
+});
+
 
 module.exports = router;
