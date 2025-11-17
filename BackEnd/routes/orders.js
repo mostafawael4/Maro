@@ -74,6 +74,79 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
   }
 });
 
+// PUT /:orderId (admin only) - update order fields
+/**
+ * Deeply merges properties from the source object into the target object.
+ * - If a property is an object (but not an array), will recursively merge its properties.
+ * - Otherwise, will overwrite the value in the target with the source value.
+ * - Mutates the target object in-place.
+ * 
+ * @param {Object} target - The object to merge into (will be mutated).
+ * @param {Object} source - The object with new values (will not be mutated).
+ */
+const deepMerge = (target, source) => {
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key])
+    ) {
+      // If nested object, recurse
+      if (!target[key]) target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else {
+      // Primitive or array → direct replace
+      target[key] = source[key];
+    }
+  }
+}
+router.put("/:orderId", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const updateFields = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ ok: false, message: "orderId is required" });
+    }
+    if (!updateFields || typeof updateFields !== "object" || Array.isArray(updateFields)) {
+      return res.status(400).json({ ok: false, message: "You must provide fields to update in request body" });
+    }
+
+    // Get the order by orderId before updating
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    // Update only the fields sent
+    if (updateFields.orderForm) {
+      deepMerge(order.orderForm, updateFields.orderForm);
+      order.markModified("orderForm");
+    }
+    
+    // Update root fields (clientName, notes, status, etc.)
+    for (const key of Object.keys(updateFields)) {
+      if (key !== "orderForm") {
+        order[key] = updateFields[key];
+      }
+    }
+
+    await order.save();
+
+    const updatedOrder = await Order.findById(orderId).lean();
+
+    if (!updatedOrder) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    logger.info(`Order ${orderId} updated by admin.`);
+    return res.json({ ok: true, order: updatedOrder });
+  } catch (err) {
+    logger.error(`PUT /orders/:orderId failed: ${err.stack || err.message || err}`);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 // PUT /orders/:orderId/status - admin only: update status
 router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
   try {
@@ -100,7 +173,6 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
 });
 
 // POST /orders/:orderId/upload - admin only upload images/videos to this order
-
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
 const uploadMemory = multer({
   storage,
@@ -259,6 +331,7 @@ router.delete("/:orderId", requireAdminAuth,
     }
   }
 );
+
 // DELETE /deletemedia/:orderId (admin only) - delete order files[] from the server and from db by file name
 router.delete("/:orderId/deletemedia", requireAdminAuth, 
   async (req, res) => {
