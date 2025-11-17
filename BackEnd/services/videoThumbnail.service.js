@@ -2,6 +2,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
+const Credentials  = require('../config/Credentials.js');
 
 // Set FFmpeg and FFprobe paths - try to use installer, fallback to system FFmpeg
 try {
@@ -16,20 +17,20 @@ try {
 } catch (err) {
   // If installer is not available, try to use system FFmpeg
   // You can also set FFMPEG_PATH and FFPROBE_PATH environment variables
-  if (process.env.FFMPEG_PATH) {
-    ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
+  if (Credentials.FFMPEG_PATH) {
+    ffmpeg.setFfmpegPath(Credentials.FFMPEG_PATH);
     logger.info('FFmpeg path set from FFMPEG_PATH environment variable');
   }
-  if (process.env.FFPROBE_PATH) {
-    ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
+  if (Credentials.FFPROBE_PATH) {
+    ffmpeg.setFfprobePath(Credentials.FFPROBE_PATH);
     logger.info('FFprobe path set from FFPROBE_PATH environment variable');
   }
-  if (!process.env.FFMPEG_PATH && !process.env.FFPROBE_PATH) {
+  if (!Credentials.FFMPEG_PATH && !Credentials.FFPROBE_PATH) {
     logger.warn('FFmpeg installer not found. Using system FFmpeg if available.');
   }
 }
 
-const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
+const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS;
 
 /**
  * Extract thumbnail from video at a specific time (in seconds)

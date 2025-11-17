@@ -9,6 +9,8 @@ const logger = require("../utils/logger");
 const { handleMulterErrors } = require("../middleware/upload").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../services/order.service");
 const { extractOrderVideoThumbnail, getVideoDuration } = require("../services/videoThumbnail.service");
+const Credentials  = require('../config/Credentials.js');
+
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -328,7 +330,7 @@ router.get("/:orderId/video/:filename/duration", requireAdminAuth, async (req, r
     }
 
     const path = require("path");
-    const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
+    const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
     const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
 
     const fs = require("fs");
@@ -370,7 +372,7 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
       if (order.media[mediaIndex].thumbnailFilename) {
         const path = require("path");
         const fs = require("fs");
-        const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
+        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
         const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
         if (fs.existsSync(oldThumbPath)) {
           try {
