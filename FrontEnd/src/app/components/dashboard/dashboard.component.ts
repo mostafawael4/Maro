@@ -2,9 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { OrdersService, Order } from '../../services/orders.service';
-import { AuthService } from '../../services/auth.service';
-import { combineLatest, Subject } from 'rxjs';
-import { takeUntil, filter } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 
 @Component({
@@ -18,7 +16,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   loading = true;
   error = '';
-  isAuthenticated = false;
   updatingOrderId: string | null = null;
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
@@ -26,20 +23,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private ordersService: OrdersService,
-    private authService: AuthService,
     private router: Router
-  ) {
-    // Get initial auth state immediately (synchronous from localStorage)
-    this.isAuthenticated = this.authService.isAuthenticatedValue;
-  }
+  ) {}
 
   ngOnInit(): void {
-    // Subscribe to auth changes
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth ?? false;
-    });
-
-    // Load orders immediately (localStorage auth is already set)
+    // Load orders - authentication is handled by adminGuard at route level
     this.loadOrders();
   }
 

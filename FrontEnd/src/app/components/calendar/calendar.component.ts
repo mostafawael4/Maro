@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { CalendarService, WeddingCalendarEvent } from '../../services/calendar.service';
 
 interface CalendarDay {
@@ -31,7 +32,10 @@ export class CalendarComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
 
-  constructor(private calendarService: CalendarService) {}
+  constructor(
+    private calendarService: CalendarService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.fetchEvents();
@@ -46,9 +50,14 @@ export class CalendarComponent implements OnInit {
         this.buildCalendar();
         this.buildUpcomingEvents();
       },
-      error: () => {
-        this.errorMessage = 'Unable to load events right now. Please try again later.';
+      error: (err) => {
         this.isLoading = false;
+        // If unauthorized, redirect to admin login
+        if (err.status === 401) {
+          this.router.navigate(['/admin']);
+        } else {
+          this.errorMessage = 'Unable to load events right now. Please try again later.';
+        }
       }
     });
   }

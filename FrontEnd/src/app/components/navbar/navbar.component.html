@@ -47,6 +47,7 @@
           Gallery
         </a>
         <a 
+          *ngIf="isAuthenticated"
           routerLink="/calendar" 
           routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"
@@ -174,6 +175,7 @@
         </a>
         
         <a 
+          *ngIf="isAuthenticated"
           routerLink="/calendar" 
           routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"
