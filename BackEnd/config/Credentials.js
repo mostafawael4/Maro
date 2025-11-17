@@ -16,6 +16,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
 const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || '.';
 const UPLOAD_DIR_GALLERY = process.env.UPLOAD_DIR_GALLERY || '.';
 const UPLOAD_DIR_FILMS = process.env.UPLOAD_DIR_GALLERY || '.';
+const UPLOAD_DIR_HOMEPAGE = process.env.UPLOAD_DIR_HOMEPAGE || '.';
 
 const LOG_DIR = process.env.LOGGING_PATH;
 
@@ -42,6 +43,7 @@ module.exports = {
   UPLOAD_DIR_ORDERS,
   UPLOAD_DIR_GALLERY,
   UPLOAD_DIR_FILMS,
+  UPLOAD_DIR_HOMEPAGE,
   LOG_DIR,
   FFMPEG_PATH,
   FFPROBE_PATH,
