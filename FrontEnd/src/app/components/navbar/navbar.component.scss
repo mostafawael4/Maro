@@ -129,6 +129,7 @@
 .navbar-logo {
   transition: all 0.3s ease-in-out;
   
+  
   &:hover {
     transform: scale(1.05);
   }
@@ -138,6 +139,7 @@
 .navbar-logo-img {
   // Apply dark burgundy color to logo
   filter: brightness(0) saturate(100%) invert(10%) sepia(85%) saturate(4200%) hue-rotate(340deg) brightness(75%) contrast(115%);
+  margin-left: 151px;
 }
 
 // CTA Button Enhancement
@@ -231,4 +233,8 @@ button:focus-visible {
     transition: none;
     animation: none;
   }
+}
+
+.custom-links {
+  margin-right: 144px;
 }

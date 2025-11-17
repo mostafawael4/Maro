@@ -21,9 +21,10 @@
   font-size: 2.5rem;
   font-weight: 400;
   color: #8B3A3A;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   letter-spacing: 1px;
-  font-style: italic;
+  text-transform: uppercase;
+  // font-style: italic;
 
   @media (max-width: 768px) {
     font-size: 2rem;
@@ -89,12 +90,12 @@
 
 .section-title {
   font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
+  font-size: 2.5rem;
   font-weight: 400;
   color: #8B3A3A;
-  margin-bottom: 1rem;
-  letter-spacing: 0.5px;
-  font-style: italic;
+  margin-bottom: 0.75rem;
+  letter-spacing: 1px;
+  // font-style: italic;
   position: relative;
   padding-bottom: 0.75rem;
 
@@ -110,7 +111,7 @@
   }
 
   @media (max-width: 768px) {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 }
 

@@ -1,5 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
- @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,6 +7,9 @@
 
 /* Cinematic Wedding Photography Color Palette CSS Variables */
 :root {
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
   /* Primary Colors - Terracotta Tones */
   --color-primary-50: #fdf2f1;
   --color-primary-100: #fce4e1;
@@ -88,10 +91,24 @@
 
 /* Base styles for cinematic theme */
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-neutral-400); /* Cream background */
   color: var(--color-accent-900); /* Charcoal text */
   line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.page-title,
+.section-title,
+.component-header,
+.header-title {
+  font-family: var(--font-heading) !important;
+  letter-spacing: 0.02em;
 }
 
 /* Cinematic typography classes */
