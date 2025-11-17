@@ -13,6 +13,7 @@ import { CreateOrderComponent } from './components/create-order/create-order.com
 import { FeedbacksComponent } from './components/feedbacks/feedbacks.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -23,11 +24,11 @@ export const routes: Routes = [
     { path: 'orders', component: OrdersComponent },
     { path: 'create-order', component: CreateOrderComponent },
     { path: 'order-details/:id', component: OrderDetailsComponent },
-    { path: 'dashboard', component: DashboardComponent },
+    { path: 'dashboard', component: DashboardComponent, canActivate: [adminGuard] },
     { path: 'order-info/:id', component: OrderInfoComponent },
     { path: 'contact', component: ContactComponent },
     { path: 'admin', component: AdminComponent },
     { path: 'feedbacks', component: FeedbacksComponent },
-    { path: 'calendar', component: CalendarComponent },
+    { path: 'calendar', component: CalendarComponent, canActivate: [adminGuard] },
     { path: '**', component: NotFoundComponent }, // 404 - must be last
 ];

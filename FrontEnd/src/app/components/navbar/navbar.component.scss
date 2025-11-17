@@ -19,7 +19,7 @@
 .nav-link-desktop {
   @apply relative px-3 py-2 font-medium transition-all duration-300 ease-in-out;
   font-family: 'Georgia', serif; // Elegant serif font
-  font-size: 1rem;
+  font-size: 1rem; // Reduced from 1rem (14px instead of 16px)
   letter-spacing: 0.5px;
   color: #333333; // Dark text for white navbar
   
@@ -193,6 +193,32 @@
     margin: 0.25rem 0;
     border-radius: 0.5rem;
   }
+  
+  // Mobile menu scrollable container
+  .lg\:hidden {
+    &[class*="overflow-y-auto"] {
+      -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+      scrollbar-width: thin; // Thin scrollbar for Firefox
+      
+      // Custom scrollbar for webkit browsers (Chrome, Safari, Edge)
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(200, 155, 123, 0.1);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: rgba(139, 58, 58, 0.3);
+        border-radius: 3px;
+        
+        &:hover {
+          background: rgba(139, 58, 58, 0.5);
+        }
+      }
+    }
+  }
 }
 
 // Animation Keyframes
@@ -252,6 +278,76 @@ button:focus-visible {
   .btn-primary {
     transition: none;
     animation: none;
+  }
+}
+
+// Dropdown Menu Styling
+.dropdown-container {
+  position: relative;
+  
+  // Extend hover area to include the dropdown menu gap
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: transparent;
+    pointer-events: all;
+    z-index: 49;
+  }
+}
+
+.dropdown-trigger {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  
+  svg {
+    transition: transform 0.3s ease;
+  }
+}
+
+.dropdown-container:hover .dropdown-trigger svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.08), 0 2px 15px rgba(255, 223, 186, 0.1);
+}
+
+.dropdown-container:hover .dropdown-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+// Ensure dropdown menu stays visible when hovering over it
+.dropdown-menu:hover {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.dropdown-item {
+  &:hover {
+    background-color: rgba(200, 155, 123, 0.1);
+  }
+  
+  &.active {
+    background-color: rgba(139, 58, 58, 0.1);
+  }
+  
+  &::before,
+  &::after {
+    display: none; // Remove underline animations from dropdown items
   }
 }
 
