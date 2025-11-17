@@ -5,6 +5,7 @@ const router = express.Router();
 const uploadService = require("../services/upload.service");
 const allowedExtensions = require("../config/allowed_extensions");
 const { handleMulterErrors } = require("../middleware/upload").default;
+const logger = require("../utils/logger");
 
 // ✅ Upload video with description
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
@@ -18,13 +19,17 @@ const uploadMemory = multer({
   },
 }).single("videos");
 router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
+  logger.info("Received film upload request.");
   try {
     const file = req.file;
     const { description } = req.body;
 
     if (!file) {
+      logger.warn("No file uploaded in film upload.");
       return res.status(400).json({ error: "No file uploaded" });
     }
+
+    logger.info(`Processing file for film upload: ${file.originalname}`);
 
     const fileUrl = uploadService.saveFile(
       undefined,
@@ -32,6 +37,8 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
       file.originalname,
       { isFilm: true }
     );
+    logger.info(`Saved film file: ${fileUrl}`);
+
     // Optionally generate/save unique filename with timestamp if desired
     const newFilm = await Film.create({
       filename: file.originalname || file.filename,
@@ -39,17 +46,26 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
       description,
     });
 
+    logger.info(`Film record created: ${newFilm.filename}`);
+
     res.status(201).json(newFilm);
   } catch (err) {
-    console.error("Film upload error:", err);
+    logger.error("Film upload error:", err);
     res.status(500).json({ error: "Failed to upload video" });
   }
 });
 
 // ✅ Get all films
 router.get("/", async (req, res) => {
-  const films = await Film.find().sort({ uploadedAt: -1 });
-  res.json(films);
+  logger.info("Fetching all films.");
+  try {
+    const films = await Film.find().sort({ uploadedAt: -1 });
+    logger.info(`Fetched ${films.length} films.`);
+    res.json(films);
+  } catch (err) {
+    logger.error("Error fetching films:", err);
+    res.status(500).json({ error: "Failed to fetch films" });
+  }
 });
 
 module.exports = router;
