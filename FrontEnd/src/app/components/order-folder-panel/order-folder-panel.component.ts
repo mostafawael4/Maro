@@ -13,11 +13,19 @@ export class OrderFolderPanelComponent {
   @Input() loading: boolean = false;
   @Input() error: string = '';
   @Input() selectedFolder: string | null = null;
+  @Input() isAuthenticated: boolean = false;
 
   @Output() folderSelected = new EventEmitter<string>();
+  @Output() folderDeleted = new EventEmitter<string>();
 
-  onFolderClick(folder: string): void {
+  onFolderClick(folder: string, event: Event): void {
+    event.stopPropagation();
     this.folderSelected.emit(folder);
+  }
+
+  onDeleteFolder(folder: string, event: Event): void {
+    event.stopPropagation();
+    this.folderDeleted.emit(folder);
   }
 }
 

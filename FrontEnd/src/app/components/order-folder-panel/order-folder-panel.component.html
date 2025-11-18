@@ -22,23 +22,39 @@
   </div>
 
   <div *ngIf="!loading && !error && folders.length > 0" class="folders-grid">
-    <button 
+    <div 
       *ngFor="let folder of folders" 
-      class="folder-card" 
-      [class.active]="folder === selectedFolder"
-      (click)="onFolderClick(folder)">
-      <div class="folder-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
-          <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
-        </svg>
-      </div>
-      <div class="folder-name">{{ folder }}</div>
-      <div class="folder-meta">
-        <span>→</span>
-        <small>open</small>
-      </div>
-    </button>
+      class="folder-card-wrapper">
+      <button 
+        class="folder-card" 
+        [class.active]="folder === selectedFolder"
+        (click)="onFolderClick(folder, $event)">
+        <!-- Delete Button (Admin Only) - Above the card -->
+        <button 
+          *ngIf="isAuthenticated"
+          class="folder-delete-btn"
+          (click)="onDeleteFolder(folder, $event)"
+          title="Delete folder and all its contents">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </button>
+        <div class="folder-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
+            <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
+          </svg>
+        </div>
+        <div class="folder-name">{{ folder }}</div>
+        <div class="folder-meta">
+          <span>—</span>
+          <small>items</small>
+        </div>
+      </button>
+    </div>
   </div>
 
   <div *ngIf="!loading && !error && folders.length === 0" class="folder-state empty">

@@ -241,12 +241,18 @@
 }
 
 .empty-images {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: rgba(0, 0, 0, 0.6);
-  padding: 40px 20px;
+  padding: 60px 20px;
+  min-height: 300px;
 
   svg {
-    margin-bottom: 16px;
+    display: block;
+    margin: 0 auto 16px auto;
     color: #8B3A3A;
   }
 
@@ -256,6 +262,10 @@
     color: #8B3A3A;
     margin-bottom: 0.75rem;
     font-style: italic;
+  }
+
+  p {
+    margin: 0;
   }
 }
 

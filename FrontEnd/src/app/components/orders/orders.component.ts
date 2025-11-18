@@ -31,6 +31,9 @@ export class OrdersComponent implements OnInit {
   uploadFiles: File[] = [];
   uploadModalError: string = '';
   isDragOver: boolean = false;
+  showUploadResultModal: boolean = false;
+  uploadResultMessage: string = '';
+  uploadResultType: 'success' | 'error' = 'success';
   
   // For normal users
   showEmailModal = false;
@@ -287,28 +290,55 @@ export class OrdersComponent implements OnInit {
 
     this.ordersService.uploadOrderImages(orderId, files, folderName).subscribe({
       next: (response) => {
-        this.uploadSuccess = `Successfully uploaded ${files.length} image(s)`;
+        const successCount = response.added?.length || files.length;
+        const failedCount = response.failed?.length || 0;
+        
         this.uploadingOrderId = null;
+        
+        // Close upload modal first
         if (onSuccess) {
           onSuccess();
         }
+        
         // Reload orders to update image count
         this.loadOrders();
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          this.uploadSuccess = '';
-        }, 3000);
+        
+        // Show result modal
+        if (failedCount > 0) {
+          // Partial success
+          this.uploadResultType = 'success';
+          this.uploadResultMessage = `Successfully uploaded ${successCount} file(s). ${failedCount} file(s) failed to upload.`;
+          if (response.failed && response.failed.length > 0) {
+            const failedNames = response.failed.map((f: any) => f.filename || f.originalName).join(', ');
+            this.uploadResultMessage += `\n\nFailed files: ${failedNames}`;
+          }
+        } else {
+          // Complete success
+          this.uploadResultType = 'success';
+          this.uploadResultMessage = `Successfully uploaded ${successCount} file(s)!`;
+        }
+        this.showUploadResultModal = true;
       },
       error: (err) => {
-        this.uploadError = 'Failed to upload images. Please try again.';
         this.uploadingOrderId = null;
         console.error('Error uploading images:', err);
-        // Clear error message after 5 seconds
-        setTimeout(() => {
-          this.uploadError = '';
-        }, 5000);
+        
+        // Close upload modal
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        // Show error modal
+        this.uploadResultType = 'error';
+        this.uploadResultMessage = err.error?.message || 'Failed to upload images. Please try again.';
+        this.showUploadResultModal = true;
       }
     });
+  }
+
+  closeUploadResultModal(): void {
+    this.showUploadResultModal = false;
+    this.uploadResultMessage = '';
   }
 
   // Email Modal Methods for Normal Users

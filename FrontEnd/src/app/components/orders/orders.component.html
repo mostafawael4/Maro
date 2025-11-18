@@ -6,6 +6,34 @@
     (cancel)="onCancelDelete()"
   ></app-delete-modal>
 
+  <!-- Upload Result Modal -->
+  <div *ngIf="showUploadResultModal" class="order-upload-modal-overlay" (click)="closeUploadResultModal()">
+    <div class="upload-result-modal" (click)="$event.stopPropagation()">
+      <button class="modal-close-btn" (click)="closeUploadResultModal()" aria-label="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="result-content" [class.success]="uploadResultType === 'success'" [class.error]="uploadResultType === 'error'">
+        <div class="result-icon">
+          <svg *ngIf="uploadResultType === 'success'" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <svg *ngIf="uploadResultType === 'error'" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h2>{{ uploadResultType === 'success' ? 'Upload Successful' : 'Upload Failed' }}</h2>
+        <p class="result-message">{{ uploadResultMessage }}</p>
+        <button class="btn-ok" (click)="closeUploadResultModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Upload Modal -->
   <div *ngIf="showUploadModal" class="order-upload-modal-overlay">
     <div class="order-upload-modal" (click)="$event.stopPropagation()">
@@ -30,6 +58,7 @@
       <div 
         class="dropzone" 
         [class.drag-over]="isDragOver"
+        [class.has-files]="uploadFiles.length > 0"
         (dragover)="onDragOver($event)"
         (dragleave)="onDragLeave($event)"
         (drop)="onDrop($event)"
@@ -51,10 +80,10 @@
           <p>Drag & drop media here or click to browse</p>
           <span>Images and videos are supported</span>
         </div>
-        <div class="selected-files" *ngIf="uploadFiles.length > 0">
+        <div class="selected-files" *ngIf="uploadFiles.length > 0" (click)="$event.stopPropagation()">
           <div class="file-chip" *ngFor="let file of uploadFiles; let i = index">
             <span>{{ file.name }}</span>
-            <button type="button" (click)="removeUploadFile(i)" [disabled]="uploadingOrderId === uploadModalOrder?._id">×</button>
+            <button type="button" (click)="removeUploadFile(i); $event.stopPropagation()" [disabled]="uploadingOrderId === uploadModalOrder?._id">×</button>
           </div>
         </div>
       </div>

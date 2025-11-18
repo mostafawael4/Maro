@@ -50,6 +50,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   folderMedia: OrderImage[] = [];
   folderMediaLoading = false;
   folderMediaError = '';
+  showDeleteFolderModal = false;
+  folderToDelete: string | null = null;
+  deletingFolder = false;
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -109,6 +112,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     if (showLoader) {
       this.loading = true;
     }
+    // Don't clear error here - let it persist if it was set by a previous operation
     this.ordersService.getOrderById(orderId).subscribe({
       next: (response: any) => {
         // Handle if response is wrapped in an object with 'order' property
@@ -474,5 +478,95 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
     this.foldersInitialized = true;
     this.foldersLoading = false;
+  }
+
+  // Folder deletion methods
+  onDeleteFolder(folderName: string): void {
+    if (!this.isAuthenticated || !this.order?._id) return;
+    this.folderToDelete = folderName;
+    this.showDeleteFolderModal = true;
+  }
+
+  onConfirmDeleteFolder(): void {
+    if (!this.folderToDelete || !this.order?._id) return;
+    
+    const orderId = this.order._id;
+    this.deletingFolder = true;
+    this.error = ''; // Clear any previous errors
+    this.ordersService.deleteOrderFolder(orderId, this.folderToDelete).subscribe({
+      next: (response) => {
+        // Check if there were any failed deletions
+        if (response.failedFiles && response.failedFiles.length > 0) {
+          // Partial failure - some files couldn't be deleted
+          this.error = response.message || `Failed to delete some files in folder '${this.folderToDelete}'.`;
+          this.deletingFolder = false;
+          this.showDeleteFolderModal = false;
+          this.folderToDelete = null;
+          setTimeout(() => {
+            this.error = '';
+          }, 8000); // Show error for 8 seconds
+          return;
+        }
+
+        if (response.ok) {
+          // Clear error on success
+          this.error = '';
+          
+          // If the deleted folder was selected, exit folder view
+          if (this.selectedFolder === this.folderToDelete) {
+            this.exitFolderView();
+          }
+          
+          // Reload folders to update the list
+          if (this.isAuthenticated && this.order?._id) {
+            this.loadFolders(this.order._id);
+          } else {
+            // For clients, rebuild from media
+            this.buildClientFoldersFromMedia();
+          }
+          
+          // Reload order to get updated media (including background image)
+          if (this.order?._id) {
+            this.loadOrderById(this.order._id, false);
+          }
+        } else {
+          // Response indicates failure
+          this.error = response.message || 'Failed to delete folder. Please try again.';
+          this.deletingFolder = false;
+          this.showDeleteFolderModal = false;
+          this.folderToDelete = null;
+          setTimeout(() => {
+            this.error = '';
+          }, 8000);
+          return;
+        }
+        
+        this.showDeleteFolderModal = false;
+        this.folderToDelete = null;
+        this.deletingFolder = false;
+      },
+      error: (err) => {
+        console.error('Error deleting folder:', err);
+        this.error = err.error?.message || 'Failed to delete folder. Please try again.';
+        this.showDeleteFolderModal = false;
+        this.folderToDelete = null;
+        this.deletingFolder = false;
+        setTimeout(() => {
+          this.error = '';
+        }, 8000); // Increased to 8 seconds
+      }
+    });
+  }
+
+  onCancelDeleteFolder(): void {
+    this.showDeleteFolderModal = false;
+    this.folderToDelete = null;
+  }
+
+  getDeleteFolderMessage(): string {
+    if (!this.folderToDelete) {
+      return 'Are you sure you want to delete this folder and all its contents?';
+    }
+    return `Are you sure you want to delete the folder "${this.folderToDelete}" and all its contents?`;
   }
 }

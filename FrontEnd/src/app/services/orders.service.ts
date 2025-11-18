@@ -126,6 +126,10 @@ export class OrdersService {
     return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
   }
 
+  deleteOrderFolder(orderId: string, folderName: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+  }
+
   sendOrderCompletionEmail(orderId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/emails/${orderId}`, {}, { withCredentials: true });
   }

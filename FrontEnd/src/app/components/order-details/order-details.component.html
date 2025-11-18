@@ -5,8 +5,16 @@
     title="Delete Media"
     [message]="'Are you sure you want to delete ' + (mediaToDelete?.filename || 'this media') + '?'"
     (confirm)="onConfirmDeleteMedia()"
-    (cancel)="onCancelDeleteMedia()"
-  ></app-delete-modal>
+    (cancel)="onCancelDeleteMedia()" />
+
+  <!-- Delete Folder Confirmation Modal -->
+  <app-delete-modal
+    [isOpen]="showDeleteFolderModal"
+    title="Delete Folder"
+    [message]="getDeleteFolderMessage()"
+    warning="This action cannot be undone. All media in this folder will be permanently deleted."
+    (confirm)="onConfirmDeleteFolder()"
+    (cancel)="onCancelDeleteFolder()" />
 
   <!-- Back Button -->
   <button class="back-btn" (click)="goBack()">
@@ -24,13 +32,14 @@
   </div>
 
   <!-- Error State -->
-  <div *ngIf="error && !loading" class="error-container">
+  <div *ngIf="error" class="error-container" [class.show-error]="error">
     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="10"/>
       <line x1="12" y1="8" x2="12" y2="12"/>
       <line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     <p>{{ error }}</p>
+    <button class="error-close-btn" (click)="error = ''" aria-label="Close error">×</button>
   </div>
 
   <!-- Order Details -->
@@ -65,7 +74,9 @@
       [loading]="foldersLoading"
       [error]="foldersError"
       [selectedFolder]="selectedFolder"
-      (folderSelected)="selectFolder($event)">
+      [isAuthenticated]="isAuthenticated"
+      (folderSelected)="selectFolder($event)"
+      (folderDeleted)="onDeleteFolder($event)">
     </app-order-folder-panel>
 
     <app-folder-media-view
@@ -104,6 +115,7 @@
       (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
+  </div>
 
   <!-- Image Slider -->
   <app-image-slider
