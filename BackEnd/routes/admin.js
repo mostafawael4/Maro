@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const Admin = require('../models/admin');
 const { requireAdminAuth, requireAdminOrEditorAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const Credentials  = require('./config/Credentials.js');
+const Credentials  = require('../config/Credentials.js');
 
 // POST /admin/setup
 // Creates admin and editor users if neither exist.
