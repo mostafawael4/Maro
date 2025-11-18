@@ -14,6 +14,7 @@ const OrderSchema = new mongoose.Schema({
     selectedAt: { type: Date, default: Date.now },
   },
   media: [{ 
+    foldername:{ type: String },
     filename: String, 
     url: String, 
     uploadedAt: Date,

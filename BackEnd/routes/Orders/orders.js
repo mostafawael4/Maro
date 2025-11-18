@@ -9,6 +9,7 @@ const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
 const { extractOrderVideoThumbnail, getVideoDuration } = require("../../services/videoThumbnail.service.js");
+const orderFolderRoutes = require('./orderFolders');
 const Credentials  = require('../../config/Credentials.js');
 
 
@@ -199,6 +200,8 @@ router.post(
       }
 
       const files = req.files || [];
+      const { foldername } = req.body;
+
       if (!files.length) {
         logger.warn(`Upload attempt to order ${orderId} with no files`);
       } else {
@@ -216,6 +219,7 @@ router.post(
         );
         
         const fileObj = {
+          foldername: foldername || null,
           filename: url.split("/").pop(),
           url,
           uploadedAt: new Date(),
@@ -516,6 +520,6 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
-
+router.use("/folders", orderFolderRoutes);
 
 module.exports = router;
