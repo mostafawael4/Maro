@@ -9,8 +9,6 @@ const logger = require('./utils/logger');
 const morgan = require('morgan');
 
 const connectDB = require('./config/db');
-const Admin = require('./models/admin');
-const bcrypt = require('bcryptjs');
 
 const Credentials  = require('./config/Credentials.js');
 
@@ -65,18 +63,6 @@ const allRoutes = require('./routes/routes');
 
     // small health endpoint
     app.get('/', (req, res) => res.json({ ok: true, message: 'Maro backend running' }));
-
-    // initial admin creation if ADMIN_INITIAL_PASSWORD env provided and no admin exists
-    const initialPassword = Credentials.ADMIN_INITIAL_PASSWORD;
-    if (initialPassword) {
-      const existing = await Admin.findOne({});
-      if (!existing) {
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(initialPassword, salt);
-        await Admin.create({ username: 'admin', passwordHash });
-        console.log('Initial admin created with password from ADMIN_INITIAL_PASSWORD env var. Remove this var after first run.');
-      }
-    }
 
     app.listen(Credentials.PORT, () => {
       logger.info(`Server listening on http://localhost:${Credentials.PORT}`);
