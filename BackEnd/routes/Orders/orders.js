@@ -9,7 +9,6 @@ const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
 const { extractOrderVideoThumbnail, getVideoDuration } = require("../../services/videoThumbnail.service.js");
-const orderFolderRoutes = require('./orderFolders');
 const Credentials  = require('../../config/Credentials.js');
 
 
@@ -520,6 +519,10 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
+const orderFolderRoutes = require('./orderFolders');
 router.use("/folders", orderFolderRoutes);
+
+const emails = require('./emails');
+router.use("/emails", emails);
 
 module.exports = router;
