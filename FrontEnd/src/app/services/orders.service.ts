@@ -65,8 +65,11 @@ export interface Order {
   clientName?: string;
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
-  backgroundImage?: string; // Background image URL for order
-  backgroundImageFilename?: string; // Background image filename
+  orderBackground?: {
+    image?: string; // Background image URL for order
+    filename?: string; // Background image filename
+    selectedAt?: string | Date; // When background was selected
+  };
   media?: OrderImage[]; // Made optional to handle cases where backend might not send it
   orderForm?: OrderForm;
   feedbacks?: Feedback[];

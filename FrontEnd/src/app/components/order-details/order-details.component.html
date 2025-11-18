@@ -199,7 +199,7 @@
     *ngIf="showBackgroundImageSelector && order"
     [orderId]="order._id"
     [images]="getImageOnlyMedia()"
-    [currentBackgroundImage]="order.backgroundImage"
+    [currentBackgroundImage]="order.orderBackground?.image"
     (imageSelected)="onBackgroundImageSelected($event)"
     (close)="onCloseBackgroundImageSelector()">
   </app-background-image-selector>
