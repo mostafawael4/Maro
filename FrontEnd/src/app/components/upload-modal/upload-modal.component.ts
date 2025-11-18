@@ -1,6 +1,6 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GalleryService } from '../../services/gallery.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-upload-modal',
@@ -11,6 +11,7 @@ import { GalleryService } from '../../services/gallery.service';
 })
 export class UploadModalComponent {
   @Input() show: boolean = false;
+  @Input() uploadFunction?: (files: File[]) => Observable<any>;
   @Output() closeModal = new EventEmitter<void>();
   @Output() uploadComplete = new EventEmitter<void>();
 
@@ -20,7 +21,7 @@ export class UploadModalComponent {
   uploadError: string = '';
   isDragging: boolean = false;
 
-  constructor(private galleryService: GalleryService) {}
+  constructor() {}
 
   close() {
     this.closeModal.emit();
@@ -86,11 +87,16 @@ export class UploadModalComponent {
       return;
     }
 
+    if (!this.uploadFunction) {
+      this.uploadError = 'Upload function not provided';
+      return;
+    }
+
     this.isUploading = true;
     this.uploadError = '';
     this.uploadSuccess = '';
 
-    this.galleryService.uploadImages(this.selectedFiles).subscribe({
+    this.uploadFunction(this.selectedFiles).subscribe({
       next: (response) => {
         this.isUploading = false;
         this.uploadSuccess = `Successfully uploaded ${this.selectedFiles.length} image(s)!`;
@@ -104,7 +110,7 @@ export class UploadModalComponent {
       },
       error: (error) => {
         this.isUploading = false;
-        this.uploadError = error.error?.message || 'Failed to upload images. Please try again.';
+        this.uploadError = error.error?.error || error.error?.message || 'Failed to upload images. Please try again.';
         console.error('Upload error:', error);
       }
     });

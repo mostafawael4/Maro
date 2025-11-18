@@ -164,6 +164,11 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadGalleryImages();
   }
 
+  // Upload function to pass to UploadModalComponent
+  uploadGalleryImages(files: File[]) {
+    return this.galleryService.uploadImages(files);
+  }
+
   // Image Slider methods
   openImageSlider(index: number) {
     this.currentImageIndex = index;

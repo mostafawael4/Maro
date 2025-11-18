@@ -80,6 +80,7 @@
   <!-- Upload Modal Component -->
   <app-upload-modal 
     [show]="showUploadModal" 
+    [uploadFunction]="uploadGalleryImages.bind(this)"
     (closeModal)="closeUploadModal()" 
     (uploadComplete)="onUploadComplete()">
   </app-upload-modal>

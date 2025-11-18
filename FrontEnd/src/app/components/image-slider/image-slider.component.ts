@@ -1,7 +1,10 @@
 import { Component, Input, Output, EventEmitter, HostListener, PLATFORM_ID, Inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { GalleryImage } from '../../services/gallery.service';
+import { HomePageImage } from '../../services/homepage.service';
 import { environment } from '../../../environments/environment';
+
+export type ImageType = GalleryImage | HomePageImage;
 
 @Component({
   selector: 'app-image-slider',
@@ -11,7 +14,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './image-slider.component.scss'
 })
 export class ImageSliderComponent {
-  @Input() images: GalleryImage[] = [];
+  @Input() images: ImageType[] = [];
   @Input() currentIndex: number = 0;
   @Input() show: boolean = false;
   @Output() close = new EventEmitter<void>();
@@ -67,14 +70,14 @@ export class ImageSliderComponent {
     }
   }
 
-  getCurrentImage(): GalleryImage | null {
+  getCurrentImage(): ImageType | null {
     if (this.images && this.images.length > 0 && this.currentIndex >= 0 && this.currentIndex < this.images.length) {
       return this.images[this.currentIndex];
     }
     return null;
   }
 
-  getImageUrl(image: GalleryImage): string {
+  getImageUrl(image: ImageType): string {
     // If the URL is relative, prepend the backend URL
     if (image.url.startsWith('/')) {
       return `${environment.apiUrl}${image.url}`;
@@ -82,7 +85,7 @@ export class ImageSliderComponent {
     return image.url;
   }
 
-  isVideo(image: GalleryImage): boolean {
+  isVideo(image: ImageType): boolean {
     if (!image.filename) return false;
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
     const ext = image.filename.toLowerCase().substring(image.filename.lastIndexOf('.'));
