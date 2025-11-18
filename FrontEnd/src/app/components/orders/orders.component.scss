@@ -609,6 +609,218 @@
   }
 }
 
+.order-upload-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.order-upload-modal {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(135deg, #FFFCF8 0%, #FFF9F2 100%);
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(107, 31, 31, 0.15);
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    color: #8B3A3A;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+  }
+
+  .order-name {
+    margin-bottom: 1.5rem;
+    color: rgba(0, 0, 0, 0.7);
+    font-style: italic;
+  }
+
+  .modal-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    margin-bottom: 0.5rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid rgba(107, 31, 31, 0.2);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: 'Georgia', serif;
+    margin-bottom: 1.25rem;
+    background: white;
+    transition: all 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #8B3A3A;
+      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.15);
+    }
+
+    &:disabled {
+      background: rgba(0, 0, 0, 0.05);
+      cursor: not-allowed;
+    }
+  }
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.dropzone {
+  position: relative;
+  border: 2px dashed rgba(107, 31, 31, 0.4);
+  border-radius: 14px;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+
+  &.drag-over {
+    border-color: #8B3A3A;
+    background: rgba(139, 58, 58, 0.05);
+  }
+
+  input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dropzone-content {
+    pointer-events: none;
+
+    svg {
+      color: #8B3A3A;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    span {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      color: rgba(0, 0, 0, 0.6);
+    }
+  }
+}
+
+.selected-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+
+  .file-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(107, 31, 31, 0.08);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+
+    button {
+      border: none;
+      background: transparent;
+      color: #8B3A3A;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+    }
+  }
+}
+
+.upload-modal-error {
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-style: italic;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  button {
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-cancel {
+    background: rgba(0, 0, 0, 0.05);
+    color: #8B3A3A;
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .btn-upload {
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+    box-shadow: 0 6px 16px rgba(107, 31, 31, 0.3);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(107, 31, 31, 0.4);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
 // Feedback Section
 .feedback-section {
   width: 100%;

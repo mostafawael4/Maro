@@ -1,0 +1,162 @@
+.folders-section {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  border-radius: 16px;
+  border: 2px solid rgba(107, 31, 31, 0.1);
+  box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.folders-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: #8B3A3A;
+    margin-bottom: 0.25rem;
+    font-style: italic;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-style: italic;
+  }
+}
+
+.folder-count-badge {
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  background: rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(107, 31, 31, 0.2);
+  color: #8B3A3A;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.folder-card {
+  border: 2px solid rgba(107, 31, 31, 0.15);
+  border-radius: 14px;
+  background: white;
+  padding: 1.25rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.08);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(107, 31, 31, 0.15);
+    border-color: rgba(107, 31, 31, 0.4);
+  }
+
+  &.active {
+    border-color: #8B3A3A;
+    box-shadow: 0 10px 24px rgba(107, 31, 31, 0.2);
+    background: linear-gradient(135deg, rgba(107, 31, 31, 0.05), rgba(139, 58, 58, 0.05));
+  }
+
+  .folder-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(107, 31, 31, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8B3A3A;
+  }
+
+  .folder-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #8B3A3A;
+    text-transform: capitalize;
+  }
+
+  .folder-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    color: rgba(0, 0, 0, 0.6);
+
+    span {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    small {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+}
+
+.folder-state {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 2px solid rgba(107, 31, 31, 0.12);
+  background: rgba(107, 31, 31, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(0, 0, 0, 0.7);
+
+  &.error {
+    border-color: rgba(220, 38, 38, 0.3);
+    background: rgba(220, 38, 38, 0.05);
+    color: #dc2626;
+  }
+
+  &.empty {
+    flex-direction: column;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.6);
+
+    svg {
+      color: #8B3A3A;
+    }
+  }
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(139, 58, 58, 0.15);
+  border-top: 3px solid #8B3A3A;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  &.small {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+

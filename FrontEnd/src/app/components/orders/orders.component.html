@@ -6,6 +6,80 @@
     (cancel)="onCancelDelete()"
   ></app-delete-modal>
 
+  <!-- Upload Modal -->
+  <div *ngIf="showUploadModal" class="order-upload-modal-overlay">
+    <div class="order-upload-modal" (click)="$event.stopPropagation()">
+      <button class="modal-close-btn" (click)="closeUploadModal()" aria-label="Close upload modal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <h2>Upload Media</h2>
+      <p class="order-name" *ngIf="uploadModalOrder">Order: {{ uploadModalOrder.orderForm?.brideAndGroomNames || uploadModalOrder.clientName || uploadModalOrder.email }}</p>
+
+      <label class="modal-label" for="uploadFolderName">Folder Name</label>
+      <input 
+        type="text" 
+        id="uploadFolderName" 
+        [(ngModel)]="uploadFolderName"
+        placeholder="e.g. reels"
+        [disabled]="uploadingOrderId === uploadModalOrder?._id"
+      />
+
+      <div 
+        class="dropzone" 
+        [class.drag-over]="isDragOver"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <input 
+          type="file" 
+          #fileInput 
+          multiple 
+          accept="image/*,video/*"
+          (change)="onFileInputChange($event)"
+          [disabled]="uploadingOrderId === uploadModalOrder?._id"
+        />
+        <div class="dropzone-content" *ngIf="uploadFiles.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>Drag & drop media here or click to browse</p>
+          <span>Images and videos are supported</span>
+        </div>
+        <div class="selected-files" *ngIf="uploadFiles.length > 0">
+          <div class="file-chip" *ngFor="let file of uploadFiles; let i = index">
+            <span>{{ file.name }}</span>
+            <button type="button" (click)="removeUploadFile(i)" [disabled]="uploadingOrderId === uploadModalOrder?._id">×</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="upload-modal-error" *ngIf="uploadModalError">{{ uploadModalError }}</p>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="closeUploadModal()" [disabled]="uploadingOrderId === uploadModalOrder?._id">Cancel</button>
+        <button 
+          class="btn-upload" 
+          (click)="submitUploadModal(fileInput)" 
+          [disabled]="uploadingOrderId === uploadModalOrder?._id"
+        >
+          <ng-container *ngIf="uploadingOrderId !== uploadModalOrder?._id; else uploadingState">
+            Upload Media
+          </ng-container>
+          <ng-template #uploadingState>
+            <div class="mini-spinner"></div>
+            Uploading...
+          </ng-template>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="header">
     <h1>Client Orders</h1>
     <p *ngIf="isAuthenticated">View and manage all your photography orders</p>
@@ -126,7 +200,7 @@
           <!-- Upload Icon (Admin Only) -->
           <button 
             class="action-icon upload-icon"
-            (click)="onUploadClick($event, order._id)"
+            (click)="onUploadClick($event, order)"
             [disabled]="uploadingOrderId === order._id"
             title="Upload images to this order"
           >

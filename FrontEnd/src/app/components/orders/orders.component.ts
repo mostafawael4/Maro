@@ -25,6 +25,12 @@ export class OrdersComponent implements OnInit {
   uploadingOrderId: string | null = null;
   uploadSuccess: string = '';
   uploadError: string = '';
+  showUploadModal = false;
+  uploadModalOrder: Order | null = null;
+  uploadFolderName: string = '';
+  uploadFiles: File[] = [];
+  uploadModalError: string = '';
+  isDragOver: boolean = false;
   
   // For normal users
   showEmailModal = false;
@@ -141,30 +147,105 @@ export class OrdersComponent implements OnInit {
     });
   }
 
-  onUploadClick(event: Event, orderId: string): void {
+  onUploadClick(event: Event, order: Order): void {
     event.stopPropagation(); // Prevent opening order details
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,video/*'; // Accept both images and videos
-    input.multiple = true;
-    input.onchange = (e: any) => {
-      const files = e.target.files;
-      if (files && files.length > 0) {
-        this.uploadImages(orderId, Array.from(files));
-      }
-    };
-    input.click();
+    this.openUploadModal(order);
   }
 
-  uploadImages(orderId: string, files: File[]): void {
+  openUploadModal(order: Order): void {
+    this.uploadModalOrder = order;
+    this.showUploadModal = true;
+    this.uploadFolderName = '';
+    this.uploadFiles = [];
+    this.uploadModalError = '';
+    this.isDragOver = false;
+  }
+
+  closeUploadModal(): void {
+    this.showUploadModal = false;
+    this.uploadModalOrder = null;
+    this.uploadFolderName = '';
+    this.uploadFiles = [];
+    this.uploadModalError = '';
+    this.isDragOver = false;
+  }
+
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.uploadFiles = Array.from(input.files);
+      this.uploadModalError = '';
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragOver = false;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const validFiles = Array.from(files).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+      if (validFiles.length === 0) {
+        this.uploadModalError = 'Please drop image or video files only.';
+        return;
+      }
+      this.uploadFiles = validFiles;
+      this.uploadModalError = '';
+    }
+  }
+
+  removeUploadFile(index: number): void {
+    this.uploadFiles.splice(index, 1);
+  }
+
+  submitUploadModal(fileInput?: HTMLInputElement): void {
+    const folderName = this.uploadFolderName.trim();
+    if (!folderName) {
+      this.uploadModalError = 'Folder name is required.';
+      return;
+    }
+    if (this.uploadFiles.length === 0) {
+      this.uploadModalError = 'Please select at least one media file.';
+      return;
+    }
+    if (!this.uploadModalOrder?._id) {
+      this.uploadModalError = 'Order information missing.';
+      return;
+    }
+    this.uploadModalError = '';
+    this.uploadImages(this.uploadModalOrder._id, this.uploadFiles, folderName, () => {
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      this.closeUploadModal();
+    });
+  }
+
+  uploadImages(orderId: string, files: File[], folderName: string, onSuccess?: () => void): void {
     this.uploadingOrderId = orderId;
     this.uploadError = '';
     this.uploadSuccess = '';
 
-    this.ordersService.uploadOrderImages(orderId, files).subscribe({
+    this.ordersService.uploadOrderImages(orderId, files, folderName).subscribe({
       next: (response) => {
         this.uploadSuccess = `Successfully uploaded ${files.length} image(s)`;
         this.uploadingOrderId = null;
+        if (onSuccess) {
+          onSuccess();
+        }
         // Reload orders to update image count
         this.loadOrders();
         // Clear success message after 3 seconds

@@ -1,0 +1,53 @@
+<div class="folders-section">
+  <div class="folders-header">
+    <div class="folders-title">
+      <h2>Media Folders</h2>
+      <p>Select a folder to browse its media collection.</p>
+    </div>
+    <span class="folder-count-badge">{{ folders.length }} {{ folders.length === 1 ? 'folder' : 'folders' }}</span>
+  </div>
+
+  <div *ngIf="loading" class="folder-state">
+    <div class="spinner small"></div>
+    <p>Loading folders...</p>
+  </div>
+
+  <div *ngIf="!loading && error" class="folder-state error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="!loading && !error && folders.length > 0" class="folders-grid">
+    <button 
+      *ngFor="let folder of folders" 
+      class="folder-card" 
+      [class.active]="folder === selectedFolder"
+      (click)="onFolderClick(folder)">
+      <div class="folder-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
+          <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
+        </svg>
+      </div>
+      <div class="folder-name">{{ folder }}</div>
+      <div class="folder-meta">
+        <span>→</span>
+        <small>open</small>
+      </div>
+    </button>
+  </div>
+
+  <div *ngIf="!loading && !error && folders.length === 0" class="folder-state empty">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+      <path d="M21 15l-5-5L5 21"></path>
+    </svg>
+    <p>No folders yet. Upload media to start organizing!</p>
+  </div>
+</div>
+

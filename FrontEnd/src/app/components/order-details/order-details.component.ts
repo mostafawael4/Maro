@@ -11,11 +11,21 @@ import { GalleryImage } from '../../services/gallery.service';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 import { VideoPosterSelectorComponent } from '../video-poster-selector/video-poster-selector.component';
 import { BackgroundImageSelectorComponent } from '../background-image-selector/background-image-selector.component';
+import { OrderFolderPanelComponent } from '../order-folder-panel/order-folder-panel.component';
+import { FolderMediaViewComponent } from '../folder-media-view/folder-media-view.component';
 
 @Component({
   selector: 'app-order-details',
   standalone: true,
-  imports: [CommonModule, ImageSliderComponent, DeleteModalComponent, VideoPosterSelectorComponent, BackgroundImageSelectorComponent],
+  imports: [
+    CommonModule,
+    ImageSliderComponent,
+    DeleteModalComponent,
+    VideoPosterSelectorComponent,
+    BackgroundImageSelectorComponent,
+    OrderFolderPanelComponent,
+    FolderMediaViewComponent
+  ],
   templateUrl: './order-details.component.html',
   styleUrl: './order-details.component.scss'
 })
@@ -27,13 +37,20 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   showImageSlider = false;
   currentImageIndex = 0;
-  mediaFilter: 'all' | 'images' | 'videos' = 'all';
   showDeleteModal = false;
   mediaToDelete: OrderImage | null = null;
   deletingMedia = false;
   showVideoPosterSelector = false;
   selectedVideoForThumbnail: OrderImage | null = null;
   showBackgroundImageSelector = false;
+  folders: string[] = [];
+  foldersLoading = false;
+  foldersError = '';
+  selectedFolder: string | null = null;
+  folderMedia: OrderImage[] = [];
+  folderMediaLoading = false;
+  folderMediaError = '';
+  private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -81,12 +98,32 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadOrderById(orderId: string): void {
+  get currentMedia(): OrderImage[] {
+    if (this.selectedFolder !== null || this.isAuthenticated) {
+      return this.folderMedia;
+    }
+    return this.order?.media || [];
+  }
+
+  loadOrderById(orderId: string, showLoader: boolean = true): void {
+    if (showLoader) {
+      this.loading = true;
+    }
     this.ordersService.getOrderById(orderId).subscribe({
       next: (response: any) => {
         // Handle if response is wrapped in an object with 'order' property
         this.order = response.order || response;
         this.loading = false;
+
+        if (this.isAuthenticated && this.order?._id) {
+          this.loadFolders(this.order._id);
+        } else {
+          this.selectedFolder = null;
+          this.folderMedia = this.order?.media || [];
+          this.foldersLoading = false;
+          this.folderMediaLoading = false;
+          this.buildClientFoldersFromMedia();
+        }
       },
       error: (err) => {
         if (err.status === 401) {
@@ -107,6 +144,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
         // Verify the order ID matches
         if (response.order && response.order._id === orderId) {
           this.order = response.order;
+          this.folderMedia = this.order.media || [];
+          this.buildClientFoldersFromMedia();
         } else {
           this.error = 'Order not found or access denied';
         }
@@ -149,38 +188,10 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   openImageSlider(index: number) {
-    // Find the clicked media in the filtered array
-    const clickedMedia = this.getFilteredMedia()[index];
-    if (!clickedMedia) return;
-    
-    // Find this media in the full media array (for slider - includes both images and videos)
-    const allMedia = this.order?.media || [];
-    const actualIndex = allMedia.findIndex(m => m.filename === clickedMedia.filename);
-    
-    this.currentImageIndex = actualIndex >= 0 ? actualIndex : 0;
+    const media = this.currentMedia;
+    if (!media || !media[index]) return;
+    this.currentImageIndex = index;
     this.showImageSlider = true;
-  }
-
-  setMediaFilter(filter: 'all' | 'images' | 'videos') {
-    this.mediaFilter = filter;
-  }
-
-  getFilteredMedia(): OrderImage[] {
-    if (!this.order?.media) return [];
-    if (this.mediaFilter === 'all') return this.order.media;
-    if (this.mediaFilter === 'images') return this.order.media.filter(m => !this.isVideo(m));
-    if (this.mediaFilter === 'videos') return this.order.media.filter(m => this.isVideo(m));
-    return this.order.media;
-  }
-
-  getImagesCount(): number {
-    if (!this.order?.media) return 0;
-    return this.order.media.filter(m => !this.isVideo(m)).length;
-  }
-
-  getVideosCount(): number {
-    if (!this.order?.media) return 0;
-    return this.order.media.filter(m => this.isVideo(m)).length;
   }
 
   closeImageSlider() {
@@ -188,9 +199,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   getSliderImages(): GalleryImage[] {
-    if (!this.order?.media) return [];
+    if (!this.currentMedia) return [];
     // Include both images and videos in the slider
-    return this.order.media.map(img => ({
+    return this.currentMedia.map(img => ({
       _id: img.filename,
       filename: img.filename,
       url: img.url,
@@ -198,8 +209,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     }));
   }
 
-  async downloadImage(media: OrderImage, event: Event) {
-    event.stopPropagation(); // Prevent opening the slider
+  async downloadImage(media: OrderImage, event?: Event) {
+    event?.stopPropagation(); // Prevent opening the slider
     
     try {
       const mediaUrl = this.getImageUrl(media);
@@ -229,8 +240,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     }
   }
 
-  onDeleteMediaClick(media: OrderImage, event: Event): void {
-    event.stopPropagation(); // Prevent opening the slider
+  onDeleteMediaClick(media: OrderImage, event?: Event): void {
+    event?.stopPropagation(); // Prevent opening the slider
     if (!this.isAuthenticated) return;
     this.mediaToDelete = media;
     this.showDeleteModal = true;
@@ -244,12 +255,17 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.ordersService.deleteOrderMedia(orderId, [this.mediaToDelete.filename]).subscribe({
       next: (response) => {
         if (response.ok) {
-          // Remove the media from the order
           if (this.order?.media) {
             this.order.media = this.order.media.filter(m => m.filename !== this.mediaToDelete?.filename);
           }
-          // Reload the order to get updated data
-          this.loadOrderById(orderId);
+          if (this.isAuthenticated) {
+            if (this.selectedFolder) {
+              this.folderMedia = this.folderMedia.filter(m => m.filename !== this.mediaToDelete?.filename);
+            }
+            this.loadFolders(orderId);
+          } else {
+            this.folderMedia = this.folderMedia.filter(m => m.filename !== this.mediaToDelete?.filename);
+          }
         }
         this.showDeleteModal = false;
         this.mediaToDelete = null;
@@ -273,26 +289,32 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.mediaToDelete = null;
   }
 
-  onSelectVideoThumbnail(media: OrderImage, event: Event): void {
-    event.stopPropagation();
+  onSelectVideoThumbnail(media: OrderImage, event?: Event): void {
+    event?.stopPropagation();
     if (!this.isAuthenticated || !this.isVideo(media)) return;
     this.selectedVideoForThumbnail = media;
     this.showVideoPosterSelector = true;
   }
 
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
-    if (!this.order || !this.selectedVideoForThumbnail || !this.order.media) return;
-    
-    // Update the media item with the new thumbnail
-    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
-    if (mediaIndex !== -1 && this.order.media[mediaIndex]) {
-      this.order.media[mediaIndex].thumbnail = data.thumbnail;
-      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+    if (!this.order || !this.selectedVideoForThumbnail) return;
+
+    if (this.order.media) {
+      const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+      if (mediaIndex !== -1) {
+        this.order.media[mediaIndex].thumbnail = data.thumbnail;
+        this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+      }
     }
-    
-    // Reload order to get updated data
-    if (this.isAuthenticated && this.order._id) {
-      this.loadOrderById(this.order._id);
+
+    const folderIndex = this.folderMedia.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+    if (folderIndex !== -1) {
+      this.folderMedia[folderIndex].thumbnail = data.thumbnail;
+      this.folderMedia[folderIndex].thumbnailFilename = data.thumbnailFilename;
+    }
+
+    if (this.isAuthenticated && this.order._id && this.selectedFolder) {
+      this.selectFolder(this.selectedFolder);
     }
   }
 
@@ -331,7 +353,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
     // Reload order to get updated data with background image
     if (this.isAuthenticated && this.order._id) {
-      this.loadOrderById(this.order._id);
+      this.loadOrderById(this.order._id, false);
     }
   }
 
@@ -340,7 +362,117 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   getImageOnlyMedia(): OrderImage[] {
-    if (!this.order?.media) return [];
-    return this.order.media.filter(m => !this.isVideo(m));
+    if (!this.currentMedia) return [];
+    return this.currentMedia.filter(m => !this.isVideo(m));
+  }
+
+  exitFolderView(): void {
+    this.selectedFolder = null;
+    this.folderMediaError = '';
+    this.folderMediaLoading = false;
+
+    if (!this.isAuthenticated) {
+      this.folderMedia = this.order?.media || [];
+    } else {
+      this.folderMedia = [];
+    }
+  }
+
+  private loadFolders(orderId: string): void {
+    this.foldersLoading = true;
+    this.foldersError = '';
+    const previouslySelected = this.selectedFolder;
+    const hadSelection = !!previouslySelected;
+
+    this.ordersService.getOrderFolders(orderId).subscribe({
+      next: (response) => {
+        this.folders = response.folders || [];
+        this.foldersLoading = false;
+
+        if (!this.folders.length) {
+          this.selectedFolder = null;
+          this.folderMedia = [];
+          this.folderMediaLoading = false;
+          this.foldersInitialized = true;
+          return;
+        }
+
+        if (hadSelection && previouslySelected && this.folders.includes(previouslySelected)) {
+          this.selectFolder(previouslySelected);
+        } else if (!this.foldersInitialized) {
+          this.selectedFolder = null;
+          this.folderMedia = [];
+          this.folderMediaLoading = false;
+        }
+
+        this.foldersInitialized = true;
+      },
+      error: (err) => {
+        this.foldersLoading = false;
+        this.foldersError = err.error?.message || 'Failed to load folders';
+        console.error('Error loading folders:', err);
+      }
+    });
+  }
+
+  selectFolder(folderName: string): void {
+    if (!this.order?._id) return;
+    this.selectedFolder = folderName;
+    this.folderMediaError = '';
+
+    if (!this.isAuthenticated) {
+      const media = this.order?.media || [];
+      this.folderMedia = media.filter(item => item.foldername === folderName);
+      this.folderMediaLoading = false;
+      return;
+    }
+
+    this.folderMediaLoading = true;
+    this.folderMedia = [];
+
+    this.ordersService.getFolderMedia(this.order._id, folderName).subscribe({
+      next: (response) => {
+        this.folderMedia = response.media || [];
+        this.folderMediaLoading = false;
+      },
+      error: (err) => {
+        this.folderMediaLoading = false;
+        this.folderMediaError = err.error?.message || 'Failed to load folder media';
+        console.error('Error loading folder media:', err);
+      }
+    });
+  }
+
+  private buildClientFoldersFromMedia(): void {
+    if (this.isAuthenticated) {
+      return;
+    }
+
+    const media = this.order?.media || [];
+    if (!media.length) {
+      this.folders = [];
+      this.folderMedia = [];
+      this.selectedFolder = null;
+      this.foldersInitialized = true;
+      return;
+    }
+
+    const folderSet = new Set<string>();
+    media.forEach(item => {
+      if (item.foldername) {
+        folderSet.add(item.foldername);
+      }
+    });
+
+    this.folders = Array.from(folderSet);
+
+    if (this.folders.length === 0) {
+      this.folderMedia = media;
+    } else {
+      this.folderMedia = [];
+    }
+
+    this.foldersInitialized = true;
+    this.foldersLoading = false;
   }
 }

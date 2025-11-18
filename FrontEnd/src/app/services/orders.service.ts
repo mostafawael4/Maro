@@ -10,6 +10,7 @@ export interface OrderImage {
   _id?: string;
   thumbnail?: string;
   thumbnailFilename?: string;
+  foldername?: string | null;
 }
 
 export interface OrderFormVendors {
@@ -88,6 +89,19 @@ export interface SingleOrderResponse {
   order: Order;
 }
 
+export interface OrderFoldersResponse {
+  ok: boolean;
+  count: number;
+  folders: string[];
+}
+
+export interface FolderMediaResponse {
+  ok: boolean;
+  foldername: string;
+  count: number;
+  media: OrderImage[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -104,11 +118,20 @@ export class OrdersService {
     return this.http.get<any>(`${this.apiUrl}/${id}`, { withCredentials: true });
   }
 
-  uploadOrderImages(orderId: string, files: File[]): Observable<any> {
+  getOrderFolders(orderId: string): Observable<OrderFoldersResponse> {
+    return this.http.get<OrderFoldersResponse>(`${this.apiUrl}/folders/${orderId}`, { withCredentials: true });
+  }
+
+  getFolderMedia(orderId: string, folderName: string): Observable<FolderMediaResponse> {
+    return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+  }
+
+  uploadOrderImages(orderId: string, files: File[], folderName: string): Observable<any> {
     const formData = new FormData();
     files.forEach(file => {
       formData.append('media', file); // Changed from 'images' to 'media' to match backend
     });
+    formData.append('foldername', folderName);
     return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { withCredentials: true });
   }
 

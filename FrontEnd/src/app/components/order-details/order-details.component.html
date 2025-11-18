@@ -59,121 +59,51 @@
       </div>
     </div>
 
-    <!-- Media Gallery -->
-    <div class="images-gallery" *ngIf="order.media && order.media.length > 0">
-      <div class="gallery-header">
-        <div class="header-title-actions">
-          <h2>Order Media</h2>
-          <!-- Select Background Image Button (Admin Only) -->
-          <button 
-            *ngIf="isAuthenticated && getImageOnlyMedia().length > 0"
-            class="select-background-btn"
-            (click)="onSelectBackgroundImage()"
-            title="Select background image for this order"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <circle cx="8.5" cy="8.5" r="1.5"></circle>
-              <polyline points="21 15 16 10 5 21"></polyline>
-            </svg>
-            Set Background Image
-          </button>
-        </div>
-        <div class="filter-buttons">
-          <button 
-            class="filter-btn" 
-            [class.active]="mediaFilter === 'all'"
-            (click)="setMediaFilter('all')">
-            All ({{ (order.media || []).length }})
-          </button>
-          <button 
-            class="filter-btn" 
-            [class.active]="mediaFilter === 'images'"
-            (click)="setMediaFilter('images')">
-            Images ({{ getImagesCount() }})
-          </button>
-          <button 
-            class="filter-btn" 
-            [class.active]="mediaFilter === 'videos'"
-            (click)="setMediaFilter('videos')">
-            Videos ({{ getVideosCount() }})
-          </button>
-        </div>
-      </div>
-      <div class="gallery-grid">
-        <div *ngFor="let media of getFilteredMedia(); let i = index" class="gallery-item">
-          <!-- Video Player -->
-          <div *ngIf="isVideo(media)" class="video-wrapper">
-            <video 
-              [src]="getImageUrl(media)"
-              [poster]="getVideoThumbnailUrl(media)"
-              controls
-              preload="metadata"
-              (click)="openImageSlider(i); $event.stopPropagation()"
-              class="media-video">
-              Your browser does not support the video tag.
-            </video>
-            <!-- Thumbnail Selector Button (Admin Only) -->
-            <button 
-              *ngIf="isAuthenticated"
-              class="thumbnail-selector-btn" 
-              (click)="onSelectVideoThumbnail(media, $event)"
-              title="Select video thumbnail">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-            </button>
-          </div>
-          <!-- Image -->
-          <img 
-            *ngIf="!isVideo(media)"
-            [src]="getImageUrl(media)" 
-            [alt]="'Order media ' + (i + 1)" 
-            loading="lazy" 
-            (click)="openImageSlider(i)">
-          <div class="image-overlay">
-            <span class="image-filename">{{ media.filename }}</span>
-            <span class="image-date">{{ media.uploadedAt | date: 'short' }}</span>
-          </div>
-          <button class="download-btn" (click)="downloadImage(media, $event)" [title]="isVideo(media) ? 'Download video' : 'Download image'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-          </button>
-          <!-- Delete Button (Admin Only) -->
-          <button 
-            *ngIf="isAuthenticated"
-            class="delete-btn" 
-            (click)="onDeleteMediaClick(media, $event)" 
-            [title]="'Delete ' + (isVideo(media) ? 'video' : 'image')"
-            [disabled]="deletingMedia"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
+    <app-order-folder-panel
+      *ngIf="folders.length > 0 && !selectedFolder"
+      [folders]="folders"
+      [loading]="foldersLoading"
+      [error]="foldersError"
+      [selectedFolder]="selectedFolder"
+      (folderSelected)="selectFolder($event)">
+    </app-order-folder-panel>
 
-    <!-- Empty Media State -->
-    <div *ngIf="!order.media || order.media.length === 0" class="empty-images">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <path d="M21 15l-5-5L5 21"/>
-      </svg>
-      <h3>No Media Yet</h3>
-      <p>Photos and videos will be added to this order soon.</p>
-    </div>
-  </div>
+    <app-folder-media-view
+      *ngIf="selectedFolder"
+      [media]="currentMedia"
+      [loading]="folderMediaLoading"
+      [error]="folderMediaError"
+      [folderName]="selectedFolder"
+      [showStepper]="true"
+      [canGoBack]="folders.length > 0"
+      [isAuthenticated]="isAuthenticated"
+      [baseUrl]="baseUrl"
+      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
+      (back)="exitFolderView()"
+      (openMedia)="openImageSlider($event)"
+      (downloadMedia)="downloadImage($event)"
+      (deleteMedia)="onDeleteMediaClick($event)"
+      (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
+      (selectBackground)="onSelectBackgroundImage()">
+    </app-folder-media-view>
+
+    <app-folder-media-view
+      *ngIf="!selectedFolder && folders.length === 0"
+      [media]="currentMedia"
+      [loading]="loading && !isAuthenticated"
+      [error]="!isAuthenticated ? error : ''"
+      [canGoBack]="false"
+      [showStepper]="false"
+      [folderName]="null"
+      [baseUrl]="baseUrl"
+      [isAuthenticated]="isAuthenticated"
+      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
+      (openMedia)="openImageSlider($event)"
+      (downloadMedia)="downloadImage($event)"
+      (deleteMedia)="onDeleteMediaClick($event)"
+      (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
+      (selectBackground)="onSelectBackgroundImage()">
+    </app-folder-media-view>
 
   <!-- Image Slider -->
   <app-image-slider
