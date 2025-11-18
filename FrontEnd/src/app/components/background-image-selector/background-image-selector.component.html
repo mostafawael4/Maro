@@ -29,13 +29,13 @@
           [class.selected]="isSelected(image)"
           (click)="selectImage(image)"
         >
-          <img [src]="getImageUrl(image)" [alt]="image.filename" />
+          <img [src]="getImageUrl(image)" [alt]="getDisplayName(image)" />
           <div class="image-overlay">
             <svg *ngIf="isSelected(image)" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
-          <span class="image-filename">{{ image.filename }}</span>
+          <span class="image-filename">{{ getDisplayName(image) }}</span>
         </div>
       </div>
 

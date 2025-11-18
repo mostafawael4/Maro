@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpEventType } from '@angular/common/http';
 import { OrdersService, Order } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -34,6 +35,14 @@ export class OrdersComponent implements OnInit {
   showUploadResultModal: boolean = false;
   uploadResultMessage: string = '';
   uploadResultType: 'success' | 'error' = 'success';
+  uploadProgress: number = 0;
+  uploadProgressBytes: number = 0;
+  uploadTotalBytes: number = 0;
+  uploadStartTime: number = 0;
+  uploadElapsedTime: string = '0s';
+  uploadSpeed: string = '0 Bytes';
+  private uploadProgressInterval: any = null;
+  private uploadProgressSimulator: any = null;
   
   // For normal users
   showEmailModal = false;
@@ -55,7 +64,8 @@ export class OrdersComponent implements OnInit {
   constructor(
     private ordersService: OrdersService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -211,12 +221,19 @@ export class OrdersComponent implements OnInit {
   }
 
   closeUploadModal(): void {
+    this.stopUploadTimeTracking();
+    this.stopProgressSimulation();
     this.showUploadModal = false;
     this.uploadModalOrder = null;
     this.uploadFolderName = '';
     this.uploadFiles = [];
     this.uploadModalError = '';
     this.isDragOver = false;
+    this.uploadProgress = 0;
+    this.uploadProgressBytes = 0;
+    this.uploadTotalBytes = 0;
+    this.uploadElapsedTime = '0s';
+    this.uploadSpeed = '0 Bytes';
   }
 
   onFileInputChange(event: Event): void {
@@ -287,40 +304,125 @@ export class OrdersComponent implements OnInit {
     this.uploadingOrderId = orderId;
     this.uploadError = '';
     this.uploadSuccess = '';
+    
+    // Calculate total file size
+    this.uploadTotalBytes = files.reduce((total, file) => total + file.size, 0);
+    this.uploadProgressBytes = 0;
+    this.uploadProgress = 0;
+    this.uploadStartTime = Date.now();
+    this.uploadElapsedTime = '0s';
+    this.uploadSpeed = '0 Bytes';
+    
+    // Start time tracking
+    this.startUploadTimeTracking();
+    
+    // Start progress simulation as fallback (in case progress events don't fire)
+    this.startProgressSimulation();
 
     this.ordersService.uploadOrderImages(orderId, files, folderName).subscribe({
-      next: (response) => {
-        const successCount = response.added?.length || files.length;
-        const failedCount = response.failed?.length || 0;
+      next: (event: any) => {
+        console.log('Upload event:', event.type, event);
         
-        this.uploadingOrderId = null;
-        
-        // Close upload modal first
-        if (onSuccess) {
-          onSuccess();
-        }
-        
-        // Reload orders to update image count
-        this.loadOrders();
-        
-        // Show result modal
-        if (failedCount > 0) {
-          // Partial success
-          this.uploadResultType = 'success';
-          this.uploadResultMessage = `Successfully uploaded ${successCount} file(s). ${failedCount} file(s) failed to upload.`;
-          if (response.failed && response.failed.length > 0) {
-            const failedNames = response.failed.map((f: any) => f.filename || f.originalName).join(', ');
-            this.uploadResultMessage += `\n\nFailed files: ${failedNames}`;
+        // Handle progress events (type 1 = UploadProgress, type 3 = DownloadProgress which can also be used for upload)
+        if (event.type === HttpEventType.UploadProgress || (event.type === 3 && event.loaded !== undefined)) {
+          // Stop simulation since we have real progress
+          this.stopProgressSimulation();
+          if (event.total) {
+            this.uploadProgressBytes = event.loaded;
+            const calculatedProgress = Math.round((event.loaded / event.total) * 100);
+            // If loaded equals or exceeds total, we're at 100%
+            if (event.loaded >= event.total) {
+              this.uploadProgress = 100;
+              this.uploadProgressBytes = this.uploadTotalBytes;
+              console.log('Upload complete detected from progress event - setting to 100%');
+            } else {
+              this.uploadProgress = calculatedProgress;
+            }
+            this.updateUploadSpeed();
+            console.log(`Upload progress: ${this.uploadProgress}% (${this.uploadProgressBytes}/${event.total} bytes)`);
+            this.cdr.markForCheck();
           }
-        } else {
-          // Complete success
-          this.uploadResultType = 'success';
-          this.uploadResultMessage = `Successfully uploaded ${successCount} file(s)!`;
+        } 
+        // Handle Response event (type 4 = Response)
+        else if (event.type === HttpEventType.Response || event.type === 4) {
+          console.log('Response event received - upload complete');
+          // Stop simulation
+          this.stopProgressSimulation();
+          // Upload complete - ensure progress shows 100%
+          this.uploadProgress = 100;
+          this.uploadProgressBytes = this.uploadTotalBytes;
+          this.updateUploadSpeed();
+          this.cdr.markForCheck();
+          
+          // Small delay to show 100% before closing
+          setTimeout(() => {
+            this.stopUploadTimeTracking();
+            const response = event.body;
+            const successCount = response?.added?.length || 0;
+            const failedCount = response?.failed?.length || 0;
+            const duplicateCount = response?.duplicates?.length || 0;
+            
+            this.uploadingOrderId = null;
+          
+            // Close upload modal first
+            if (onSuccess) {
+              onSuccess();
+            }
+            
+            // Reload orders to update image count
+            this.loadOrders();
+            
+            // Build result message
+            let messageParts: string[] = [];
+            
+            if (successCount > 0) {
+              messageParts.push(`Successfully uploaded ${successCount} file(s)!`);
+            }
+            
+            if (duplicateCount > 0) {
+              const duplicateNames = response.duplicates.map((d: any) => d.originalName).join(', ');
+              messageParts.push(`${duplicateCount} file(s) skipped (already uploaded): ${duplicateNames}`);
+            }
+            
+            if (failedCount > 0) {
+              const failedNames = response.failed?.map((f: any) => f.filename || f.originalName).join(', ') || 'Unknown files';
+              messageParts.push(`${failedCount} file(s) failed to upload: ${failedNames}`);
+            }
+            
+            // If all files were duplicates
+            if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
+              this.uploadResultType = 'error';
+              this.uploadResultMessage = response?.message || `All ${duplicateCount} file(s) are already uploaded in this folder.`;
+            } else if (failedCount > 0 || (successCount === 0 && duplicateCount === 0)) {
+              // Partial success or complete failure
+              this.uploadResultType = successCount > 0 ? 'success' : 'error';
+              this.uploadResultMessage = messageParts.join('\n\n');
+            } else {
+              // Complete success (with or without duplicates)
+              this.uploadResultType = 'success';
+              this.uploadResultMessage = messageParts.join('\n\n');
+            }
+            
+            this.showUploadResultModal = true;
+          }, 500); // Increased delay to ensure 100% is visible
         }
-        this.showUploadResultModal = true;
+        // Handle any other event that might indicate completion
+        else if (event.body && event.ok !== undefined) {
+          // This might be a response wrapped differently
+          console.log('Alternative response format detected - setting to 100%');
+          this.stopProgressSimulation();
+          this.uploadProgress = 100;
+          this.uploadProgressBytes = this.uploadTotalBytes;
+          this.updateUploadSpeed();
+          this.cdr.markForCheck();
+        }
       },
       error: (err) => {
+        this.stopUploadTimeTracking();
+        this.stopProgressSimulation();
         this.uploadingOrderId = null;
+        this.uploadProgress = 0;
+        this.uploadSpeed = '0 Bytes';
         console.error('Error uploading images:', err);
         
         // Close upload modal
@@ -332,8 +434,97 @@ export class OrdersComponent implements OnInit {
         this.uploadResultType = 'error';
         this.uploadResultMessage = err.error?.message || 'Failed to upload images. Please try again.';
         this.showUploadResultModal = true;
+      },
+      complete: () => {
+        // This is called when the observable completes
+        // Ensure progress is at 100% if upload was successful
+        console.log('Upload observable completed');
+        if (this.uploadingOrderId === orderId && this.uploadProgress < 100) {
+          console.log('Forcing progress to 100% on completion');
+          this.uploadProgress = 100;
+          this.uploadProgressBytes = this.uploadTotalBytes;
+          this.updateUploadSpeed();
+          this.cdr.markForCheck();
+        }
       }
     });
+  }
+
+  startUploadTimeTracking(): void {
+    this.uploadProgressInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - this.uploadStartTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      const newTime = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+      if (this.uploadElapsedTime !== newTime) {
+        this.uploadElapsedTime = newTime;
+        this.updateUploadSpeed();
+        this.cdr.markForCheck();
+      }
+    }, 100);
+  }
+
+  stopUploadTimeTracking(): void {
+    if (this.uploadProgressInterval) {
+      clearInterval(this.uploadProgressInterval);
+      this.uploadProgressInterval = null;
+    }
+  }
+
+  startProgressSimulation(): void {
+    // Simulate progress if real progress events don't fire
+    let simulatedProgress = 0;
+    this.uploadProgressSimulator = setInterval(() => {
+      // Stop if upload is complete or cancelled
+      if (this.uploadProgress >= 100 || this.uploadingOrderId === null) {
+        this.stopProgressSimulation();
+        return;
+      }
+      
+      // Only simulate if we haven't received real progress and haven't reached 95%
+      if (this.uploadProgress < 95 && this.uploadingOrderId !== null) {
+        // Gradually increase progress up to 95% (leave room for completion)
+        simulatedProgress += 1.5;
+        if (simulatedProgress > 95) simulatedProgress = 95;
+        
+        // Only update if we haven't received real progress
+        if (this.uploadProgress < simulatedProgress) {
+          this.uploadProgress = Math.round(simulatedProgress);
+          this.uploadProgressBytes = Math.round((this.uploadTotalBytes * simulatedProgress) / 100);
+          this.updateUploadSpeed();
+          this.cdr.markForCheck();
+        }
+      }
+    }, 150);
+  }
+
+  stopProgressSimulation(): void {
+    if (this.uploadProgressSimulator) {
+      clearInterval(this.uploadProgressSimulator);
+      this.uploadProgressSimulator = null;
+    }
+  }
+
+  formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  updateUploadSpeed(): void {
+    if (this.uploadProgressBytes === 0 || this.uploadStartTime === 0) {
+      this.uploadSpeed = '0 Bytes';
+      return;
+    }
+    const elapsedSeconds = (Date.now() - this.uploadStartTime) / 1000;
+    if (elapsedSeconds === 0) {
+      this.uploadSpeed = '0 Bytes';
+      return;
+    }
+    const bytesPerSecond = this.uploadProgressBytes / elapsedSeconds;
+    this.uploadSpeed = this.formatBytes(Math.round(bytesPerSecond));
   }
 
   closeUploadResultModal(): void {

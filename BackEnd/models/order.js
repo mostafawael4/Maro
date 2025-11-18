@@ -16,6 +16,7 @@ const OrderSchema = new mongoose.Schema({
   media: [{ 
     foldername:{ type: String },
     filename: String, 
+    originalName: { type: String }, // Original filename before upload
     url: String, 
     uploadedAt: Date,
     thumbnail: { type: String, default: null }, // Thumbnail URL for videos

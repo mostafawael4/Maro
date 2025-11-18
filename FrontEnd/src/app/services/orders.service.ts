@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface OrderImage {
   filename: string;
+  originalName?: string; // Original filename before upload
   url: string;
   uploadedAt: string;
   _id?: string;
@@ -140,7 +141,11 @@ export class OrdersService {
       formData.append('media', file); // Changed from 'images' to 'media' to match backend
     });
     formData.append('foldername', folderName);
-    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { withCredentials: true });
+    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { 
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
   getOrdersByEmail(email: string): Observable<SingleOrderResponse> {

@@ -207,8 +207,46 @@ router.post(
         logger.info(`Uploading ${files.length} files to order ${orderId}`);
       }
 
+      // Check for duplicates before uploading
+      const existingMedia = order.media || [];
+      const duplicates = [];
+      const filesToUpload = [];
+
+      files.forEach((f) => {
+        // Check if a file with the same original name and folder already exists
+        const isDuplicate = existingMedia.some(
+          (existing) =>
+            existing.originalName === f.originalname &&
+            (existing.foldername || null) === (foldername || null)
+        );
+
+        if (isDuplicate) {
+          duplicates.push({
+            originalName: f.originalname,
+            foldername: foldername || null,
+          });
+          logger.info(
+            `Duplicate file detected: "${f.originalname}" in folder "${foldername || 'root'}" for order ${orderId}`
+          );
+        } else {
+          filesToUpload.push(f);
+        }
+      });
+
+      // If all files are duplicates, return early
+      if (filesToUpload.length === 0) {
+        return res.json({
+          ok: true,
+          added: [],
+          duplicates: duplicates,
+          message: duplicates.length === 1
+            ? `File "${duplicates[0].originalName}" is already uploaded in this folder.`
+            : `All ${duplicates.length} file(s) are already uploaded in this folder.`,
+        });
+      }
+
       // Save each file using the uploadService
-      const fileObjs = await Promise.all(files.map(async (f) => {
+      const fileObjs = await Promise.all(filesToUpload.map(async (f) => {
         const url = uploadService.saveFile(orderId, f.buffer, f.originalname, {
           isGallery: false,
           isFilm: false,
@@ -220,6 +258,7 @@ router.post(
         const fileObj = {
           foldername: foldername || null,
           filename: url.split("/").pop(),
+          originalName: f.originalname, // Store original filename
           url,
           uploadedAt: new Date(),
         };
@@ -249,7 +288,19 @@ router.post(
           .map((f) => f.filename)
           .join(", ")}]`
       );
-      return res.json({ ok: true, added: fileObjs, order });
+      
+      // Build response with added files and duplicates info
+      const response = {
+        ok: true,
+        added: fileObjs,
+        duplicates: duplicates.length > 0 ? duplicates : undefined,
+      };
+
+      if (duplicates.length > 0) {
+        response.message = `${fileObjs.length} file(s) uploaded successfully. ${duplicates.length} file(s) were skipped as duplicates.`;
+      }
+
+      return res.json(response);
     } catch (err) {
       logger.error(
         `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`

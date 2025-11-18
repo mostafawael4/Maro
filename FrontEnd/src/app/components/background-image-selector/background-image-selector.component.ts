@@ -33,6 +33,11 @@ export class BackgroundImageSelectorComponent {
     return `${this.baseUrl}${image.url}`;
   }
 
+  getDisplayName(image: OrderImage): string {
+    // Return originalName if available, otherwise fall back to filename
+    return image.originalName || image.filename;
+  }
+
   isSelected(image: OrderImage): boolean {
     return image.filename === this.currentBackgroundImage?.split('/').pop() || 
            image.filename === this.selectedImageFilename;

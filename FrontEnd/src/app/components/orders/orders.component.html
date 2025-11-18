@@ -90,6 +90,23 @@
 
       <p class="upload-modal-error" *ngIf="uploadModalError">{{ uploadModalError }}</p>
 
+      <!-- Upload Progress -->
+      <div *ngIf="uploadingOrderId === uploadModalOrder?._id" class="upload-progress-container">
+        <div class="progress-header">
+          <span class="progress-percentage">{{ uploadProgress }}%</span>
+          <span class="progress-time">{{ uploadElapsedTime }}</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-size">{{ formatBytes(uploadProgressBytes) }} / {{ formatBytes(uploadTotalBytes) }}</span>
+          <span class="progress-speed" *ngIf="uploadProgress > 0 && uploadElapsedTime !== '0s'">
+            {{ uploadSpeed }}/s
+          </span>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button class="btn-cancel" (click)="closeUploadModal()" [disabled]="uploadingOrderId === uploadModalOrder?._id">Cancel</button>
         <button 

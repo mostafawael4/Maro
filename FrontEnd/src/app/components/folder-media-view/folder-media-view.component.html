@@ -84,12 +84,12 @@
       <img 
         *ngIf="!isVideo(mediaItem)"
         [src]="getImageUrl(mediaItem)" 
-        [alt]="'Order media ' + (i + 1)" 
+        [alt]="getDisplayName(mediaItem)" 
         loading="lazy" 
         (click)="onOpenMedia(i)">
 
       <div class="image-overlay">
-        <span class="image-filename">{{ mediaItem.filename }}</span>
+        <span class="image-filename">{{ getDisplayName(mediaItem) }}</span>
         <span class="image-date">{{ mediaItem.uploadedAt | date: 'short' }}</span>
       </div>
 

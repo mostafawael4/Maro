@@ -59,6 +59,11 @@ export class FolderMediaViewComponent {
     return `${this.baseUrl}${image.thumbnail}`;
   }
 
+  getDisplayName(image: OrderImage): string {
+    // Return originalName if available, otherwise fall back to filename
+    return image.originalName || image.filename;
+  }
+
   isVideo(file: OrderImage): boolean {
     if (!file.filename) return false;
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
