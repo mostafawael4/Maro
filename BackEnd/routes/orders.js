@@ -473,4 +473,47 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
   }
 });
 
+// PUT /orders/:orderId/background-image - admin only: set background image from order's media
+router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filename } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ ok: false, message: "orderId is required" });
+    }
+
+    if (!filename) {
+      return res.status(400).json({ ok: false, message: "filename is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    const orderMedia = order.media
+
+    const mediaItem = orderMedia.find(item => item.filename === filename);
+    if (!mediaItem) {
+      logger.warn(`Filename "${filename}" not found in media for order ${orderId}`);
+      return res.status(404).json({ ok: false, message: "Media file not found in this order" });
+    }
+
+    // Update the order's background image
+    order.orderBackground.image = mediaItem.url;
+    order.orderBackground.filename = filename;
+    await order.save();
+
+    logger.info(`Background image set for order ${orderId}: ${filename}`);
+    return res.json({ 
+      ok: true, 
+      orderBackground: order.orderBackground
+    });
+  } catch (err) {
+    logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+});
+
 module.exports = router;

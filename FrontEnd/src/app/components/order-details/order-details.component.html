@@ -62,7 +62,23 @@
     <!-- Media Gallery -->
     <div class="images-gallery" *ngIf="order.media && order.media.length > 0">
       <div class="gallery-header">
-        <h2>Order Media</h2>
+        <div class="header-title-actions">
+          <h2>Order Media</h2>
+          <!-- Select Background Image Button (Admin Only) -->
+          <button 
+            *ngIf="isAuthenticated && getImageOnlyMedia().length > 0"
+            class="select-background-btn"
+            (click)="onSelectBackgroundImage()"
+            title="Select background image for this order"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            Set Background Image
+          </button>
+        </div>
         <div class="filter-buttons">
           <button 
             class="filter-btn" 
@@ -177,4 +193,14 @@
     (thumbnailSelected)="onThumbnailSelected($event)"
     (close)="onCloseVideoPosterSelector()">
   </app-video-poster-selector>
+
+  <!-- Background Image Selector Modal -->
+  <app-background-image-selector
+    *ngIf="showBackgroundImageSelector && order"
+    [orderId]="order._id"
+    [images]="getImageOnlyMedia()"
+    [currentBackgroundImage]="order.orderBackground?.image"
+    (imageSelected)="onBackgroundImageSelected($event)"
+    (close)="onCloseBackgroundImageSelector()">
+  </app-background-image-selector>
 </div>

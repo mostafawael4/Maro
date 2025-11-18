@@ -88,12 +88,22 @@ export class OrdersComponent implements OnInit {
   }
 
   getFirstImage(order: Order): string {
-    if (order.media && order.media.length > 0) {
-      // Media are now objects with filename property
-      const firstImage = order.media[0];
-      return `${this.baseUrl}${firstImage.url}`;
+    // Use order.orderBackground.image if present (newer orders)
+    if (order.orderBackground && order.orderBackground.image) {
+      return `${this.baseUrl}${order.orderBackground.image}`;
     }
-    return 'assets/images/placeholder.jpg'; // Default placeholder
+    // Otherwise, use the first image from media array if exists and is an image
+    if (order.media && order.media.length > 0) {
+      // Prefer images (not videos) for order preview
+      const firstImage = order.media.find(m => !m.url?.match(/\.(mp4|mov|webm)$/i));
+      if (firstImage) {
+        return `${this.baseUrl}${firstImage.url}`;
+      }
+      // Fall back to first media if all are videos
+      return `${this.baseUrl}${order.media[0].url}`;
+    }
+    // Default placeholder if nothing available
+    return 'assets/images/placeholder.jpg';
   }
 
   openOrderDetails(orderId: string): void {
