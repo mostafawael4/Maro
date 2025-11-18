@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './admin.component.scss'
 })
 export class AdminComponent implements OnInit, AfterViewInit {
+  username: string = '';
   password: string = '';
   errorMessage: string = '';
   isLoading: boolean = false;
@@ -49,15 +50,18 @@ export class AdminComponent implements OnInit, AfterViewInit {
   }
 
   onSubmit(): void {
-    if (!this.password.trim()) {
-      this.errorMessage = 'Please enter a password';
+    const trimmedUsername = this.username.trim();
+    const trimmedPassword = this.password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      this.errorMessage = 'Please enter both username and password';
       return;
     }
 
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.password).subscribe({
+    this.authService.login(trimmedUsername, trimmedPassword).subscribe({
       next: (response) => {
         if (response.ok) {
           this.isLoading = false;

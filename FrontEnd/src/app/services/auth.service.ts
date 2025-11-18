@@ -63,8 +63,8 @@ export class AuthService {
     return this.isAuthenticatedSubject.value;
   }
 
-  login(password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, { password }, { withCredentials: true })
+  login(username: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/login`, { username, password }, { withCredentials: true })
       .pipe(
         tap((response: any) => {
           if (response.ok) {
