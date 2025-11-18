@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const Order = require("../models/order");
-const { requireAdminAuth } = require("../middleware/auth");
-const uploadService = require("../services/upload.service");
+const Order = require("../../models/order.js");
+const { requireAdminAuth } = require("../../middleware/auth.js");
+const uploadService = require("../../services/upload.service.js");
 const multer = require("multer");
-const allowedExtensions = require("../config/allowed_extensions.json");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../services/order.service");
-const { extractOrderVideoThumbnail, getVideoDuration } = require("../services/videoThumbnail.service");
-const Credentials  = require('../config/Credentials.js');
+const allowedExtensions = require("../../config/allowed_extensions.json");
+const logger = require("../../utils/logger.js");
+const { handleMulterErrors } = require("../../middleware/upload.js").default;
+const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
+const { extractOrderVideoThumbnail, getVideoDuration } = require("../../services/videoThumbnail.service.js");
+const Credentials  = require('../../config/Credentials.js');
 
 
 // POST /orders - create a new order (public)
@@ -515,5 +515,7 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error", error: err.message });
   }
 });
+
+
 
 module.exports = router;
