@@ -8,8 +8,11 @@ const OrderSchema = new mongoose.Schema({
   clientName: { type: String },
   notes: { type: String },
   status: { type: String, enum: ['pending','in-progress','done'], default: 'pending' },
-  backgroundImage: { type: String, default: null }, // Background image URL for order
-  backgroundImageFilename: { type: String, default: null }, // Background image filename
+  orderBackground: {
+    image: { type: String, default: null }, // Background image URL for order
+    filename: { type: String, default: null }, // Background image filename
+    selectedAt: { type: Date, default: Date.now },
+  },
   media: [{ 
     filename: String, 
     url: String, 

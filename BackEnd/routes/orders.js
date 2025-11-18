@@ -419,29 +419,23 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    // Verify that the filename exists in the order's media (must be an image, not video)
-    const mediaItem = order.media.find(m => m.filename === filename);
-    if (!mediaItem) {
-      return res.status(404).json({ ok: false, message: "File not found in order media" });
-    }
+    const orderMedia = order.media
 
-    // Check if it's an image (not a video)
-    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv', '.m4v'];
-    const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
-    if (videoExtensions.includes(ext)) {
-      return res.status(400).json({ ok: false, message: "Background image must be an image file, not a video" });
+    const mediaItem = orderMedia.find(item => item.filename === filename);
+    if (!mediaItem) {
+      logger.warn(`Filename "${filename}" not found in media for order ${orderId}`);
+      return res.status(404).json({ ok: false, message: "Media file not found in this order" });
     }
 
     // Update the order's background image
-    order.backgroundImage = mediaItem.url;
-    order.backgroundImageFilename = filename;
+    order.orderBackground.image = mediaItem.url;
+    order.orderBackground.filename = filename;
     await order.save();
 
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({ 
       ok: true, 
-      backgroundImage: order.backgroundImage,
-      backgroundImageFilename: order.backgroundImageFilename
+      orderBackground: order.orderBackground
     });
   } catch (err) {
     logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
