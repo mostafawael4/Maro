@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const adminRoutes = require('./admin');
-const orderRoutes = require('./orders');
+const orderRoutes = require('./Orders/orders');
 const logsRoutes = require('./logs');
 const galleryRoutes = require('./gallery');
 const filmsRoutes = require('./films');
