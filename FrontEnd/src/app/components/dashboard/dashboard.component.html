@@ -123,6 +123,30 @@
                   </svg>
                   Delete
                 </button>
+                <button 
+                  (click)="sendOrderCompletionEmail(order)"
+                  class="view-btn email-btn"
+                  title="Send ready email to client"
+                  [disabled]="sendingEmail[order._id] || order.status !== 'done'"
+                >
+                  <ng-container *ngIf="!sendingEmail[order._id]; else sendingState">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                      <polyline points="3 5 12 13 21 5"></polyline>
+                    </svg>
+                    Email
+                  </ng-container>
+                  <ng-template #sendingState>
+                    <span class="btn-spinner"></span>
+                    Sending...
+                  </ng-template>
+                </button>
+              </div>
+              <div class="email-status" *ngIf="emailStatus[order._id]">
+                <span [class.success]="emailStatus[order._id].type === 'success'"
+                      [class.error]="emailStatus[order._id].type === 'error'">
+                  {{ emailStatus[order._id].message }}
+                </span>
               </div>
             </div>
           </td>

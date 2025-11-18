@@ -19,6 +19,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   updatingOrderId: string | null = null;
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
+  sendingEmail: { [orderId: string]: boolean } = {};
+  emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -83,6 +85,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/order-details', orderId]);
   }
 
+  sendOrderCompletionEmail(order: Order): void {
+    if (!order._id) {
+      return;
+    }
+
+    if (order.status !== 'done') {
+      this.emailStatus[order._id] = {
+        type: 'error',
+        message: 'Mark order as done before emailing.'
+      };
+      this.clearEmailStatus(order._id);
+      return;
+    }
+
+    this.sendingEmail[order._id] = true;
+    delete this.emailStatus[order._id];
+
+    this.ordersService.sendOrderCompletionEmail(order._id).subscribe({
+      next: (response) => {
+        this.sendingEmail[order._id] = false;
+        this.emailStatus[order._id] = {
+          type: 'success',
+          message: response?.message || 'Email sent to client.'
+        };
+        this.clearEmailStatus(order._id);
+      },
+      error: (err) => {
+        this.sendingEmail[order._id] = false;
+        this.emailStatus[order._id] = {
+          type: 'error',
+          message: err.error?.message || 'Failed to send email.'
+        };
+        this.clearEmailStatus(order._id);
+      }
+    });
+  }
+
   getStatusClass(status: string): string {
     switch (status) {
       case 'pending':
@@ -139,5 +178,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }, 5000);
       }
     });
+  }
+
+  private clearEmailStatus(orderId: string): void {
+    setTimeout(() => {
+      delete this.emailStatus[orderId];
+    }, 4000);
   }
 }

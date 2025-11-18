@@ -523,6 +523,13 @@
   background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
 }
 
+// Email Icon
+.email-icon {
+  bottom: 12px;
+  left: 12px;
+  background: linear-gradient(135deg, #0F9D58 0%, #0B7A43 100%);
+}
+
 .mini-spinner {
   width: 22px;
   height: 22px;
@@ -606,6 +613,34 @@
     font-style: italic;
     margin: 0;
     font-family: 'Georgia', serif;
+  }
+}
+
+.email-status {
+  margin-top: 0.5rem;
+  width: 100%;
+  text-align: center;
+
+  span {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .success {
+    background: rgba(40, 167, 69, 0.1);
+    color: #1f7a36;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+  }
+
+  .error {
+    background: rgba(220, 38, 38, 0.08);
+    color: #b91c1c;
+    border: 1px solid rgba(220, 38, 38, 0.3);
   }
 }
 

@@ -224,6 +224,21 @@
             </svg>
           </button>
 
+          <!-- Email Icon -->
+          <button 
+            class="action-icon email-icon"
+            (click)="sendOrderCompletionEmail(order, $event)"
+            [disabled]="sendingEmail[order._id] || order.status !== 'done'"
+            title="Send ready email to client"
+          >
+            <svg *ngIf="!sendingEmail[order._id]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16v16H4z" fill="none"></path>
+              <polyline points="4 4 12 11 20 4"></polyline>
+              <path d="M4 20h16V8"></path>
+            </svg>
+            <div *ngIf="sendingEmail[order._id]" class="mini-spinner"></div>
+          </button>
+
           <!-- Order Circle Content -->
           <div 
             class="order-circle-content"
@@ -241,6 +256,13 @@
         <div class="order-info-below">
           <h3 class="groom-name">{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h3>
           <p class="event-date" *ngIf="order.orderForm?.eventDate">{{ formatEventDate(order.orderForm?.eventDate || '') }}</p>
+        </div>
+
+        <div class="email-status" *ngIf="emailStatus[order._id]">
+          <span [class.success]="emailStatus[order._id].type === 'success'"
+                [class.error]="emailStatus[order._id].type === 'error'">
+            {{ emailStatus[order._id].message }}
+          </span>
         </div>
 
         <!-- Feedback Section -->

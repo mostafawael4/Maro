@@ -46,6 +46,8 @@ export class OrdersComponent implements OnInit {
   submittingFeedback: { [orderId: string]: boolean } = {};
   feedbackSuccess: { [orderId: string]: string } = {};
   feedbackError: { [orderId: string]: string } = {};
+  sendingEmail: { [orderId: string]: boolean } = {};
+  emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
 
   constructor(
     private ordersService: OrdersService,
@@ -150,6 +152,50 @@ export class OrdersComponent implements OnInit {
   onUploadClick(event: Event, order: Order): void {
     event.stopPropagation(); // Prevent opening order details
     this.openUploadModal(order);
+  }
+
+  sendOrderCompletionEmail(order: Order, event: Event): void {
+    event.stopPropagation();
+    if (!order._id) {
+      return;
+    }
+
+    if (order.status !== 'done') {
+      this.emailStatus[order._id] = {
+        type: 'error',
+        message: 'Mark order as done before emailing.'
+      };
+      this.clearEmailStatus(order._id);
+      return;
+    }
+
+    this.sendingEmail[order._id] = true;
+    delete this.emailStatus[order._id];
+
+    this.ordersService.sendOrderCompletionEmail(order._id).subscribe({
+      next: (response) => {
+        this.sendingEmail[order._id] = false;
+        this.emailStatus[order._id] = {
+          type: 'success',
+          message: response?.message || 'Email sent to client.'
+        };
+        this.clearEmailStatus(order._id);
+      },
+      error: (err) => {
+        this.sendingEmail[order._id] = false;
+        this.emailStatus[order._id] = {
+          type: 'error',
+          message: err.error?.message || 'Failed to send email.'
+        };
+        this.clearEmailStatus(order._id);
+      }
+    });
+  }
+
+  private clearEmailStatus(orderId: string): void {
+    setTimeout(() => {
+      delete this.emailStatus[orderId];
+    }, 4000);
   }
 
   openUploadModal(order: Order): void {

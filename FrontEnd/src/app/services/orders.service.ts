@@ -126,6 +126,10 @@ export class OrdersService {
     return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
   }
 
+  sendOrderCompletionEmail(orderId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/emails/${orderId}`, {}, { withCredentials: true });
+  }
+
   uploadOrderImages(orderId: string, files: File[], folderName: string): Observable<any> {
     const formData = new FormData();
     files.forEach(file => {
