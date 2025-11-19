@@ -23,7 +23,12 @@
           {{ folderName ? (folderName | titlecase) + ' Folder' : 'Order Media' }}
         </h2>
         <p class="folder-subtitle" *ngIf="folderName">
-          {{ media.length }} {{ media.length === 1 ? 'item' : 'items' }}
+          <span *ngIf="searchTerm.trim(); else totalCount">
+            {{ filteredMedia.length }} of {{ media.length }} {{ media.length === 1 ? 'item' : 'items' }}
+          </span>
+          <ng-template #totalCount>
+            {{ media.length }} {{ media.length === 1 ? 'item' : 'items' }}
+          </ng-template>
         </p>
       </div>
       <button 
@@ -39,6 +44,33 @@
         </svg>
         Set Background Image
       </button>
+    </div>
+    
+    <!-- Search Input -->
+    <div class="search-container" *ngIf="hasMedia">
+      <div class="search-input-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm"
+          placeholder="Search media by name..."
+          class="search-input"
+        />
+        <button 
+          *ngIf="searchTerm.trim()" 
+          class="clear-search-btn"
+          (click)="searchTerm = ''"
+          title="Clear search"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -56,8 +88,8 @@
     <p>{{ error }}</p>
   </div>
 
-  <div class="gallery-grid" *ngIf="!loading && !error && hasMedia">
-    <div *ngFor="let mediaItem of media; let i = index" class="gallery-item">
+  <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia">
+    <div *ngFor="let mediaItem of filteredMedia; let i = index" class="gallery-item">
       <div *ngIf="isVideo(mediaItem)" class="video-wrapper">
         <video 
           [src]="getImageUrl(mediaItem)"
@@ -129,6 +161,16 @@
     <ng-template #noFolder>
       <p>Photos and videos will be added to this order soon.</p>
     </ng-template>
+  </div>
+
+  <div *ngIf="!loading && !error && hasMedia && !hasFilteredMedia" class="empty-images">
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+    <h3>No Results Found</h3>
+    <p>No media found matching "{{ searchTerm }}"</p>
+    <button class="clear-search-link" (click)="searchTerm = ''">Clear search</button>
   </div>
 </div>
 
