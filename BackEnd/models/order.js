@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const OrderFormSchema = require('./orderForm')
-const FeedbackSchema = require('./feedback')
+const FeedbackSchema = require('./orderFeedback')
 
 const OrderSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
