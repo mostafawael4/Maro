@@ -10,6 +10,7 @@ const allowedExtensions = require("../../config/allowed_extensions.json");
 const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
+const Credentials = require('../../config/Credentials.js')
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -396,8 +397,34 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     const { timeInSeconds } = req.body; // Time in seconds (default: 1)
 
     const order = await Order.findById(orderId);
-    
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
     const thumbnailResult = await extractThumbnailService(orderId, filename, timeInSeconds);
+
+    // Update the video file in the order with the new thumbnail
+    const mediaIndex = order.media.findIndex(m => m.filename === filename);
+    if (mediaIndex !== -1) {
+      // Delete old thumbnail if exists
+      if (order.media[mediaIndex].thumbnailFilename) {
+        const path = require("path");
+        const fs = require("fs");
+        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
+        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
+        if (fs.existsSync(oldThumbPath)) {
+          try {
+            fs.unlinkSync(oldThumbPath);
+          } catch (err) {
+            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+          }
+        }
+      }
+
+      order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
+      order.media[mediaIndex].thumbnailFilename = thumbnailResult.thumbnailFilename;
+      await order.save();
+    }
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
     return res.json({ 
