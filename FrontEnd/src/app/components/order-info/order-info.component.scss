@@ -218,6 +218,17 @@
     padding-top: 0.75rem;
     font-size: 1.2rem;
   }
+
+  &.remaining {
+    border-top: 1px solid rgba(139, 58, 58, 0.15);
+    padding-top: 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+
+    strong {
+      color: #4a4a4a;
+    }
+  }
 }
 
 .promo-chip {

@@ -163,7 +163,40 @@ const normalizePricingSelections = async (pricingInput = {}) => {
     }
   }
 
-  if (packagesMap.size === 0 && collections.length === 0 && extras.length === 0 && !promoCode) {
+  const rawDeposit = parsePriceValue(pricingInput.depositPaid);
+  let depositPaid = rawDeposit > 0 ? rawDeposit : 0;
+
+  let total = subtotal - discount;
+  if (!Number.isFinite(total) || total < 0) {
+    total = 0;
+  }
+  // Fallback to provided total if no selections contributed to subtotal
+  if (total === 0 && pricingInput.total !== undefined && pricingInput.total !== null) {
+    const providedTotal = parsePriceValue(pricingInput.total);
+    if (Number.isFinite(providedTotal) && providedTotal > 0) {
+      total = providedTotal;
+    }
+  }
+
+  if (depositPaid > total) {
+    depositPaid = total;
+  }
+  const remainingBalance = Math.max(total - depositPaid, 0);
+
+  const hasPricingNumbers =
+    subtotal > 0 ||
+    discount > 0 ||
+    total > 0 ||
+    depositPaid > 0 ||
+    (pricingInput.remainingBalance !== undefined && pricingInput.remainingBalance !== null);
+
+  if (
+    packagesMap.size === 0 &&
+    collections.length === 0 &&
+    extras.length === 0 &&
+    !promoCode &&
+    !hasPricingNumbers
+  ) {
     return undefined;
   }
 
@@ -182,10 +215,16 @@ const normalizePricingSelections = async (pricingInput = {}) => {
     normalized.promoCode = promoCode;
   }
 
-  if (subtotal > 0 || discount > 0) {
+  if (subtotal > 0 || discount > 0 || total > 0) {
     normalized.subtotal = subtotal;
     normalized.discount = discount;
-    normalized.total = subtotal - discount;
+    normalized.total = total;
+  }
+  if (depositPaid > 0) {
+    normalized.depositPaid = depositPaid;
+    normalized.remainingBalance = remainingBalance;
+  } else if (total > 0 && remainingBalance >= 0) {
+    normalized.remainingBalance = remainingBalance;
   }
 
   return normalized;

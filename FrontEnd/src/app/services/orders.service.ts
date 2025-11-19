@@ -69,6 +69,8 @@ export interface OrderPricing {
   subtotal?: number;
   discount?: number;
   total?: number;
+  depositPaid?: number;
+  remainingBalance?: number;
 }
 
 export interface OrderForm {

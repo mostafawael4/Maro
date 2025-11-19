@@ -115,4 +115,23 @@ export class OrderInfoComponent implements OnInit {
 
     return hasPackages || hasCollections || hasExtras;
   }
+
+  getDepositPaid(pricing?: OrderPricing | null): number {
+    if (!pricing || pricing.depositPaid === undefined || pricing.depositPaid === null) {
+      return 0;
+    }
+    return pricing.depositPaid;
+  }
+
+  getRemainingBalance(pricing?: OrderPricing | null): number {
+    if (!pricing) {
+      return 0;
+    }
+    if (pricing.remainingBalance !== undefined && pricing.remainingBalance !== null) {
+      return pricing.remainingBalance;
+    }
+    const total = pricing.total ?? 0;
+    const deposit = this.getDepositPaid(pricing);
+    return Math.max(total - deposit, 0);
+  }
 }

@@ -144,6 +144,60 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  getBrideAndGroomName(order: Order): string {
+    if (!order) {
+      return '—';
+    }
+
+    const rawNames =
+      order.orderForm?.brideAndGroomNames ||
+      order.orderForm?.coupleDescription ||
+      order.clientName ||
+      '';
+
+    const cleaned = rawNames.replace(/\s+/g, ' ').trim();
+    if (!cleaned) {
+      return order.clientName || '—';
+    }
+
+    // If the names are already in a combined format, return as is
+    // Otherwise, try to split and format them
+    const parts = cleaned
+      .split(/&|and|\/|\+|,|x/i)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      // Return both names formatted nicely
+      return `${parts[0]} & ${parts[1]}`;
+    }
+
+    // If only one name or couldn't split, return the original
+    return cleaned;
+  }
+
+  getEventDate(order: Order): string | null {
+    const eventDate = order.orderForm?.eventDate;
+    if (!eventDate) {
+      return null;
+    }
+
+    const parsedDate = new Date(eventDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return eventDate;
+    }
+
+    return parsedDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  getMediaCount(order: Order): number {
+    return (order.media || []).length;
+  }
+
   onDeleteClick(orderId: string): void {
     this.orderIdToDelete = orderId;
     this.showDeleteModal = true;

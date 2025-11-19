@@ -29,11 +29,15 @@ export class CreateOrderComponent implements OnInit {
   pricingSummary = {
     subtotal: 0,
     discount: 0,
-    total: 0
+    total: 0,
+    remaining: 0
   };
   appliedPromoCode: string | null = null;
   promoError = '';
   promoSuccess = '';
+  packageSelectionError = 'Please select at least one package.';
+  collectionSelectionError = '';
+  depositError = '';
 
   private readonly PROMO_CODES: Record<string, number> = {
     maro1000: 1000,
@@ -74,6 +78,7 @@ export class CreateOrderComponent implements OnInit {
     private router: Router
   ) {
     this.orderForm = this.createForm();
+    this.updateVendorControlStates();
   }
 
   ngOnInit(): void {
@@ -84,56 +89,57 @@ export class CreateOrderComponent implements OnInit {
     return this.fb.group({
       // Basic order info
       email: ['', [Validators.required, Validators.email]],
-      clientName: [''],
+      clientName: ['', [Validators.required, Validators.minLength(3)]],
       notes: [''],
 
       // Order form fields
-      brideAndGroomNames: [''],
-      eventDate: [''],
-      eventType: this.fb.array([]),
+      brideAndGroomNames: ['', Validators.required],
+      eventDate: ['', Validators.required],
+      eventType: this.fb.array([], Validators.required),
       eventTypeOther: [''],
-      eventVenue: [''],
-      timelineOfDay: [''],
-      shootersStartTime: [''],
-      shootersEndTime: [''],
-      coupleDescription: [''],
-      moodBoardLinks: [''],
-      favoriteSongs: this.fb.array([]),
-      specialMoments: [''],
-      excludeShots: [''],
+      eventVenue: ['', Validators.required],
+      timelineOfDay: ['', Validators.required],
+      shootersStartTime: ['', Validators.required],
+      shootersEndTime: ['', Validators.required],
+      coupleDescription: ['', Validators.required],
+      moodBoardLinks: ['', Validators.required],
+      favoriteSongs: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
+      specialMoments: ['', Validators.required],
+      excludeShots: ['', Validators.required],
 
       // Vendors
       vendors: this.fb.group({
-        photographers: this.fb.array([]),
-        cinematographers: this.fb.array([]),
-        makeupArtist: [''],
-        hairStylist: [''],
-        dressDesigner: [''],
-        eventPlanner: [''],
-        dj: [''],
-        lighting: [''],
-        entertainment: [''],
-        others: ['']
+        photographers: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
+        cinematographers: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
+        makeupArtist: ['', Validators.required],
+        hairStylist: ['', Validators.required],
+        dressDesigner: ['', Validators.required],
+        eventPlanner: ['', Validators.required],
+        dj: ['', Validators.required],
+        lighting: ['', Validators.required],
+        entertainment: ['', Validators.required],
+        others: ['', Validators.required]
       }),
 
       // Film editing
       filmEditing: this.fb.group({
-        includeAccessoriesShots: this.fb.control(''),
-        editSequence: this.fb.control(''),
-        stylePreference: this.fb.array([]),
+        includeAccessoriesShots: this.fb.control('', Validators.required),
+        editSequence: this.fb.control('', Validators.required),
+        stylePreference: this.fb.array([], Validators.required),
         highlightPreference: this.fb.group({
-          preparations: this.fb.control(''),
-          groupShots: this.fb.control(''),
-          dancingParty: this.fb.control('')
+          preparations: this.fb.control('', Validators.required),
+          groupShots: this.fb.control('', Validators.required),
+          dancingParty: this.fb.control('', Validators.required)
         }),
         teaserStyleLinks: this.fb.array([])
       }),
 
       // Social media
-      socialMediaInspiration: this.fb.array([]),
-      tiktokIdeas: this.fb.array([]),
+      socialMediaInspiration: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
+      tiktokIdeas: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
       pricing: this.fb.group({
-        promoCode: ['']
+        promoCode: [''],
+        depositPaid: [0, [Validators.min(0)]]
       })
     });
   }
@@ -215,19 +221,25 @@ export class CreateOrderComponent implements OnInit {
 
 
   addPhotographer(): void {
-    this.photographersArray.push(this.fb.control(''));
+    this.photographersArray.push(this.fb.control('', Validators.required));
   }
 
   removePhotographer(index: number): void {
     this.photographersArray.removeAt(index);
+    if (this.photographersArray.length === 0) {
+      this.addPhotographer();
+    }
   }
 
   addCinematographer(): void {
-    this.cinematographersArray.push(this.fb.control(''));
+    this.cinematographersArray.push(this.fb.control('', Validators.required));
   }
 
   removeCinematographer(index: number): void {
     this.cinematographersArray.removeAt(index);
+    if (this.cinematographersArray.length === 0) {
+      this.addCinematographer();
+    }
   }
 
   addTeaserStyleLink(): void {
@@ -239,27 +251,36 @@ export class CreateOrderComponent implements OnInit {
   }
 
   addSocialMediaInspiration(): void {
-    this.socialMediaInspirationArray.push(this.fb.control(''));
+    this.socialMediaInspirationArray.push(this.fb.control('', Validators.required));
   }
 
   removeSocialMediaInspiration(index: number): void {
     this.socialMediaInspirationArray.removeAt(index);
+    if (this.socialMediaInspirationArray.length === 0) {
+      this.addSocialMediaInspiration();
+    }
   }
 
   addTiktokIdea(): void {
-    this.tiktokIdeasArray.push(this.fb.control(''));
+    this.tiktokIdeasArray.push(this.fb.control('', Validators.required));
   }
 
   removeTiktokIdea(index: number): void {
     this.tiktokIdeasArray.removeAt(index);
+    if (this.tiktokIdeasArray.length === 0) {
+      this.addTiktokIdea();
+    }
   }
 
   addFavoriteSong(): void {
-    this.favoriteSongsArray.push(this.fb.control(''));
+    this.favoriteSongsArray.push(this.fb.control('', Validators.required));
   }
 
   removeFavoriteSong(index: number): void {
     this.favoriteSongsArray.removeAt(index);
+    if (this.favoriteSongsArray.length === 0) {
+      this.addFavoriteSong();
+    }
   }
 
   // Toggle checkbox arrays
@@ -286,6 +307,8 @@ export class CreateOrderComponent implements OnInit {
       this.selectedPackages.set(packageId, this.buildPackageSelection(pkg));
     }
     this.updatePricingSummary();
+    this.validatePackageSelections();
+    this.updateVendorControlStates();
   }
 
   isPackageSelected(packageId: string): boolean {
@@ -304,6 +327,8 @@ export class CreateOrderComponent implements OnInit {
       this.selectedCollections.set(collectionId, this.buildCollectionSelection(pkg, collection));
     }
     this.updatePricingSummary();
+    this.validatePackageSelections();
+    this.updateVendorControlStates();
   }
 
   isCollectionSelected(collectionId: string): boolean {
@@ -322,10 +347,19 @@ export class CreateOrderComponent implements OnInit {
       this.selectedExtras.set(extraId, this.buildExtraSelection(pkg, extra));
     }
     this.updatePricingSummary();
+    this.validatePackageSelections();
   }
 
   isExtraSelected(extraId: string): boolean {
     return this.selectedExtras.has(extraId);
+  }
+
+  get hasSelectedPhotographyPackage(): boolean {
+    return this.isPackageTypeSelected('photography');
+  }
+
+  get hasSelectedCinematographyPackage(): boolean {
+    return this.isPackageTypeSelected('cinematography');
   }
 
   applyPromoCode(): void {
@@ -451,12 +485,117 @@ export class CreateOrderComponent implements OnInit {
     }
 
     const total = subtotal - discount;
+    const pricingGroup = this.getPricingFormGroup();
+    const depositControl = pricingGroup?.get('depositPaid');
+    let depositValue = Number(depositControl?.value || 0);
+    if (depositValue < 0 || isNaN(depositValue)) {
+      depositValue = 0;
+      depositControl?.setValue(0, { emitEvent: false });
+    }
+    if (depositValue > total) {
+      depositValue = total;
+      depositControl?.setValue(depositValue, { emitEvent: false });
+      this.depositError = 'Deposit cannot exceed total amount.';
+    } else {
+      this.depositError = '';
+    }
+    const remaining = total - depositValue;
 
     this.pricingSummary = {
       subtotal,
       discount,
-      total
+      total,
+      remaining
     };
+  }
+
+  private hasCollectionForPackage(packageId: string): boolean {
+    for (const collection of this.selectedCollections.values()) {
+      if (collection.packageId === packageId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private validatePackageSelections(setSubmitError = false): boolean {
+    this.packageSelectionError = '';
+    this.collectionSelectionError = '';
+
+    if (!this.packages.length) {
+      return true;
+    }
+
+    let isValid = true;
+
+    if (!this.selectedPackages.size) {
+      this.packageSelectionError = 'Please select at least one package.';
+      isValid = false;
+    }
+
+    const packagesMissingCollections = Array.from(this.selectedPackages.values()).filter(
+      (pkg) => !this.hasCollectionForPackage(pkg.packageId)
+    );
+
+    if (packagesMissingCollections.length) {
+      if (packagesMissingCollections.length === 1) {
+        const pkgName =
+          packagesMissingCollections[0].packageDisplayName ||
+          packagesMissingCollections[0].packageName ||
+          'this package';
+        this.collectionSelectionError = `Please select at least one collection for ${pkgName}.`;
+      } else {
+        const pkgNames = packagesMissingCollections
+          .map((pkg) => pkg.packageDisplayName || pkg.packageName || 'a package')
+          .join(', ');
+        this.collectionSelectionError = `Please select at least one collection for every selected package. Missing: ${pkgNames}.`;
+      }
+      isValid = false;
+    }
+
+    if (!isValid && setSubmitError) {
+      this.submitError = 'Please complete the Packages & Pricing selections.';
+    } else if (isValid && this.submitError === 'Please complete the Packages & Pricing selections.') {
+      this.submitError = '';
+    }
+
+    return isValid;
+  }
+
+  private isPackageTypeSelected(packageName: string): boolean {
+    return Array.from(this.selectedPackages.values()).some(
+      (pkg) => pkg.packageName === packageName
+    );
+  }
+
+  private updateVendorControlStates(): void {
+    const disablePhotographers = this.hasSelectedPhotographyPackage;
+    const disableCinematographers = this.hasSelectedCinematographyPackage;
+
+    this.setArrayDisabledState(this.photographersArray, disablePhotographers);
+    this.setArrayDisabledState(this.cinematographersArray, disableCinematographers);
+  }
+
+  private setArrayDisabledState(array: FormArray, shouldDisable: boolean): void {
+    if (shouldDisable && array.enabled) {
+      array.disable({ emitEvent: false });
+    } else if (!shouldDisable && array.disabled) {
+      array.enable({ emitEvent: false });
+    }
+  }
+
+  onDepositChange(): void {
+    const pricingGroup = this.getPricingFormGroup();
+    const depositControl = pricingGroup?.get('depositPaid');
+    if (!depositControl) {
+      return;
+    }
+    let value = Number(depositControl.value || 0);
+    if (isNaN(value) || value < 0) {
+      value = 0;
+    }
+    depositControl.setValue(value, { emitEvent: false });
+    this.updatePricingSummary();
   }
 
   private getPricingFormGroup(): FormGroup | null {
@@ -486,6 +625,14 @@ export class CreateOrderComponent implements OnInit {
       pricing.total = this.pricingSummary.total;
     }
 
+    const pricingGroup = this.getPricingFormGroup();
+    const depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
+
+    if (depositPaid > 0) {
+      pricing.depositPaid = depositPaid;
+      pricing.remainingBalance = this.pricingSummary.remaining;
+    }
+
     if (this.appliedPromoCode) {
       pricing.promoCode = this.appliedPromoCode;
     }
@@ -503,6 +650,10 @@ export class CreateOrderComponent implements OnInit {
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
       this.submitError = 'Please fill in all required fields correctly.';
+      return;
+    }
+
+    if (!this.validatePackageSelections(true)) {
       return;
     }
 

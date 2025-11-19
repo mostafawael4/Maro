@@ -69,6 +69,8 @@ const OrderFormSchema = new Schema({
     subtotal: { type: Number },
     discount: { type: Number },
     total: { type: Number },
+    depositPaid: { type: Number },
+    remainingBalance: { type: Number },
   },
 });
 

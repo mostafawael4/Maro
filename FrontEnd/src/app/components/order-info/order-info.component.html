@@ -246,6 +246,14 @@
           <span>Total</span>
           <strong>{{ formatCurrency(order.orderForm?.pricing?.total) }}</strong>
         </div>
+        <div class="summary-row">
+          <span>Deposit Paid</span>
+          <strong>{{ formatCurrency(getDepositPaid(order.orderForm?.pricing)) }}</strong>
+        </div>
+        <div class="summary-row remaining">
+          <span>Remaining Balance</span>
+          <strong>{{ formatCurrency(getRemainingBalance(order.orderForm?.pricing)) }}</strong>
+        </div>
         <div class="promo-chip" *ngIf="order.orderForm?.pricing?.promoCode">
           Promo Applied: {{ order.orderForm?.pricing?.promoCode }}
         </div>
