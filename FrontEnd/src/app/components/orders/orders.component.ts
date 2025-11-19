@@ -554,8 +554,8 @@ export class OrdersComponent implements OnInit {
 
     this.ordersService.getOrdersByEmail(this.userEmail).subscribe({
       next: (response) => {
-        // Backend returns a single order, wrap it in an array
-        this.orders = response.order ? [response.order] : [];
+        // Backend returns multiple orders
+        this.orders = response.orders || [];
         this.filteredOrders = this.orders;
         this.loading = false;
       },
