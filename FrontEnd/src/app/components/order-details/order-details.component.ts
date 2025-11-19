@@ -302,12 +302,12 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
     if (!this.order || !this.selectedVideoForThumbnail) return;
-
+    
     if (this.order.media) {
-      const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
       if (mediaIndex !== -1) {
-        this.order.media[mediaIndex].thumbnail = data.thumbnail;
-        this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+      this.order.media[mediaIndex].thumbnail = data.thumbnail;
+      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
       }
     }
 
