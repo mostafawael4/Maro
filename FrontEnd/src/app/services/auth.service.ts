@@ -30,8 +30,8 @@ export class AuthService {
   // Start with false as default (safe for SSR)
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-  private authCheckComplete = new BehaviorSubject<boolean>(false);
-  public authCheckComplete$ = this.authCheckComplete.asObservable();
+  private initialAuthResolvedSubject = new BehaviorSubject<boolean>(false);
+  public initialAuthResolved$ = this.initialAuthResolvedSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -45,22 +45,38 @@ export class AuthService {
       const authState = this.readAuthFromStorage();
       // Update the BehaviorSubject synchronously - this happens BEFORE any component renders
       this.isAuthenticatedSubject.next(authState);
-      // Mark as complete immediately - components won't wait
-      this.authCheckComplete.next(true);
-      
       // Verify with server in next tick (non-blocking)
       Promise.resolve().then(() => {
-        this.checkAuth();
+        this.checkAuth(true);
       });
+      // Fallback: if server check takes too long, still resolve after timeout
+      setTimeout(() => this.resolveInitialAuth(), 2500);
     } else {
-      // On server, stay at false and mark complete
-      this.authCheckComplete.next(true);
+      // On server, mark as resolved immediately
+      this.resolveInitialAuth();
     }
   }
 
   // Synchronous getter for immediate access to auth state
   get isAuthenticatedValue(): boolean {
     return this.isAuthenticatedSubject.value;
+  }
+
+  get isBrowserEnv(): boolean {
+    return this.isBrowser;
+  }
+
+  hasStoredAuth(): boolean {
+    if (!this.isBrowser) {
+      return false;
+    }
+    return this.readAuthFromStorage();
+  }
+
+  private resolveInitialAuth(): void {
+    if (!this.initialAuthResolvedSubject.value) {
+      this.initialAuthResolvedSubject.next(true);
+    }
   }
 
   login(username: string, password: string): Observable<any> {
@@ -89,7 +105,7 @@ export class AuthService {
       );
   }
 
-  checkAuth(): void {
+  checkAuth(isInitial = false): void {
     this.http.get(`${this.apiUrl}/me`, { withCredentials: true })
       .subscribe({
         next: (response: any) => {
@@ -112,7 +128,9 @@ export class AuthService {
               localStorage.removeItem(this.AUTH_STORAGE_KEY);
             }
           }
-          // Don't update authCheckComplete here - it's already set to true in constructor
+          if (isInitial) {
+            this.resolveInitialAuth();
+          }
         },
         error: () => {
           // Server error - if we thought we were authenticated, clear it
@@ -122,7 +140,9 @@ export class AuthService {
             this.isAuthenticatedSubject.next(false);
             localStorage.removeItem(this.AUTH_STORAGE_KEY);
           }
-          // Don't update authCheckComplete here - it's already set to true in constructor
+          if (isInitial) {
+            this.resolveInitialAuth();
+          }
         }
       });
   }

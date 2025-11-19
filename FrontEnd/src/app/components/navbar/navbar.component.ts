@@ -1,7 +1,8 @@
-import { Component, HostListener, Input } from '@angular/core';
+import { Component, HostListener, Input, Inject, PLATFORM_ID, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-navbar',
@@ -10,21 +11,36 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss'
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit {
   isMobileMenuOpen = false;
   isScrolled = false;
   isAuthenticated = false;
   isDropdownOpen = false;
+  isClientReady = false;
   @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
   constructor(
     private authService: AuthService,
-    public router: Router
+    public router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.isAuthenticated = this.authService.isAuthenticatedValue || this.authService.hasStoredAuth();
+    }
+
     // Subscribe to authentication state
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      if (isPlatformBrowser(this.platformId)) {
+        this.isClientReady = true;
+      }
     });
+  }
+
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.isClientReady = true;
+    }
   }
 
   @HostListener('window:scroll', ['$event'])
