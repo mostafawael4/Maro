@@ -58,8 +58,8 @@
           </span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">Created Date:</span>
-          <span class="meta-value">{{ order.createdAt | date: 'MMM dd, yyyy' }}</span>
+          <span class="meta-label">Event Date:</span>
+          <span class="meta-value">{{ order.orderForm?.eventDate ? (order.orderForm?.eventDate | date: 'MMM dd, yyyy') : 'N/A' }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Total Media:</span>
