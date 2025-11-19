@@ -145,9 +145,10 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   loadOrderByEmail(email: string, orderId: string): void {
     this.ordersService.getOrdersByEmail(email).subscribe({
       next: (response) => {
-        // Verify the order ID matches
-        if (response.order && response.order._id === orderId) {
-          this.order = response.order;
+        // Find the specific order by ID from the array of orders
+        const foundOrder = response.orders?.find(order => order._id === orderId);
+        if (foundOrder) {
+          this.order = foundOrder;
           this.folderMedia = this.order.media || [];
           this.buildClientFoldersFromMedia();
         } else {

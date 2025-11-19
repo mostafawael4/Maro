@@ -187,8 +187,8 @@ export class OrdersService {
     });
   }
 
-  getOrdersByEmail(email: string): Observable<SingleOrderResponse> {
-    return this.http.get<SingleOrderResponse>(`${this.apiUrl}/view/by-email?email=${email}`);
+  getOrdersByEmail(email: string): Observable<OrdersResponse> {
+    return this.http.get<OrdersResponse>(`${this.apiUrl}/view/orders-by-email?email=${email}`);
   }
 
   updateOrderStatus(orderId: string, status: string): Observable<any> {
