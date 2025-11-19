@@ -91,7 +91,7 @@ export class FeedbacksComponent implements OnInit {
   }
 
   onDeleteConfirm(): void {
-    if (!this.feedbackToDelete) return;
+    if (!this.feedbackToDelete || this.deletingFeedback) return;
     
     this.deletingFeedback = true;
     this.ordersService.deleteFeedback(
@@ -121,6 +121,7 @@ export class FeedbacksComponent implements OnInit {
   }
 
   onDeleteCancel(): void {
+    if (this.deletingFeedback) return;
     this.showDeleteModal = false;
     this.feedbackToDelete = null;
   }

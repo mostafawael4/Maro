@@ -2,6 +2,7 @@
   <!-- Delete Confirmation Modal -->
   <app-delete-modal
     [isOpen]="showDeleteModal"
+    [isLoading]="isDeleting"
     (confirm)="onConfirmDelete()"
     (cancel)="onCancelDelete()"
   ></app-delete-modal>

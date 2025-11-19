@@ -19,6 +19,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   updatingOrderId: string | null = null;
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
+  isDeletingOrder = false;
   sendingEmail: { [orderId: string]: boolean } = {};
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
   private destroy$ = new Subject<void>();
@@ -149,29 +150,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onConfirmDelete(): void {
-    if (this.orderIdToDelete) {
+    if (this.orderIdToDelete && !this.isDeletingOrder) {
+      this.isDeletingOrder = true;
       this.deleteOrder(this.orderIdToDelete);
     }
   }
 
   onCancelDelete(): void {
+    if (this.isDeletingOrder) return;
     this.showDeleteModal = false;
     this.orderIdToDelete = null;
   }
 
   deleteOrder(orderId: string): void {
-    this.showDeleteModal = false;
     this.ordersService.deleteOrder(orderId).subscribe({
       next: (response) => {
         if (response.ok) {
           // Remove the order from the list
           this.orders = this.orders.filter(order => order._id !== orderId);
         }
+        this.isDeletingOrder = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
       },
       error: (err) => {
         this.error = 'Failed to delete order';
         console.error('Error deleting order:', err);
+        this.isDeletingOrder = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
         setTimeout(() => {
           this.error = '';

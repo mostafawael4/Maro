@@ -292,7 +292,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onConfirmDeleteMedia(): void {
-    if (!this.mediaToDelete || !this.order) return;
+    if (!this.mediaToDelete || !this.order || this.deletingMedia) return;
     
     const orderId = this.order._id;
     this.deletingMedia = true;
@@ -329,6 +329,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onCancelDeleteMedia(): void {
+    if (this.deletingMedia) return;
     this.showDeleteModal = false;
     this.mediaToDelete = null;
   }
@@ -528,7 +529,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onConfirmDeleteFolder(): void {
-    if (!this.folderToDelete || !this.order?._id) return;
+    if (!this.folderToDelete || !this.order?._id || this.deletingFolder) return;
     
     const orderId = this.order._id;
     this.deletingFolder = true;
@@ -599,6 +600,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onCancelDeleteFolder(): void {
+    if (this.deletingFolder) return;
     this.showDeleteFolderModal = false;
     this.folderToDelete = null;
   }

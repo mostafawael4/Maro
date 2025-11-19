@@ -52,6 +52,7 @@ export class OrdersComponent implements OnInit {
   // Delete modal
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
+  isDeleting: boolean = false;
 
   // Feedback
   feedbackTexts: { [orderId: string]: string } = {};
@@ -374,21 +375,34 @@ export class OrdersComponent implements OnInit {
             
             // Build simplified result message
             let messageParts: string[] = [];
+            const uploadedNames = (response?.added || []).map((f: any) => f.originalName || f.filename);
+            const failedNames = (response?.failed || []).map((f: any) => f.originalName || f.filename);
             
-            // Show uploaded count and file names
+            // Always show a concise summary first
             if (successCount > 0) {
-              const uploadedNames = response.added.map((f: any) => f.originalName || f.filename).join(', ');
-              messageParts.push(`Uploaded ${successCount} file(s):\n${uploadedNames}`);
+              messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
+              
+              // Only list uploaded names if there were issues (duplicates or failures)
+              if (duplicateCount > 0 || failedCount > 0) {
+                messageParts.push(`Uploaded files:\n${uploadedNames.join(', ')}`);
+              }
             }
             
-            // Show skipped count (without listing names)
             if (duplicateCount > 0) {
-              messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded)`);
+              const duplicateNames = (response?.duplicates || []).map((d: any) => d.originalName).filter(Boolean);
+              let duplicateMessage = `Skipped ${duplicateCount} file(s) (already uploaded).`;
+              if (duplicateNames.length > 0) {
+                duplicateMessage += `\n${duplicateNames.join(', ')}`;
+              }
+              messageParts.push(duplicateMessage);
             }
             
-            // Show failed count if any
             if (failedCount > 0) {
-              messageParts.push(`Failed to upload ${failedCount} file(s)`);
+              let failedMessage = `Failed to upload ${failedCount} file(s).`;
+              if (failedNames.length > 0) {
+                failedMessage += `\n${failedNames.join(', ')}`;
+              }
+              messageParts.push(failedMessage);
             }
             
             // If all files were duplicates
@@ -402,7 +416,13 @@ export class OrdersComponent implements OnInit {
             } else {
               // Complete success (with or without duplicates)
               this.uploadResultType = 'success';
-              this.uploadResultMessage = messageParts.join('\n\n');
+              
+              // If there are no issues, keep the message short
+              if (duplicateCount === 0 && failedCount === 0 && successCount > 0) {
+                this.uploadResultMessage = `Uploaded ${successCount} file(s) successfully.`;
+              } else {
+                this.uploadResultMessage = messageParts.join('\n\n');
+              }
             }
             
             this.showUploadResultModal = true;
@@ -590,7 +610,8 @@ export class OrdersComponent implements OnInit {
   }
 
   onConfirmDelete(): void {
-    if (this.orderIdToDelete) {
+    if (this.orderIdToDelete && !this.isDeleting) {
+      this.isDeleting = true;
       this.deleteOrder(this.orderIdToDelete);
     }
   }
@@ -598,10 +619,10 @@ export class OrdersComponent implements OnInit {
   onCancelDelete(): void {
     this.showDeleteModal = false;
     this.orderIdToDelete = null;
+    this.isDeleting = false;
   }
 
   deleteOrder(orderId: string): void {
-    this.showDeleteModal = false;
     this.ordersService.deleteOrder(orderId).subscribe({
       next: (response) => {
         if (response.ok) {
@@ -609,11 +630,15 @@ export class OrdersComponent implements OnInit {
           this.orders = this.orders.filter(order => order._id !== orderId);
           this.filteredOrders = this.filteredOrders.filter(order => order._id !== orderId);
         }
+        this.isDeleting = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
       },
       error: (err) => {
         console.error('Error deleting order:', err);
         this.error = 'Failed to delete order. Please try again.';
+        this.isDeleting = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
         setTimeout(() => {
           this.error = '';

@@ -31,6 +31,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   showDeleteModal: boolean = false;
   imageToDelete: HomePageImage | null = null;
   deletingImageId: string | null = null;
+  deleteModalLoading = false;
   
   private intersectionObserver?: IntersectionObserver;
   private storyObserver?: IntersectionObserver;
@@ -244,18 +245,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onConfirmDelete(): void {
-    if (this.imageToDelete) {
-      this.deleteImage(this.imageToDelete);
+    if (!this.imageToDelete || this.deleteModalLoading) {
+      return;
     }
+    this.deleteImage(this.imageToDelete);
   }
 
   onCancelDelete(): void {
+    if (this.deleteModalLoading) {
+      return;
+    }
     this.showDeleteModal = false;
     this.imageToDelete = null;
   }
 
   deleteImage(image: HomePageImage): void {
-    this.showDeleteModal = false;
+    this.deleteModalLoading = true;
     this.deletingImageId = image._id;
 
     this.homepageService.deleteImage(image.filename).subscribe({
@@ -267,6 +272,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.images = this.images.filter(img => img._id !== image._id);
         this.deletingImageId = null;
         this.imageToDelete = null;
+        this.deleteModalLoading = false;
+        this.showDeleteModal = false;
         
         // Clean up loaded/visible images tracking
         if (index !== -1) {
@@ -285,7 +292,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         console.error('Error deleting image:', error);
         alert('Failed to delete image. Please try again.');
         this.deletingImageId = null;
-        this.imageToDelete = null;
+        this.deleteModalLoading = false;
       }
     });
   }

@@ -118,6 +118,10 @@
         background: transparent;
         color: #8B3A3A;
         border: 2px solid rgba(107, 31, 31, 0.2);
+        &[disabled] {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
 
         &:hover {
           background: rgba(107, 31, 31, 0.05);
@@ -129,6 +133,24 @@
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
         color: white;
         box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .loading-state {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .mini-spinner {
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
 
         &:hover {
           background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
@@ -139,9 +161,20 @@
         &:active {
           transform: translateY(0);
         }
+
+        &[disabled] {
+          opacity: 0.7;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
       }
     }
   }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {
