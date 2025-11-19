@@ -71,7 +71,7 @@
     </div>
 
     <app-order-folder-panel
-      *ngIf="folders.length > 0 && !selectedFolder"
+      *ngIf="(folders.length > 0 || foldersLoading) && !selectedFolder"
       [folders]="folders"
       [loading]="foldersLoading"
       [error]="foldersError"

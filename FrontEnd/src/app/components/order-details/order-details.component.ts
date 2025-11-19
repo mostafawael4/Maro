@@ -145,9 +145,10 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   loadOrderByEmail(email: string, orderId: string): void {
     this.ordersService.getOrdersByEmail(email).subscribe({
       next: (response) => {
-        // Verify the order ID matches
-        if (response.order && response.order._id === orderId) {
-          this.order = response.order;
+        // Find the specific order by ID from the array of orders
+        const foundOrder = response.orders?.find(order => order._id === orderId);
+        if (foundOrder) {
+          this.order = foundOrder;
           this.folderMedia = this.order.media || [];
           this.buildClientFoldersFromMedia();
         } else {
@@ -344,23 +345,52 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
     if (!this.order || !this.selectedVideoForThumbnail) return;
     
-    if (this.order.media) {
-    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
-      if (mediaIndex !== -1) {
-      this.order.media[mediaIndex].thumbnail = data.thumbnail;
-      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+    const orderId = this.order._id;
+    const videoFilename = this.selectedVideoForThumbnail.filename;
+    const currentOrder = this.order; // Store reference to avoid null checks
+    
+    // Call API to update video thumbnail in database
+    this.ordersService.updateVideoThumbnail(orderId, videoFilename, data.thumbnail, data.thumbnailFilename).subscribe({
+      next: (response) => {
+        if (response.ok && currentOrder) {
+          // Update local state from response
+          if (response.order && response.order.media) {
+            const updatedMediaItem = response.order.media.find((m: OrderImage) => m.filename === videoFilename);
+            if (updatedMediaItem) {
+              if (currentOrder.media) {
+                const mediaIndex = currentOrder.media.findIndex(m => m.filename === videoFilename);
+                if (mediaIndex !== -1) {
+                  currentOrder.media[mediaIndex].thumbnail = updatedMediaItem.thumbnail;
+                  currentOrder.media[mediaIndex].thumbnailFilename = updatedMediaItem.thumbnailFilename;
+                }
+              }
+
+              const folderIndex = this.folderMedia.findIndex(m => m.filename === videoFilename);
+              if (folderIndex !== -1) {
+                this.folderMedia[folderIndex].thumbnail = updatedMediaItem.thumbnail;
+                this.folderMedia[folderIndex].thumbnailFilename = updatedMediaItem.thumbnailFilename;
+              }
+            }
+          }
+
+          // Reload order to get updated data
+          if (this.isAuthenticated && currentOrder._id) {
+            if (this.selectedFolder) {
+              this.selectFolder(this.selectedFolder);
+            } else {
+              this.loadOrderById(currentOrder._id, false);
+            }
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error updating video thumbnail:', err);
+        this.error = err.error?.message || 'Failed to set video thumbnail. Please try again.';
+        setTimeout(() => {
+          this.error = '';
+        }, 5000);
       }
-    }
-
-    const folderIndex = this.folderMedia.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
-    if (folderIndex !== -1) {
-      this.folderMedia[folderIndex].thumbnail = data.thumbnail;
-      this.folderMedia[folderIndex].thumbnailFilename = data.thumbnailFilename;
-    }
-
-    if (this.isAuthenticated && this.order._id && this.selectedFolder) {
-      this.selectFolder(this.selectedFolder);
-    }
+    });
   }
 
   onCloseVideoPosterSelector(): void {
