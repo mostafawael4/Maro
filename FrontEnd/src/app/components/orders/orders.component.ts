@@ -372,27 +372,29 @@ export class OrdersComponent implements OnInit {
             // Reload orders to update image count
             this.loadOrders();
             
-            // Build result message
+            // Build simplified result message
             let messageParts: string[] = [];
             
+            // Show uploaded count and file names
             if (successCount > 0) {
-              messageParts.push(`Successfully uploaded ${successCount} file(s)!`);
+              const uploadedNames = response.added.map((f: any) => f.originalName || f.filename).join(', ');
+              messageParts.push(`Uploaded ${successCount} file(s):\n${uploadedNames}`);
             }
             
+            // Show skipped count (without listing names)
             if (duplicateCount > 0) {
-              const duplicateNames = response.duplicates.map((d: any) => d.originalName).join(', ');
-              messageParts.push(`${duplicateCount} file(s) skipped (already uploaded): ${duplicateNames}`);
+              messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded)`);
             }
             
+            // Show failed count if any
             if (failedCount > 0) {
-              const failedNames = response.failed?.map((f: any) => f.filename || f.originalName).join(', ') || 'Unknown files';
-              messageParts.push(`${failedCount} file(s) failed to upload: ${failedNames}`);
+              messageParts.push(`Failed to upload ${failedCount} file(s)`);
             }
             
             // If all files were duplicates
             if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
               this.uploadResultType = 'error';
-              this.uploadResultMessage = response?.message || `All ${duplicateCount} file(s) are already uploaded in this folder.`;
+              this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
             } else if (failedCount > 0 || (successCount === 0 && duplicateCount === 0)) {
               // Partial success or complete failure
               this.uploadResultType = successCount > 0 ? 'success' : 'error';
