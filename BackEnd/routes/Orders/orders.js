@@ -213,6 +213,15 @@ router.post(
       const orderId = req.params.orderId;
       const order = await Order.findById(orderId);
 
+      const files = req.files || [];
+      const { foldername } = req.body;
+
+      if (!files.length) {
+        logger.warn(`Upload attempt to order ${orderId} with no files`);
+      } else {
+        logger.info(`Uploading ${files.length} files to order ${orderId}`);
+      }
+
       const result = await uploadMediaFiles(orderId, files, foldername);
 
       logger.info(
@@ -220,19 +229,11 @@ router.post(
           .map((f) => f.filename)
           .join(", ")}]`
       );
-      
-      // Build response with added files and duplicates info
-      const response = {
+
+      return res.json({
         ok: true,
-        added: fileObjs,
-        duplicates: duplicates.length > 0 ? duplicates : undefined,
-      };
-
-      if (duplicates.length > 0) {
-        response.message = `${fileObjs.length} file(s) uploaded successfully. ${duplicates.length} file(s) were skipped as duplicates.`;
-      }
-
-      return res.json(response);
+        ...result,
+      });
     } catch (err) {
       logger.error(
         `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`
