@@ -265,8 +265,8 @@ router.get("/view/by-email", async (req, res) => {
   }
 });
 
-// GET /orders/by-email?email=... (admin only) - returns ALL orders for a given email
-router.get("/view/orders-by-email", requireAdminAuth,
+// GET /orders/by-email?email=... (public) - returns ALL orders for a given email
+router.get("/view/orders-by-email",
   async (req, res) => {
     try {
       const { email } = req.query;
