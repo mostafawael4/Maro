@@ -211,7 +211,6 @@ router.post(
   async (req, res) => {
     try {
       const orderId = req.params.orderId;
-      const order = await Order.findById(orderId);
 
       const files = req.files || [];
       const { foldername } = req.body;
@@ -225,7 +224,7 @@ router.post(
       const result = await uploadMediaFiles(orderId, files, foldername);
 
       logger.info(
-        `Files added to order ${orderId}: [${fileObjs
+        `Files added to order ${orderId}: [${(result.fileObjs || [])
           .map((f) => f.filename)
           .join(", ")}]`
       );
