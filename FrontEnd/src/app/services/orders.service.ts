@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface OrderImage {
@@ -263,6 +264,35 @@ export class OrdersService {
       `${this.apiUrl}/${orderId}/background-image`,
       { filename },
       { withCredentials: true }
+    );
+  }
+
+  updateVideoThumbnail(orderId: string, videoFilename: string, thumbnail: string, thumbnailFilename: string): Observable<{ ok: boolean; order: Order }> {
+    // First get the current order to update the media array
+    return this.getOrderById(orderId).pipe(
+      switchMap((response: any) => {
+        const order = response.order || response;
+        if (!order || !order.media) {
+          throw new Error('Order or media not found');
+        }
+        
+        // Find and update the video media item
+        const mediaIndex = order.media.findIndex((m: OrderImage) => m.filename === videoFilename);
+        if (mediaIndex === -1) {
+          throw new Error('Video not found in order media');
+        }
+        
+        // Update the thumbnail
+        order.media[mediaIndex].thumbnail = thumbnail;
+        order.media[mediaIndex].thumbnailFilename = thumbnailFilename;
+        
+        // Use the general PUT endpoint to update the order
+        return this.http.put<{ ok: boolean; order: Order }>(
+          `${this.apiUrl}/${orderId}`,
+          { media: order.media },
+          { withCredentials: true }
+        );
+      })
     );
   }
 }
