@@ -93,6 +93,7 @@
       (back)="exitFolderView()"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)"
       (deleteMedia)="onDeleteMediaClick($event)"
       (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">
@@ -111,6 +112,7 @@
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)"
       (deleteMedia)="onDeleteMediaClick($event)"
       (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">

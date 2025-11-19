@@ -24,11 +24,14 @@ export class FolderMediaViewComponent {
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<number>();
   @Output() downloadMedia = new EventEmitter<OrderImage>();
+  @Output() downloadSelectedMedia = new EventEmitter<OrderImage[]>();
   @Output() deleteMedia = new EventEmitter<OrderImage>();
   @Output() selectVideoThumbnail = new EventEmitter<OrderImage>();
   @Output() selectBackground = new EventEmitter<void>();
 
   searchTerm: string = '';
+  selectionMode: boolean = false;
+  selectedItems: Set<string> = new Set();
 
   get hasMedia(): boolean {
     return !!this.media && this.media.length > 0;
@@ -50,7 +53,15 @@ export class FolderMediaViewComponent {
     return !!this.filteredMedia && this.filteredMedia.length > 0;
   }
 
-  onOpenMedia(index: number): void {
+  onOpenMedia(index: number, event?: Event): void {
+    // If in selection mode, toggle selection instead of opening slider
+    if (this.selectionMode) {
+      event?.stopPropagation();
+      const mediaItem = this.filteredMedia[index];
+      this.toggleSelection(mediaItem);
+      return;
+    }
+    
     // Get the actual index in the original media array
     const mediaItem = this.filteredMedia[index];
     const actualIndex = this.media.findIndex(m => m.filename === mediaItem.filename);
@@ -59,7 +70,59 @@ export class FolderMediaViewComponent {
 
   onDownload(media: OrderImage, event: Event): void {
     event.stopPropagation();
-    this.downloadMedia.emit(media);
+    if (this.selectionMode) {
+      this.toggleSelection(media);
+    } else {
+      this.downloadMedia.emit(media);
+    }
+  }
+
+  toggleSelectionMode(): void {
+    this.selectionMode = !this.selectionMode;
+    if (!this.selectionMode) {
+      this.selectedItems.clear();
+    }
+  }
+
+  toggleSelection(media: OrderImage): void {
+    const key = media.filename || media._id || '';
+    if (this.selectedItems.has(key)) {
+      this.selectedItems.delete(key);
+    } else {
+      this.selectedItems.add(key);
+    }
+  }
+
+  isSelected(media: OrderImage): boolean {
+    const key = media.filename || media._id || '';
+    return this.selectedItems.has(key);
+  }
+
+  getSelectedCount(): number {
+    return this.selectedItems.size;
+  }
+
+  onDownloadSelected(): void {
+    const selectedMedia = this.filteredMedia.filter(media => {
+      const key = media.filename || media._id || '';
+      return this.selectedItems.has(key);
+    });
+    if (selectedMedia.length > 0) {
+      this.downloadSelectedMedia.emit(selectedMedia);
+      this.selectedItems.clear();
+      this.selectionMode = false;
+    }
+  }
+
+  selectAll(): void {
+    this.filteredMedia.forEach(media => {
+      const key = media.filename || media._id || '';
+      this.selectedItems.add(key);
+    });
+  }
+
+  deselectAll(): void {
+    this.selectedItems.clear();
   }
 
   onDelete(media: OrderImage, event: Event): void {

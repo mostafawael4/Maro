@@ -229,7 +229,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = media.filename;
+      link.download = media.originalName || media.filename;
       
       // Trigger download
       document.body.appendChild(link);
@@ -241,6 +241,46 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error downloading media:', error);
       alert(`Failed to download ${this.isVideo(media) ? 'video' : 'image'}. Please try again.`);
+    }
+  }
+
+  async downloadSelectedImages(mediaArray: OrderImage[]) {
+    if (!mediaArray || mediaArray.length === 0) return;
+
+    try {
+      // Download files sequentially to avoid browser blocking multiple downloads
+      for (let i = 0; i < mediaArray.length; i++) {
+        const media = mediaArray[i];
+        const mediaUrl = this.getImageUrl(media);
+        
+        // Fetch the media file as a blob
+        const response = await fetch(mediaUrl);
+        const blob = await response.blob();
+        
+        // Create a blob URL
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = media.originalName || media.filename;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(blobUrl);
+        
+        // Small delay between downloads to prevent browser from blocking
+        if (i < mediaArray.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading selected media:', error);
+      alert('Failed to download some files. Please try again.');
     }
   }
 
