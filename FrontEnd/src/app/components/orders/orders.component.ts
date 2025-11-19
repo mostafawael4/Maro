@@ -373,40 +373,24 @@ export class OrdersComponent implements OnInit {
             // Reload orders to update image count
             this.loadOrders();
             
-            // Build simplified result message
+            // Build simplified result message with only counts
             let messageParts: string[] = [];
-            const uploadedNames = (response?.added || []).map((f: any) => f.originalName || f.filename);
-            const failedNames = (response?.failed || []).map((f: any) => f.originalName || f.filename);
             
-            // Always show a concise summary first
             if (successCount > 0) {
               messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
-              
-              // Only list uploaded names if there were issues (duplicates or failures)
-              if (duplicateCount > 0 || failedCount > 0) {
-                messageParts.push(`Uploaded files:\n${uploadedNames.join(', ')}`);
-              }
             }
             
             if (duplicateCount > 0) {
-              const duplicateNames = (response?.duplicates || []).map((d: any) => d.originalName).filter(Boolean);
-              let duplicateMessage = `Skipped ${duplicateCount} file(s) (already uploaded).`;
-              if (duplicateNames.length > 0) {
-                duplicateMessage += `\n${duplicateNames.join(', ')}`;
-              }
-              messageParts.push(duplicateMessage);
+              messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded).`);
             }
             
             if (failedCount > 0) {
-              let failedMessage = `Failed to upload ${failedCount} file(s).`;
-              if (failedNames.length > 0) {
-                failedMessage += `\n${failedNames.join(', ')}`;
-              }
-              messageParts.push(failedMessage);
+              messageParts.push(`Failed to upload ${failedCount} file(s).`);
             }
             
-            // If all files were duplicates
+            // Determine result type and message
             if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
+              // All files were duplicates
               this.uploadResultType = 'error';
               this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
             } else if (failedCount > 0 || (successCount === 0 && duplicateCount === 0)) {
@@ -416,13 +400,7 @@ export class OrdersComponent implements OnInit {
             } else {
               // Complete success (with or without duplicates)
               this.uploadResultType = 'success';
-              
-              // If there are no issues, keep the message short
-              if (duplicateCount === 0 && failedCount === 0 && successCount > 0) {
-                this.uploadResultMessage = `Uploaded ${successCount} file(s) successfully.`;
-              } else {
-                this.uploadResultMessage = messageParts.join('\n\n');
-              }
+              this.uploadResultMessage = messageParts.join('\n\n');
             }
             
             this.showUploadResultModal = true;

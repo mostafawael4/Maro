@@ -211,16 +211,23 @@ export class OrdersService {
   }
 
   submitFeedback(orderId: string, feedback: string): Observable<any> {
-    // The endpoint is /feedbacks/:orderId/feedback based on backend routes
-    return this.http.post<any>(`${environment.apiUrl}/feedbacks/${orderId}/feedback`, 
+    // The endpoint is /feedbacks/orders/:orderId/feedback based on backend routes
+    return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`, 
       { feedback },
       { withCredentials: true }
     );
   }
 
+  getOrderFeedbacks(orderId: string): Observable<any> {
+    // The endpoint is /feedbacks/orders/:orderId/feedbacks based on backend routes
+    return this.http.get<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedbacks`, {
+      withCredentials: true
+    });
+  }
+
   getAllFeedbacks(feedbackCounts?: number): Observable<any> {
-    // The endpoint is /feedbacks/all-feedbacks based on backend routes
-    let url = `${environment.apiUrl}/feedbacks/all-feedbacks`;
+    // The endpoint is /feedbacks/all based on backend routes
+    let url = `${environment.apiUrl}/feedbacks/all`;
     if (feedbackCounts) {
       url += `?feedbackCounts=${feedbackCounts}`;
     }
@@ -230,8 +237,8 @@ export class OrdersService {
   }
 
   deleteFeedback(orderId: string, feedbackId: string): Observable<any> {
-    // The endpoint is /feedbacks/:orderId/:feedbackId based on backend routes
-    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${orderId}/${feedbackId}`, {
+    // The endpoint is /feedbacks/orders/:orderId/:feedbackId based on backend routes
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/${feedbackId}`, {
       withCredentials: true
     });
   }

@@ -49,12 +49,37 @@ export class FeedbacksComponent implements OnInit {
     this.error = '';
     this.ordersService.getAllFeedbacks().subscribe({
       next: (response) => {
-        if (response.ok) {
-          this.feedbacks = response.feedbacks || [];
-        } else {
-          this.error = 'Failed to load feedbacks';
+        try {
+          // Backend returns { generalFeedbacks: [], orderFeedbacks: [] }
+          const generalFeedbacks = response.generalFeedbacks || [];
+          const orderFeedbacks = response.orderFeedbacks || [];
+          
+          // Map general feedbacks
+          const mappedGeneralFeedbacks: FeedbackItem[] = generalFeedbacks.map((fb: any) => ({
+            orderId: '',
+            clientName: undefined,
+            email: '',
+            feedbackText: fb.feedback || '',
+            feedbackId: fb._id
+          }));
+          
+          // Map order feedbacks
+          const mappedOrderFeedbacks: FeedbackItem[] = orderFeedbacks.map((fb: any) => ({
+            orderId: fb.orderId || '',
+            clientName: undefined,
+            email: '',
+            feedbackText: fb.feedback || '',
+            feedbackId: fb._id
+          }));
+          
+          // Combine both arrays
+          this.feedbacks = [...mappedGeneralFeedbacks, ...mappedOrderFeedbacks];
+          this.loading = false;
+        } catch (err) {
+          this.error = 'Failed to process feedbacks';
+          this.loading = false;
+          console.error('Error processing feedbacks:', err);
         }
-        this.loading = false;
       },
       error: (err) => {
         this.error = 'Failed to load feedbacks. Please try again.';
