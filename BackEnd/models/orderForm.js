@@ -1,6 +1,33 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const OrderFormSchema = new mongoose.Schema({
+const pricingPackageSchema = new Schema({
+  packageId: { type: Schema.Types.ObjectId, ref: 'Packages' },
+  packageName: { type: String },
+  packageDisplayName: { type: String },
+}, { _id: false });
+
+const pricingCollectionSchema = new Schema({
+  packageId: { type: Schema.Types.ObjectId, ref: 'Packages' },
+  packageName: { type: String },
+  packageDisplayName: { type: String },
+  collectionId: { type: Schema.Types.ObjectId },
+  collectionName: { type: String },
+  priceLabel: { type: String },
+  priceValue: { type: Number },
+}, { _id: false });
+
+const pricingExtraSchema = new Schema({
+  packageId: { type: Schema.Types.ObjectId, ref: 'Packages' },
+  packageName: { type: String },
+  packageDisplayName: { type: String },
+  extraId: { type: Schema.Types.ObjectId },
+  extraName: { type: String },
+  priceLabel: { type: String },
+  priceValue: { type: Number },
+}, { _id: false });
+
+const OrderFormSchema = new Schema({
   brideAndGroomNames: { type: String },
   eventDate: { type: Date },
   eventType: [{ type: String }], // wedding, engagement, etc.
@@ -34,6 +61,15 @@ const OrderFormSchema = new mongoose.Schema({
   },
   socialMediaInspiration: [{ type: String }],
   tiktokIdeas: [{ type: String }],
+  pricing: {
+    packages: [pricingPackageSchema],
+    collections: [pricingCollectionSchema],
+    extras: [pricingExtraSchema],
+    promoCode: { type: String },
+    subtotal: { type: Number },
+    discount: { type: Number },
+    total: { type: Number },
+  },
 });
 
 module.exports = OrderFormSchema;

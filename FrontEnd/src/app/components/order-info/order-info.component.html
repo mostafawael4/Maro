@@ -229,6 +229,74 @@
       </div>
     </div>
 
+    <!-- Packages & Pricing Section -->
+    <div class="details-card" *ngIf="order.orderForm?.pricing">
+      <h2 class="section-title">Packages & Pricing</h2>
+
+      <div class="pricing-summary">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <strong>{{ formatCurrency(order.orderForm?.pricing?.subtotal) }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>Discount</span>
+          <strong>-{{ formatCurrency(order.orderForm?.pricing?.discount) }}</strong>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <strong>{{ formatCurrency(order.orderForm?.pricing?.total) }}</strong>
+        </div>
+        <div class="promo-chip" *ngIf="order.orderForm?.pricing?.promoCode">
+          Promo Applied: {{ order.orderForm?.pricing?.promoCode }}
+        </div>
+      </div>
+
+      <div class="pricing-items" *ngIf="hasPricingSelections(order.orderForm?.pricing)">
+        <div class="pricing-block" *ngIf="order.orderForm?.pricing?.packages?.length">
+          <h3>Selected Packages</h3>
+          <ul>
+            <li *ngFor="let pkg of order.orderForm?.pricing?.packages">
+              <span>{{ pkg.packageDisplayName || pkg.packageName }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="pricing-block" *ngIf="order.orderForm?.pricing?.collections?.length">
+          <h3>Collections</h3>
+          <ul>
+            <li *ngFor="let collection of order.orderForm?.pricing?.collections">
+              <div>
+                <span class="item-title">{{ collection.packageDisplayName || collection.packageName }}</span>
+                <span class="item-subtitle">{{ collection.collectionName }}</span>
+              </div>
+              <span class="price-pill">
+                {{ collection.priceLabel || formatCurrency(collection.priceValue) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="pricing-block" *ngIf="order.orderForm?.pricing?.extras?.length">
+          <h3>Extras</h3>
+          <ul>
+            <li *ngFor="let extra of order.orderForm?.pricing?.extras">
+              <div>
+                <span class="item-title">{{ extra.packageDisplayName || extra.packageName }}</span>
+                <span class="item-subtitle">{{ extra.extraName }}</span>
+              </div>
+              <span class="price-pill">
+                {{ extra.priceLabel || formatCurrency(extra.priceValue) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="pricing-note" *ngIf="!hasPricingSelections(order.orderForm?.pricing)">
+        No package selections were saved with this order, but pricing totals are available above.
+      </p>
+    </div>
+
     <!-- Feedback Section -->
     <div class="details-card" *ngIf="order.feedbacks && order.feedbacks.length > 0">
       <h2 class="section-title">Feedback</h2>

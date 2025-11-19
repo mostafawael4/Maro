@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../../models/order.js");
+const Packages = require("../../models/Package.js");
 const { requireAdminAuth } = require("../../middleware/auth.js");
 const uploadService = require("../../services/upload.service.js");
 const multer = require("multer");
@@ -10,6 +11,185 @@ const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
 const { extractOrderVideoThumbnail, getVideoDuration } = require("../../services/videoThumbnail.service.js");
 const Credentials  = require('../../config/Credentials.js');
+
+const PROMO_CODES = {
+  maro1000: 1000,
+  maro2000: 2000,
+  maro3000: 3000,
+};
+
+const parsePriceValue = (price) => {
+  if (typeof price === "number" && Number.isFinite(price)) {
+    return price;
+  }
+  if (!price) {
+    return 0;
+  }
+  const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const normalizePricingSelections = async (pricingInput = {}) => {
+  if (!pricingInput || typeof pricingInput !== "object") {
+    return undefined;
+  }
+
+  const packagesFromDb = await Packages.find({}).lean();
+  if (!packagesFromDb || packagesFromDb.length === 0) {
+    return undefined;
+  }
+
+  const packageMapById = new Map();
+  const packageMapByName = new Map();
+
+  packagesFromDb.forEach((pkg) => {
+    if (!pkg) return;
+    const id = pkg._id?.toString();
+    if (id) {
+      packageMapById.set(id, pkg);
+    }
+    if (pkg.packageName) {
+      packageMapByName.set(pkg.packageName, pkg);
+    }
+  });
+
+  const resolvePackage = (selection = {}) => {
+    if (!selection) return null;
+    if (selection.packageId) {
+      const pkg = packageMapById.get(selection.packageId.toString());
+      if (pkg) return pkg;
+    }
+    if (selection.packageName) {
+      const pkg = packageMapByName.get(selection.packageName);
+      if (pkg) return pkg;
+    }
+    return null;
+  };
+
+  const packagesMap = new Map();
+  const collections = [];
+  const extras = [];
+  let subtotal = 0;
+
+  const appendPackage = (pkg) => {
+    const key = pkg._id?.toString();
+    if (!key || packagesMap.has(key)) {
+      return;
+    }
+    packagesMap.set(key, {
+      packageId: pkg._id,
+      packageName: pkg.packageName,
+      packageDisplayName: pkg.displayName,
+    });
+  };
+
+  if (Array.isArray(pricingInput.packages)) {
+    pricingInput.packages.forEach((selection) => {
+      const pkg = resolvePackage(selection);
+      if (pkg) {
+        appendPackage(pkg);
+      }
+    });
+  }
+
+  if (Array.isArray(pricingInput.collections)) {
+    pricingInput.collections.forEach((selection) => {
+      const pkg = resolvePackage(selection);
+      if (!pkg) return;
+
+      const collectionMatch = (pkg.collections || []).find((col) => {
+        if (!col) return false;
+        if (selection.collectionId && col._id && col._id.toString() === selection.collectionId.toString()) {
+          return true;
+        }
+        return selection.collectionName && col.collectionName === selection.collectionName;
+      });
+
+      if (!collectionMatch) return;
+
+      const priceValue = parsePriceValue(collectionMatch.price);
+      subtotal += priceValue;
+      appendPackage(pkg);
+      collections.push({
+        packageId: pkg._id,
+        packageName: pkg.packageName,
+        packageDisplayName: pkg.displayName,
+        collectionId: collectionMatch._id,
+        collectionName: collectionMatch.collectionName,
+        priceLabel: collectionMatch.price,
+        priceValue,
+      });
+    });
+  }
+
+  if (Array.isArray(pricingInput.extras)) {
+    pricingInput.extras.forEach((selection) => {
+      const pkg = resolvePackage(selection);
+      if (!pkg) return;
+
+      const extraMatch = (pkg.extras || []).find((extra) => {
+        if (!extra) return false;
+        if (selection.extraId && extra._id && extra._id.toString() === selection.extraId.toString()) {
+          return true;
+        }
+        return selection.extraName && extra.name === selection.extraName;
+      });
+
+      if (!extraMatch) return;
+
+      const priceValue = parsePriceValue(extraMatch.price);
+      subtotal += priceValue;
+      appendPackage(pkg);
+      extras.push({
+        packageId: pkg._id,
+        packageName: pkg.packageName,
+        packageDisplayName: pkg.displayName,
+        extraId: extraMatch._id,
+        extraName: extraMatch.name,
+        priceLabel: extraMatch.price,
+        priceValue,
+      });
+    });
+  }
+
+  let promoCode;
+  let discount = 0;
+  if (pricingInput.promoCode) {
+    const normalizedCode = pricingInput.promoCode.toString().trim().toLowerCase();
+    const promoValue = PROMO_CODES[normalizedCode];
+    if (promoValue) {
+      promoCode = normalizedCode;
+      discount = Math.min(promoValue, subtotal);
+    }
+  }
+
+  if (packagesMap.size === 0 && collections.length === 0 && extras.length === 0 && !promoCode) {
+    return undefined;
+  }
+
+  const normalized = {};
+  const packagesArray = Array.from(packagesMap.values());
+  if (packagesArray.length > 0) {
+    normalized.packages = packagesArray;
+  }
+  if (collections.length > 0) {
+    normalized.collections = collections;
+  }
+  if (extras.length > 0) {
+    normalized.extras = extras;
+  }
+  if (promoCode) {
+    normalized.promoCode = promoCode;
+  }
+
+  if (subtotal > 0 || discount > 0) {
+    normalized.subtotal = subtotal;
+    normalized.discount = discount;
+    normalized.total = subtotal - discount;
+  }
+
+  return normalized;
+};
 
 
 // POST /orders - create a new order (public)
@@ -24,11 +204,22 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ ok: false, message: "Invalid order form format" });
     }
     // create an order; you may want to check duplicates or generate a separate order code
+    let normalizedOrderForm = orderForm;
+    if (orderForm?.pricing) {
+      const normalizedPricing = await normalizePricingSelections(orderForm.pricing);
+      normalizedOrderForm = { ...orderForm };
+      if (normalizedPricing) {
+        normalizedOrderForm.pricing = normalizedPricing;
+      } else {
+        delete normalizedOrderForm.pricing;
+      }
+    }
+
     const order = await Order.create({
       email,
       clientName,
       notes,
-      orderForm, // store all wedding form data here
+      orderForm: normalizedOrderForm, // store all wedding form data here
     });
     logger.info(`Order created: ${order._id} for email ${email}`);
     return res.json({ ok: true, order });
@@ -116,6 +307,15 @@ router.put("/:orderId", requireAdminAuth, async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    if (updateFields.orderForm?.pricing) {
+      const normalizedPricing = await normalizePricingSelections(updateFields.orderForm.pricing);
+      if (normalizedPricing) {
+        updateFields.orderForm.pricing = normalizedPricing;
+      } else {
+        delete updateFields.orderForm.pricing;
+      }
     }
 
     // Update only the fields sent

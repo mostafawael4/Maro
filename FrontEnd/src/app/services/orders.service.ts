@@ -35,6 +35,42 @@ export interface OrderFormFilmEditing {
   teaserStyleLinks?: string[];
 }
 
+export interface SelectedPackageOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+}
+
+export interface SelectedCollectionOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  collectionId: string;
+  collectionName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface SelectedExtraOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  extraId: string;
+  extraName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface OrderPricing {
+  packages?: SelectedPackageOption[];
+  collections?: SelectedCollectionOption[];
+  extras?: SelectedExtraOption[];
+  promoCode?: string;
+  subtotal?: number;
+  discount?: number;
+  total?: number;
+}
+
 export interface OrderForm {
   _id?: string;
   brideAndGroomNames?: string;
@@ -53,6 +89,7 @@ export interface OrderForm {
   filmEditing?: OrderFormFilmEditing;
   socialMediaInspiration?: string[];
   tiktokIdeas?: string[];
+  pricing?: OrderPricing;
 }
 
 export interface Feedback {

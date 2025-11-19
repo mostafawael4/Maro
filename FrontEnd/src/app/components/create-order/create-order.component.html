@@ -67,6 +67,133 @@
         </div>
       </section>
 
+      <!-- Packages & Pricing Section -->
+      <section class="form-section">
+        <h2 class="section-title">Packages & Pricing</h2>
+        <p class="section-intro">
+          Select one or more packages, collections, and extras. We will calculate the total automatically and apply promo codes that start with "maro".
+        </p>
+
+        <div class="info-banner" *ngIf="packagesLoading">
+          Loading available packages...
+        </div>
+
+        <div class="error-message" *ngIf="packagesError">
+          <p>{{ packagesError }}</p>
+        </div>
+
+        <div class="packages-grid" *ngIf="!packagesLoading && packages.length">
+          <div class="package-card" *ngFor="let pkg of packages">
+            <div class="package-header">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  [checked]="isPackageSelected(pkg._id)"
+                  (change)="togglePackageSelection(pkg)"
+                />
+                <span class="checkbox-text">{{ pkg.displayName }}</span>
+              </label>
+            </div>
+
+            <div class="package-body" *ngIf="isPackageSelected(pkg._id)">
+              <div class="package-section">
+                <h4>Collections</h4>
+                <p class="empty-text" *ngIf="!pkg.collections?.length">No collections available.</p>
+                <div class="checkbox-group vertical" *ngIf="pkg.collections?.length">
+                  <label
+                    *ngFor="let collection of pkg.collections"
+                    class="checkbox-label"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="isCollectionSelected(collection._id)"
+                      (change)="toggleCollection(pkg, collection)"
+                    />
+                    <span class="checkbox-text">
+                      {{ collection.collectionName }}
+                      <small *ngIf="collection.price">- {{ collection.price }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="package-section" *ngIf="pkg.extras?.length">
+                <h4>Extras</h4>
+                <div class="checkbox-group vertical">
+                  <label
+                    *ngFor="let extra of pkg.extras"
+                    class="checkbox-label"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="isExtraSelected(extra._id)"
+                      (change)="toggleExtra(pkg, extra)"
+                    />
+                    <span class="checkbox-text">
+                      {{ extra.name }}
+                      <small *ngIf="extra.price">- {{ extra.price }}</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pricing-summary-card" *ngIf="packages.length">
+          <h3>Order Total</h3>
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <strong>{{ pricingSummary.subtotal | number:'1.0-0' }} EGP</strong>
+          </div>
+          <div class="summary-row">
+            <span>Discount</span>
+            <strong>-{{ pricingSummary.discount | number:'1.0-0' }} EGP</strong>
+          </div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <strong>{{ pricingSummary.total | number:'1.0-0' }} EGP</strong>
+          </div>
+
+          <div class="promo-section" formGroupName="pricing">
+            <label for="promoCode">Promo Code</label>
+            <div class="promo-actions">
+              <input
+                type="text"
+                id="promoCode"
+                formControlName="promoCode"
+                placeholder="Enter promo code (maro1000, maro2000, maro3000)"
+              />
+              <button type="button" class="btn-apply" (click)="applyPromoCode()">Apply</button>
+              <button
+                type="button"
+                class="btn-link"
+                *ngIf="appliedPromoCode"
+                (click)="clearPromoCode()"
+              >
+                Remove
+              </button>
+            </div>
+            <p class="promo-success" *ngIf="promoSuccess">{{ promoSuccess }}</p>
+            <p class="promo-error" *ngIf="promoError">{{ promoError }}</p>
+          </div>
+
+          <div class="selected-items" *ngIf="getSelectedCollectionsList().length || getSelectedExtrasList().length">
+            <h4>Selected Items</h4>
+            <ul>
+              <li *ngFor="let collection of getSelectedCollectionsList()">
+                {{ collection.packageDisplayName }} — {{ collection.collectionName }}
+                <span class="price-tag">{{ collection.priceLabel || (collection.priceValue | number:'1.0-0') + ' EGP' }}</span>
+              </li>
+              <li *ngFor="let extra of getSelectedExtrasList()">
+                {{ extra.packageDisplayName }} — {{ extra.extraName }}
+                <span class="price-tag">{{ extra.priceLabel || (extra.priceValue | number:'1.0-0') + ' EGP' }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       <!-- Event Details Section -->
       <section class="form-section">
         <h2 class="section-title">Event Details</h2>
