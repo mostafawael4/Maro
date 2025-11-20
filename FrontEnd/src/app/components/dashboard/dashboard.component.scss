@@ -35,6 +35,64 @@
   }
 }
 
+.dashboard-toolbar {
+  max-width: 1400px;
+  margin: 0 auto 30px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 1rem;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #fff;
+    border-radius: 999px;
+    border: 1px solid rgba(107, 31, 31, 0.2);
+    padding: 0.35rem 1rem;
+    box-shadow: 0 8px 20px rgba(107, 31, 31, 0.08);
+
+    svg {
+      color: rgba(107, 31, 31, 0.6);
+    }
+
+    input {
+      flex: 1;
+      border: none;
+      font-size: 0.95rem;
+      font-family: 'Georgia', serif;
+      color: #4a1a1a;
+      background: transparent;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .clear-btn {
+      border: none;
+      background: rgba(107, 31, 31, 0.08);
+      color: #6B1F1F;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        background: rgba(107, 31, 31, 0.15);
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -87,6 +145,24 @@
   color: #dc2626;
   max-width: 600px;
   margin: 0 auto 2rem;
+}
+
+.btn-retry {
+  padding: 0.75rem 1.8rem;
+  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-family: 'Georgia', serif;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(107, 31, 31, 0.2);
+  }
 }
 
 // Orders Table
@@ -406,6 +482,19 @@
     line-height: 1.6;
     font-style: italic;
     max-width: 500px;
+  }
+}
+
+.search-empty {
+  max-width: 600px;
+  margin: 40px auto 0;
+  border: 2px dashed rgba(107, 31, 31, 0.2);
+  border-radius: 16px;
+  padding: 40px 30px;
+  background: rgba(255, 249, 242, 0.7);
+
+  p {
+    margin-bottom: 1.5rem;
   }
 }
 

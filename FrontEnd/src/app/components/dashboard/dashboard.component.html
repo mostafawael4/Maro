@@ -12,6 +12,32 @@
     <p>Manage and track all client orders</p>
   </div>
 
+  <div 
+    class="dashboard-toolbar" 
+    *ngIf="!loading && orders.length > 0"
+  >
+    <div class="search-box">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input 
+        type="text"
+        placeholder="Search by couple names..."
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchTermChange($event)"
+      />
+      <button 
+        type="button"
+        class="clear-btn"
+        *ngIf="searchTerm"
+        (click)="onSearchTermChange('')"
+      >
+        Clear
+      </button>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>
@@ -29,7 +55,7 @@
   </div>
 
   <!-- Orders Table -->
-  <div *ngIf="!loading && orders.length > 0" class="orders-table-container">
+  <div *ngIf="!loading && filteredOrders.length > 0" class="orders-table-container">
     <table class="orders-table">
       <thead>
         <tr>
@@ -42,7 +68,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let order of orders" [class.updating]="updatingOrderId === order._id">
+        <tr *ngFor="let order of filteredOrders" [class.updating]="updatingOrderId === order._id">
           <td class="groom-name">{{ getBrideAndGroomName(order) }}</td>
           <td class="client-email">{{ order.email }}</td>
           <td class="event-details">
@@ -164,6 +190,25 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div 
+    *ngIf="!loading && orders.length > 0 && filteredOrders.length === 0" 
+    class="empty-state search-empty"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <h3>No matching orders</h3>
+    <p>We couldn’t find a couple whose names contain “{{ searchTerm }}”. Try another spelling or clear the search.</p>
+    <button 
+      class="btn-retry" 
+      type="button" 
+      (click)="onSearchTermChange('')"
+    >
+      Clear Search
+    </button>
   </div>
 
   <!-- Empty State -->

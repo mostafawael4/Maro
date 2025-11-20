@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { OrdersService, Order } from '../../services/orders.service';
 import { Subject } from 'rxjs';
@@ -8,12 +9,13 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, DeleteModalComponent],
+  imports: [CommonModule, RouterModule, FormsModule, DeleteModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
+  filteredOrders: Order[] = [];
   loading = true;
   error = '';
   updatingOrderId: string | null = null;
@@ -22,6 +24,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isDeletingOrder = false;
   sendingEmail: { [orderId: string]: boolean } = {};
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
+  searchTerm = '';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -44,6 +47,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.ordersService.getOrders().subscribe({
       next: (response) => {
         this.orders = response.orders;
+        this.applySearch();
         this.loading = false;
       },
       error: (err) => {
@@ -222,6 +226,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (response.ok) {
           // Remove the order from the list
           this.orders = this.orders.filter(order => order._id !== orderId);
+          this.applySearch();
         }
         this.isDeletingOrder = false;
         this.showDeleteModal = false;
@@ -244,5 +249,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       delete this.emailStatus[orderId];
     }, 4000);
+  }
+
+  onSearchTermChange(term: string): void {
+    this.searchTerm = term;
+    this.applySearch();
+  }
+
+  private applySearch(): void {
+    const normalizedTerm = this.searchTerm.trim().toLowerCase();
+    if (!normalizedTerm) {
+      this.filteredOrders = [...this.orders];
+      return;
+    }
+
+    this.filteredOrders = this.orders.filter(order => {
+      const formattedNames = this.getBrideAndGroomName(order).toLowerCase();
+      const rawNames = (order.orderForm?.brideAndGroomNames || '').toLowerCase();
+      const clientName = (order.clientName || '').toLowerCase();
+      return (
+        formattedNames.includes(normalizedTerm) ||
+        rawNames.includes(normalizedTerm) ||
+        clientName.includes(normalizedTerm)
+      );
+    });
   }
 }
