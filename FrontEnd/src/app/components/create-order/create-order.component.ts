@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { OrdersService, OrderForm, OrderFormVendors, OrderFormFilmEditing, OrderPricing, SelectedCollectionOption, SelectedExtraOption, SelectedPackageOption } from '../../services/orders.service';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, FormControl } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { OrdersService, OrderForm, OrderFormVendors, OrderFormFilmEditing, OrderPricing, SelectedCollectionOption, SelectedExtraOption, SelectedPackageOption, Order } from '../../services/orders.service';
 import { SuccessModalComponent } from '../success-modal/success-modal.component';
 import { PackagesService, Package, PackageCollection, PackageExtra } from '../../services/packages.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-create-order',
@@ -71,18 +72,66 @@ export class CreateOrderComponent implements OnInit {
   // Highlight preference options for each category
   highlightPreferenceOptions = ['Family', 'Friends', 'Equal amount of shots'];
 
+  isEditMode = false;
+  editingOrderId: string | null = null;
+  editingOrder: Order | null = null;
+  loadingOrderData = false;
+  loadOrderError = '';
+  isAdminUser = false;
+  formLockedForDate = false;
+  editSource: 'dashboard' | 'orders' | null = null;
+  private readonly editCachePrefix = 'maro_edit_order_';
+  private initialHydrationAttempted = false;
+  private clientEmailForFetch: string | null = null;
+
   constructor(
     private fb: FormBuilder,
     private ordersService: OrdersService,
     private packagesService: PackagesService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
+    private authService: AuthService
   ) {
     this.orderForm = this.createForm();
     this.updateVendorControlStates();
+
+    this.isAdminUser = this.authService.isAuthenticatedValue;
+
+    const orderId = this.route.snapshot.paramMap.get('id');
+    this.clientEmailForFetch = this.route.snapshot.queryParamMap.get('email');
+    if (orderId) {
+      this.isEditMode = true;
+      this.editingOrderId = orderId;
+      this.loadingOrderData = true;
+      this.orderForm.disable({ emitEvent: false });
+    }
+
+    this.updatePromoCodeLock();
   }
 
   ngOnInit(): void {
     this.loadPackages();
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAdminUser = isAuth ?? false;
+      if (this.isEditMode && this.editingOrder) {
+        this.applyFieldPermissions();
+      }
+    });
+
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAdminUser = isAuth ?? false;
+      if (this.isEditMode && this.editingOrder) {
+        this.applyFieldPermissions();
+      }
+      if (!this.initialHydrationAttempted && this.isEditMode && this.editingOrderId) {
+        this.tryHydrateEditingOrder(this.editingOrderId);
+        this.initialHydrationAttempted = true;
+      }
+    });
+
+    if (!this.authService.isBrowserEnv) {
+      this.isAdminUser = false;
+    }
   }
 
   createForm(): FormGroup {
@@ -150,12 +199,357 @@ export class CreateOrderComponent implements OnInit {
       next: (packages) => {
         this.packages = packages || [];
         this.packagesLoading = false;
+        if (this.isEditMode && this.editingOrder) {
+          this.setPricingSelections(this.editingOrder.orderForm?.pricing || null);
+        }
       },
       error: () => {
         this.packagesError = 'Failed to load packages. Please try again later.';
         this.packagesLoading = false;
       }
     });
+  }
+
+  private tryHydrateEditingOrder(orderId: string): void {
+    let hydrated = false;
+
+    if (typeof window !== 'undefined') {
+      const stateData = window.history.state as { order?: Order; source?: 'dashboard' | 'orders' };
+      if (stateData?.order?._id === orderId) {
+        this.setEditingOrder(stateData.order, stateData.source);
+        hydrated = true;
+      }
+
+      if (!hydrated) {
+        try {
+          const cached = window.sessionStorage?.getItem(`${this.editCachePrefix}${orderId}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed?.order?._id === orderId) {
+              if (!this.clientEmailForFetch && parsed.clientEmail) {
+                this.clientEmailForFetch = parsed.clientEmail;
+              }
+              this.setEditingOrder(parsed.order, parsed.source);
+              hydrated = true;
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to read cached edit order data', err);
+        }
+      }
+    }
+
+    if (hydrated) {
+      return;
+    }
+
+    if (this.isAdminUser) {
+      this.fetchOrderFromApi(orderId);
+      return;
+    }
+
+    if (this.clientEmailForFetch) {
+      this.fetchOrderForClient(orderId, this.clientEmailForFetch);
+      return;
+    }
+
+  }
+
+  private fetchOrderFromApi(orderId: string): void {
+    this.loadingOrderData = true;
+    this.ordersService.getOrderById(orderId).subscribe({
+      next: (response: any) => {
+        const order = response?.order || response;
+        if (!order) {
+          this.loadOrderError = 'Order not found.';
+          this.loadingOrderData = false;
+          return;
+        }
+        this.setEditingOrder(order, 'dashboard');
+        this.cacheEditingOrder(order, 'dashboard');
+      },
+      error: (err) => {
+        console.error('Failed to load order for editing', err);
+        this.loadOrderError = err.status === 401
+          ? 'Your session expired. Please log in again from the dashboard.'
+          : 'Failed to load this order. Please try again.';
+        this.loadingOrderData = false;
+      }
+    });
+  }
+
+  private fetchOrderForClient(orderId: string, email: string): void {
+    this.loadingOrderData = true;
+    this.ordersService.getOrdersByEmail(email).subscribe({
+      next: (response) => {
+        const orders: Order[] = response?.orders || [];
+        const order = orders.find(o => o._id === orderId);
+        if (!order) {
+          this.loadOrderError = 'We could not find this order under your email address.';
+          this.loadingOrderData = false;
+          return;
+        }
+        this.setEditingOrder(order, 'orders');
+      },
+      error: (err) => {
+        this.loadingOrderData = false;
+      }
+    });
+  }
+
+  private cacheEditingOrder(order: Order, source?: 'dashboard' | 'orders'): void {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(
+          `${this.editCachePrefix}${order._id}`,
+          JSON.stringify({ order, source, clientEmail: this.clientEmailForFetch || null })
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to cache order for editing', err);
+    }
+  }
+
+  private setFormArrayValues(control: FormArray, values: string[] = [], ensureEntry = true): void {
+    const validators = control.length ? (control.at(0) as FormControl).validator : null;
+    const asyncValidators = control.length ? (control.at(0) as FormControl).asyncValidator : null;
+    while (control.length) {
+      control.removeAt(0);
+    }
+
+    const entries = values && values.length ? values : (ensureEntry ? [''] : []);
+    entries.forEach(value => {
+      control.push(this.fb.control(value, validators, asyncValidators));
+    });
+  }
+
+  private setStylePreferenceSelections(values: string[] = []): void {
+    const array = this.stylePreferenceArray;
+    while (array.length) {
+      array.removeAt(0);
+    }
+    values.forEach(value => {
+      array.push(this.fb.control(value));
+    });
+  }
+
+  private setPricingSelections(pricing?: OrderPricing | null): void {
+    this.selectedPackages.clear();
+    this.selectedCollections.clear();
+    this.selectedExtras.clear();
+
+    if (pricing?.packages?.length) {
+      pricing.packages.forEach(pkg => {
+        if (pkg.packageId) {
+          this.selectedPackages.set(pkg.packageId, pkg);
+        }
+      });
+    }
+
+    if (pricing?.collections?.length) {
+      pricing.collections.forEach(collection => {
+        if (collection.collectionId) {
+          this.selectedCollections.set(collection.collectionId, collection);
+        }
+      });
+    }
+
+    if (pricing?.extras?.length) {
+      pricing.extras.forEach(extra => {
+        if (extra.extraId) {
+          this.selectedExtras.set(extra.extraId, extra);
+        }
+      });
+    }
+
+    const pricingGroup = this.getPricingFormGroup();
+    pricingGroup?.get('promoCode')?.setValue(pricing?.promoCode || '', { emitEvent: false });
+    pricingGroup?.get('depositPaid')?.setValue(pricing?.depositPaid ?? 0, { emitEvent: false });
+
+    if (pricing) {
+      this.pricingSummary = {
+        subtotal: pricing.subtotal ?? 0,
+        discount: pricing.discount ?? 0,
+        total: pricing.total ?? pricing.subtotal ?? 0,
+        remaining: pricing.remainingBalance ?? Math.max((pricing.total ?? 0) - (pricing.depositPaid ?? 0), 0)
+      };
+      this.appliedPromoCode = pricing.promoCode || null;
+    } else {
+      this.appliedPromoCode = null;
+      this.updatePricingSummary();
+    }
+  }
+
+  private parseHighlightSelections(entries?: string[]): { preparations?: string; groupShots?: string; dancingParty?: string } {
+    const result: { preparations?: string; groupShots?: string; dancingParty?: string } = {};
+    (entries || []).forEach(entry => {
+      const [label, valueRaw] = entry.split(':').map(part => part.trim());
+      if (!label || !valueRaw) {
+        return;
+      }
+      const normalized = valueRaw.toLowerCase().includes('equal')
+        ? 'equal'
+        : valueRaw.toLowerCase().includes('friend')
+          ? 'friends'
+          : 'family';
+
+      if (label.toLowerCase().includes('preparations')) {
+        result.preparations = normalized;
+      } else if (label.toLowerCase().includes('group')) {
+        result.groupShots = normalized;
+      } else if (label.toLowerCase().includes('dancing') || label.toLowerCase().includes('party')) {
+        result.dancingParty = normalized;
+      }
+    });
+    return result;
+  }
+
+  private mapAccessoriesShotsValue(value?: boolean | string): string {
+    if (value === true || value === 'yes') {
+      return 'yes';
+    }
+    if (value === false || value === 'no') {
+      return 'no';
+    }
+    return 'no-preference';
+  }
+
+  private normalizeDateForInput(value?: string | Date | null): string {
+    if (!value) {
+      return '';
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private setEditingOrder(order: Order, source?: 'dashboard' | 'orders'): void {
+    this.editingOrder = order;
+    if (source) {
+      this.editSource = source;
+    }
+    if (!this.clientEmailForFetch && order.email) {
+      this.clientEmailForFetch = order.email;
+    }
+    this.loadingOrderData = false;
+    this.loadOrderError = '';
+    this.orderForm.enable({ emitEvent: false });
+    this.populateFormWithOrder(order);
+    this.applyFieldPermissions();
+    this.applyDateLock(order);
+    this.cacheEditingOrder(order, this.editSource || source);
+    this.updatePromoCodeLock();
+  }
+
+  private populateFormWithOrder(order: Order): void {
+    const formData = order.orderForm || {};
+
+    this.orderForm.patchValue({
+      email: order.email || '',
+      clientName: order.clientName || '',
+      notes: order.notes || '',
+      brideAndGroomNames: formData.brideAndGroomNames || '',
+      eventDate: this.normalizeDateForInput(formData.eventDate),
+      eventVenue: formData.eventVenue || '',
+      timelineOfDay: formData.timelineOfDay || '',
+      shootersStartTime: formData.shootersStartTime || '',
+      shootersEndTime: formData.shootersEndTime || '',
+      coupleDescription: formData.coupleDescription || '',
+      moodBoardLinks: Array.isArray(formData.moodBoardLinks) ? formData.moodBoardLinks.join(', ') : (formData.moodBoardLinks as unknown as string) || '',
+      specialMoments: formData.specialMoments || '',
+      excludeShots: formData.excludeShots || '',
+      eventTypeOther: ''
+    }, { emitEvent: false });
+
+    this.setFormArrayValues(this.eventTypeArray, formData.eventType || [], false);
+    this.setFormArrayValues(this.favoriteSongsArray, formData.favoriteSongs || []);
+    this.setFormArrayValues(this.socialMediaInspirationArray, formData.socialMediaInspiration || []);
+    this.setFormArrayValues(this.tiktokIdeasArray, formData.tiktokIdeas || []);
+    this.setFormArrayValues(this.teaserStyleLinksArray, formData.filmEditing?.teaserStyleLinks || [], false);
+
+    const vendors = formData.vendors || {};
+    const vendorsGroup = this.orderForm.get('vendors') as FormGroup;
+    vendorsGroup.patchValue({
+      makeupArtist: vendors.makeupArtist || '',
+      hairStylist: vendors.hairStylist || '',
+      dressDesigner: vendors.dressDesigner || '',
+      eventPlanner: vendors.eventPlanner || '',
+      dj: vendors.dj || '',
+      lighting: vendors.lighting || '',
+      entertainment: vendors.entertainment || '',
+      others: vendors.others || ''
+    }, { emitEvent: false });
+    this.setFormArrayValues(this.photographersArray, vendors.photographers || []);
+    this.setFormArrayValues(this.cinematographersArray, vendors.cinematographers || []);
+
+    const filmEditingGroup = this.orderForm.get('filmEditing') as FormGroup;
+    const filmEditing = formData.filmEditing || {};
+    filmEditingGroup.patchValue({
+      includeAccessoriesShots: this.mapAccessoriesShotsValue(filmEditing.includeAccessoriesShots),
+      editSequence: filmEditing.editSequence || 'no-preference'
+    }, { emitEvent: false });
+    this.setStylePreferenceSelections(filmEditing.stylePreference || []);
+
+    const highlightSelections = this.parseHighlightSelections(filmEditing.highlightPreference);
+    this.highlightPreferenceGroup.patchValue({
+      preparations: highlightSelections.preparations || '',
+      groupShots: highlightSelections.groupShots || '',
+      dancingParty: highlightSelections.dancingParty || ''
+    }, { emitEvent: false });
+
+    this.setPricingSelections(formData.pricing || null);
+    this.updateVendorControlStates();
+    this.orderForm.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private applyFieldPermissions(): void {
+    const rootFields = ['email', 'clientName', 'notes'];
+    rootFields.forEach(field => {
+      const control = this.orderForm.get(field);
+      if (!control) return;
+      if (this.isAdminUser) {
+        control.enable({ emitEvent: false });
+      } else {
+        control.disable({ emitEvent: false });
+      }
+    });
+  }
+
+  private applyDateLock(order: Order): void {
+    const eventDateValue = order.orderForm?.eventDate;
+    if (!eventDateValue) {
+      this.formLockedForDate = false;
+      return;
+    }
+    const eventDate = new Date(eventDateValue);
+    if (isNaN(eventDate.getTime())) {
+      this.formLockedForDate = false;
+      return;
+    }
+    const now = new Date();
+    eventDate.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+    this.formLockedForDate = eventDate <= now;
+    if (this.formLockedForDate) {
+      this.orderForm.disable({ emitEvent: false });
+    }
+  }
+
+  private updatePromoCodeLock(): void {
+    const promoControl = this.orderForm.get('pricing.promoCode');
+    if (!promoControl) {
+      return;
+    }
+    if (this.isEditMode) {
+      promoControl.disable({ emitEvent: false });
+    } else {
+      promoControl.enable({ emitEvent: false });
+    }
   }
 
   // Helper methods for FormArrays
@@ -647,6 +1041,10 @@ export class CreateOrderComponent implements OnInit {
 
 
   onSubmit(): void {
+    if (this.isEditMode && (this.loadingOrderData || this.loadOrderError || !this.editingOrderId)) {
+      return;
+    }
+
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
       this.submitError = 'Please fill in all required fields correctly.';
@@ -661,10 +1059,10 @@ export class CreateOrderComponent implements OnInit {
     this.submitError = '';
     this.submitSuccess = false;
 
-    const formValue = this.orderForm.value;
+    const formValue = this.orderForm.getRawValue();
 
     // Handle event types - if "Other" is selected, replace it with the custom value
-    let eventTypes = formValue.eventType.filter((t: string) => t);
+    let eventTypes = (formValue.eventType || []).filter((t: string) => t);
     if (eventTypes.includes('Other') && formValue.eventTypeOther) {
       eventTypes = eventTypes.filter((t: string) => t !== 'Other');
       eventTypes.push(formValue.eventTypeOther);
@@ -699,6 +1097,34 @@ export class CreateOrderComponent implements OnInit {
       orderFormData.pricing = pricing;
     }
 
+    if (this.isEditMode && this.editingOrderId) {
+      const updatePayload: any = {
+        orderForm: orderFormData
+      };
+
+      if (this.isAdminUser) {
+        updatePayload.email = formValue.email;
+        updatePayload.clientName = formValue.clientName || undefined;
+        updatePayload.notes = formValue.notes || undefined;
+      }
+
+      this.ordersService.updateOrder(this.editingOrderId, updatePayload).subscribe({
+        next: (response) => {
+          this.isSubmitting = false;
+          this.submitSuccess = true;
+          if (response?.order) {
+            this.setEditingOrder(response.order, this.editSource || undefined);
+          }
+        },
+        error: (error) => {
+          this.isSubmitting = false;
+          this.submitError = error.error?.message || 'Failed to update order. Please try again.';
+          console.error('Error updating order:', error);
+        }
+      });
+      return;
+    }
+
     const orderData = {
       email: formValue.email,
       clientName: formValue.clientName || undefined,
@@ -707,7 +1133,7 @@ export class CreateOrderComponent implements OnInit {
     };
 
     this.ordersService.createOrder(orderData).subscribe({
-      next: (response) => {
+      next: () => {
         this.isSubmitting = false;
         this.submitSuccess = true;
       },
@@ -821,11 +1247,23 @@ export class CreateOrderComponent implements OnInit {
   }
 
   onCancel(): void {
-    this.router.navigate(['/orders']);
+    this.navigateAfterEdit();
   }
 
   onSuccessModalClose(): void {
     this.submitSuccess = false;
+    this.navigateAfterEdit();
+  }
+
+  private navigateAfterEdit(): void {
+    if (this.isEditMode) {
+      if (this.editSource === 'dashboard') {
+        this.router.navigate(['/dashboard']);
+        return;
+      }
+      this.router.navigate(['/orders']);
+      return;
+    }
     this.router.navigate(['/orders']);
   }
 }

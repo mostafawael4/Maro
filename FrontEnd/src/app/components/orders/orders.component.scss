@@ -518,6 +518,18 @@
   background: linear-gradient(135deg, #0F9D58 0%, #0B7A43 100%);
 }
 
+// Edit Icon
+.edit-icon {
+  bottom: 12px;
+  left: 50%;
+  transform: translate(-50%, 0) scale(0.8);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+}
+
+.order-card:hover .edit-icon {
+  transform: translate(-50%, 0) scale(1);
+}
+
 .mini-spinner {
   width: 22px;
   height: 22px;

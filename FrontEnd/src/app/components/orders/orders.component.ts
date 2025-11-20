@@ -62,6 +62,7 @@ export class OrdersComponent implements OnInit {
   feedbackError: { [orderId: string]: string } = {};
   sendingEmail: { [orderId: string]: boolean } = {};
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
+  private readonly editCachePrefix = 'maro_edit_order_';
 
   constructor(
     private ordersService: OrdersService,
@@ -138,6 +139,37 @@ export class OrdersComponent implements OnInit {
       });
     } else {
       this.router.navigate(['/order-details', orderId]);
+    }
+  }
+
+  openEditOrder(order: Order, event?: Event): void {
+    event?.stopPropagation();
+    if (!order?._id) {
+      return;
+    }
+
+    this.cacheOrderForEditing(order, this.userEmail);
+    const extras: any = {
+      state: { order, source: 'orders' }
+    };
+
+    if (!this.isAuthenticated && this.userEmail) {
+      extras.queryParams = { email: this.userEmail };
+    }
+
+    this.router.navigate(['/edit-order', order._id], extras);
+  }
+
+  private cacheOrderForEditing(order: Order, clientEmail?: string | null): void {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(
+          `${this.editCachePrefix}${order._id}`,
+          JSON.stringify({ order, source: 'orders', clientEmail: clientEmail || null })
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to cache order for editing', err);
     }
   }
 

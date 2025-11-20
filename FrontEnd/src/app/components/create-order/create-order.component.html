@@ -2,15 +2,26 @@
   <div class="container">
     <!-- Header -->
     <div class="page-header">
-      <h1 class="page-title">Create New Order</h1>
-      <p class="page-description">Fill in the details below to create a new order</p>
+      <h1 class="page-title">
+        {{ isEditMode ? 'Edit Order' : 'Create New Order' }}
+      </h1>
+      <p class="page-description">
+        {{ isEditMode ? 'Review the order form details below and make any necessary changes.' : 'Fill in the details below to create a new order' }}
+      </p>
+    </div>
+
+    <div
+      class="info-banner"
+      *ngIf="isEditMode && !isAdminUser && !loadingOrderData && !loadOrderError"
+    >
+      Some account details (like email and client name) are locked because you are editing this form from the client portal.
     </div>
 
     <!-- Success Modal -->
     <app-success-modal
       [isOpen]="submitSuccess"
-      title="Order Created Successfully!"
-      message="Your order has been created successfully. You will be redirected to the orders page."
+      [title]="isEditMode ? 'Order Updated Successfully!' : 'Order Created Successfully!'"
+      [message]="isEditMode ? 'Your changes have been saved successfully.' : 'Your order has been created successfully. You will be redirected to the orders page.'"
       (close)="onSuccessModalClose()"
     ></app-success-modal>
 
@@ -22,8 +33,35 @@
       <p>{{ submitError }}</p>
     </div>
 
+    <div *ngIf="isEditMode && loadingOrderData" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading order details...</p>
+    </div>
+
+    <div *ngIf="loadOrderError" class="error-message">
+      <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+      <div>
+        <p>{{ loadOrderError }}</p>
+        <button type="button" class="btn-cancel" (click)="onCancel()">Go Back</button>
+      </div>
+    </div>
+
+    <div
+      class="date-lock-banner"
+      *ngIf="formLockedForDate"
+    >
+      <p>This form can no longer be edited because the event date is today or already past.</p>
+    </div>
+
     <!-- Order Form -->
-    <form [formGroup]="orderForm" (ngSubmit)="onSubmit()" class="order-form">
+    <form
+      *ngIf="!loadingOrderData && !loadOrderError"
+      [formGroup]="orderForm"
+      (ngSubmit)="onSubmit()"
+      class="order-form"
+    >
       
       <!-- Basic Information Section -->
       <section class="form-section">
@@ -204,13 +242,22 @@
                 id="promoCode"
                 formControlName="promoCode"
                 placeholder="Enter promo code (maro1000, maro2000, maro3000)"
+                [disabled]="isEditMode"
               />
-              <button type="button" class="btn-apply" (click)="applyPromoCode()">Apply</button>
+              <button
+                type="button"
+                class="btn-apply"
+                (click)="applyPromoCode()"
+                [disabled]="isEditMode"
+              >
+                Apply
+              </button>
               <button
                 type="button"
                 class="btn-link"
                 *ngIf="appliedPromoCode"
                 (click)="clearPromoCode()"
+                [disabled]="isEditMode"
               >
                 Remove
               </button>
@@ -879,10 +926,11 @@ guests...etc.
         <button 
           type="submit" 
           class="btn-submit"
-          [disabled]="isSubmitting"
+          [disabled]="isSubmitting || formLockedForDate"
+          *ngIf="!formLockedForDate"
         >
-          <span *ngIf="!isSubmitting">Create Order</span>
-          <span *ngIf="isSubmitting">Creating Order...</span>
+          <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Create Order' }}</span>
+          <span *ngIf="isSubmitting">{{ isEditMode ? 'Saving Changes...' : 'Creating Order...' }}</span>
         </button>
         <button 
           type="button" 

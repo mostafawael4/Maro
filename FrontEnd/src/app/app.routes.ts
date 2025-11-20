@@ -24,6 +24,7 @@ export const routes: Routes = [
     { path: 'faqs', component: FaqsComponent },
     { path: 'orders', component: OrdersComponent },
     { path: 'create-order', component: CreateOrderComponent },
+    { path: 'edit-order/:id', component: CreateOrderComponent },
     { path: 'order-details/:id', component: OrderDetailsComponent },
     { path: 'dashboard', component: DashboardComponent, canActivate: [adminGuard] },
     { path: 'order-info/:id', component: OrderInfoComponent },

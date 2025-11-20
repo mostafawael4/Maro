@@ -390,6 +390,16 @@
       }
     }
 
+    &.edit-btn {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: white;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
     &.delete-btn {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       color: white;

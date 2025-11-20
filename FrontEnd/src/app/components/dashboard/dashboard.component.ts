@@ -26,6 +26,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
   searchTerm = '';
   private destroy$ = new Subject<void>();
+  private readonly editCachePrefix = 'maro_edit_order_';
 
   constructor(
     private ordersService: OrdersService,
@@ -88,6 +89,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   viewOrderImages(orderId: string): void {
     this.router.navigate(['/order-details', orderId]);
+  }
+
+  openEditOrder(order: Order, event?: Event): void {
+    event?.stopPropagation();
+    if (!order?._id) {
+      return;
+    }
+
+    this.cacheOrderForEditing(order);
+    this.router.navigate(['/edit-order', order._id], {
+      state: { order, source: 'dashboard' }
+    });
+  }
+
+  private cacheOrderForEditing(order: Order): void {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(
+          `${this.editCachePrefix}${order._id}`,
+          JSON.stringify({ order, source: 'dashboard' })
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to cache order for editing', err);
+    }
   }
 
   sendOrderCompletionEmail(order: Order): void {

@@ -210,6 +210,10 @@ export class OrdersService {
     });
   }
 
+  updateOrder(orderId: string, updateFields: Partial<Order>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${orderId}`, updateFields);
+  }
+
   submitFeedback(orderId: string, feedback: string): Observable<any> {
     // The endpoint is /feedbacks/orders/:orderId/feedback based on backend routes
     return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`, 
