@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { OrdersService } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
@@ -15,7 +16,7 @@ interface FeedbackItem {
 @Component({
   selector: 'app-feedbacks',
   standalone: true,
-  imports: [CommonModule, DeleteModalComponent],
+  imports: [CommonModule, FormsModule, DeleteModalComponent],
   templateUrl: './feedbacks.component.html',
   styleUrl: './feedbacks.component.scss'
 })
@@ -24,10 +25,14 @@ export class FeedbacksComponent implements OnInit {
   loading = true;
   error = '';
   isAuthenticated = false;
+  newFeedback = '';
+  submitError = '';
+  submitSuccess = '';
+  submittingFeedback = false;
   
   // Delete modal
   showDeleteModal = false;
-  feedbackToDelete: { orderId: string; feedbackId: string } | null = null;
+  feedbackToDelete: { orderId?: string | null; feedbackId: string } | null = null;
   deletingFeedback = false;
 
   constructor(
@@ -104,12 +109,12 @@ export class FeedbacksComponent implements OnInit {
 
   onDeleteClick(event: Event, feedback: FeedbackItem): void {
     event.stopPropagation();
-    if (!feedback.feedbackId || !feedback.orderId) {
-      console.error('Feedback ID or Order ID is missing');
+    if (!feedback.feedbackId) {
+      console.error('Feedback ID is missing');
       return;
     }
     this.feedbackToDelete = {
-      orderId: feedback.orderId,
+      orderId: feedback.orderId || null,
       feedbackId: feedback.feedbackId
     };
     this.showDeleteModal = true;
@@ -119,22 +124,18 @@ export class FeedbacksComponent implements OnInit {
     if (!this.feedbackToDelete || this.deletingFeedback) return;
     
     this.deletingFeedback = true;
-    this.ordersService.deleteFeedback(
-      this.feedbackToDelete.orderId,
-      this.feedbackToDelete.feedbackId
-    ).subscribe({
-      next: (response) => {
-        if (response.ok) {
-          // Remove feedback from local array
-          this.feedbacks = this.feedbacks.filter(
-            fb => !(fb.orderId === this.feedbackToDelete!.orderId && 
-                   fb.feedbackId === this.feedbackToDelete!.feedbackId)
-          );
-          this.showDeleteModal = false;
-          this.feedbackToDelete = null;
-        } else {
-          this.error = response.message || 'Failed to delete feedback';
-        }
+    const { orderId, feedbackId } = this.feedbackToDelete;
+    const delete$ = orderId
+      ? this.ordersService.deleteFeedback(orderId, feedbackId)
+      : this.ordersService.deleteGeneralFeedback(feedbackId);
+
+    delete$.subscribe({
+      next: () => {
+        this.feedbacks = this.feedbacks.filter(
+          fb => fb.feedbackId !== feedbackId
+        );
+        this.showDeleteModal = false;
+        this.feedbackToDelete = null;
         this.deletingFeedback = false;
       },
       error: (err) => {
@@ -149,5 +150,38 @@ export class FeedbacksComponent implements OnInit {
     if (this.deletingFeedback) return;
     this.showDeleteModal = false;
     this.feedbackToDelete = null;
+  }
+
+  onSubmitFeedback(): void {
+    this.submitError = '';
+    this.submitSuccess = '';
+    const trimmedFeedback = this.newFeedback.trim();
+
+    if (!trimmedFeedback) {
+      this.submitError = 'Please share your experience before submitting.';
+      return;
+    }
+
+    this.submittingFeedback = true;
+    this.ordersService.createGeneralFeedback(trimmedFeedback).subscribe({
+      next: (response) => {
+        const newEntry: FeedbackItem = {
+          orderId: '',
+          clientName: undefined,
+          email: '',
+          feedbackText: response.feedback || trimmedFeedback,
+          feedbackId: response._id
+        };
+        this.feedbacks = [newEntry, ...this.feedbacks];
+        this.newFeedback = '';
+        this.submitSuccess = 'Thank you for your feedback!';
+        this.submittingFeedback = false;
+      },
+      error: (err) => {
+        console.error('Error submitting feedback:', err);
+        this.submitError = 'Failed to send feedback. Please try again.';
+        this.submittingFeedback = false;
+      }
+    });
   }
 }

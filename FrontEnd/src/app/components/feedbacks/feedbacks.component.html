@@ -4,6 +4,35 @@
     <p>Read what our clients have to say about their experience</p>
   </div>
 
+  <div class="feedback-form-card">
+    <h2>Share Your Experience</h2>
+    <p>Your message helps us improve and inspires future couples.</p>
+    
+    <textarea
+      class="feedback-textarea"
+      name="generalFeedback"
+      [(ngModel)]="newFeedback"
+      [disabled]="submittingFeedback"
+      maxlength="500"
+      rows="4"
+      placeholder="Write your feedback here..."
+    ></textarea>
+
+    <div class="form-messages">
+      <span class="char-count">{{ newFeedback.length || 0 }}/500</span>
+      <span class="success" *ngIf="submitSuccess">{{ submitSuccess }}</span>
+      <span class="error" *ngIf="submitError">{{ submitError }}</span>
+    </div>
+
+    <button
+      class="btn-submit"
+      (click)="onSubmitFeedback()"
+      [disabled]="submittingFeedback"
+    >
+      {{ submittingFeedback ? 'Sending...' : 'Send Feedback' }}
+    </button>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>

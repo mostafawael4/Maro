@@ -225,6 +225,10 @@ export class OrdersService {
     });
   }
 
+  createGeneralFeedback(feedback: string): Observable<Feedback> {
+    return this.http.post<Feedback>(`${environment.apiUrl}/feedbacks`, { feedback });
+  }
+
   getAllFeedbacks(feedbackCounts?: number): Observable<any> {
     // The endpoint is /feedbacks/all based on backend routes
     let url = `${environment.apiUrl}/feedbacks/all`;
@@ -239,6 +243,12 @@ export class OrdersService {
   deleteFeedback(orderId: string, feedbackId: string): Observable<any> {
     // The endpoint is /feedbacks/orders/:orderId/:feedbackId based on backend routes
     return this.http.delete<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/${feedbackId}`, {
+      withCredentials: true
+    });
+  }
+
+  deleteGeneralFeedback(feedbackId: string): Observable<any> {
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${feedbackId}`, {
       withCredentials: true
     });
   }
