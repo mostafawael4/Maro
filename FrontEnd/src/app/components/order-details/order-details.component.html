@@ -2,6 +2,7 @@
   <!-- Delete Media Confirmation Modal -->
   <app-delete-modal
     [isOpen]="showDeleteModal"
+    [isLoading]="deletingMedia"
     title="Delete Media"
     [message]="'Are you sure you want to delete ' + (mediaToDelete?.filename || 'this media') + '?'"
     (confirm)="onConfirmDeleteMedia()"
@@ -10,6 +11,7 @@
   <!-- Delete Folder Confirmation Modal -->
   <app-delete-modal
     [isOpen]="showDeleteFolderModal"
+    [isLoading]="deletingFolder"
     title="Delete Folder"
     [message]="getDeleteFolderMessage()"
     warning="This action cannot be undone. All media in this folder will be permanently deleted."
@@ -58,8 +60,8 @@
           </span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">Created Date:</span>
-          <span class="meta-value">{{ order.createdAt | date: 'MMM dd, yyyy' }}</span>
+          <span class="meta-label">Event Date:</span>
+          <span class="meta-value">{{ order.orderForm?.eventDate ? (order.orderForm?.eventDate | date: 'MMM dd, yyyy') : 'N/A' }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Total Media:</span>
@@ -69,7 +71,7 @@
     </div>
 
     <app-order-folder-panel
-      *ngIf="folders.length > 0 && !selectedFolder"
+      *ngIf="(folders.length > 0 || foldersLoading) && !selectedFolder"
       [folders]="folders"
       [loading]="foldersLoading"
       [error]="foldersError"
@@ -93,6 +95,7 @@
       (back)="exitFolderView()"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)"
       (deleteMedia)="onDeleteMediaClick($event)"
       (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">
@@ -111,6 +114,7 @@
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)"
       (deleteMedia)="onDeleteMediaClick($event)"
       (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">

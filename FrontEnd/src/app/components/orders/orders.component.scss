@@ -2,7 +2,7 @@
   background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
   min-height: 100vh;
   padding: 40px 20px;
-  font-family: 'Georgia', serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .header {
@@ -11,21 +11,18 @@
   animation: fadeIn 0.8s ease-out;
 
   h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 2.5rem;
     font-weight: 400;
     color: #8B3A3A;
     margin-bottom: 0.75rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    // font-style: italic;
+    letter-spacing: 0.5px;
   }
 
   p {
     color: rgba(0, 0, 0, 0.6);
     font-size: 1rem;
-    font-style: italic;
-    letter-spacing: 0.5px;
+    font-weight: 400;
   }
 
   @media (max-width: 768px) {
@@ -59,7 +56,7 @@
     border: 2px solid rgba(107, 31, 31, 0.2);
     border-radius: 10px;
     font-size: 1rem;
-    font-family: 'Georgia', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
     color: #333;
     transition: all 0.3s ease;
@@ -73,7 +70,6 @@
 
     &::placeholder {
       color: rgba(0, 0, 0, 0.4);
-      font-style: italic;
     }
   }
 
@@ -118,18 +114,16 @@
     border-bottom: 2px solid rgba(107, 31, 31, 0.1);
 
     h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 1.8rem;
       font-weight: 400;
       color: #8B3A3A;
       margin-bottom: 0.5rem;
-      font-style: italic;
     }
 
     p {
       color: rgba(0, 0, 0, 0.6);
       font-size: 0.95rem;
-      font-style: italic;
     }
   }
 
@@ -145,7 +139,6 @@
         font-weight: 500;
         color: #333;
         margin-bottom: 0.5rem;
-        font-style: italic;
       }
 
       .email-input {
@@ -154,7 +147,7 @@
         border: 2px solid rgba(107, 31, 31, 0.2);
         border-radius: 10px;
         font-size: 1rem;
-        font-family: 'Georgia', serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         background: white;
         color: #333;
         transition: all 0.3s ease;
@@ -171,7 +164,6 @@
 
         &::placeholder {
           color: rgba(0, 0, 0, 0.4);
-          font-style: italic;
         }
       }
 
@@ -180,7 +172,6 @@
         color: #dc2626;
         font-size: 0.85rem;
         margin-top: 0.5rem;
-        font-style: italic;
       }
     }
 
@@ -259,7 +250,6 @@
   .viewing-as {
     font-size: 0.95rem;
     color: #333;
-    font-style: italic;
 
     strong {
       color: #8B3A3A;
@@ -352,7 +342,6 @@
   p {
     margin-top: 20px;
     color: rgba(0, 0, 0, 0.6);
-    font-style: italic;
   }
 }
 
@@ -377,7 +366,6 @@
 
   p {
     font-size: 1.1rem;
-    font-style: italic;
   }
 }
 
@@ -597,22 +585,20 @@
   width: 100%;
 
   .groom-name {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.2rem;
     font-weight: 600;
     color: #8B3A3A;
     margin: 0 0 0.4rem 0;
     letter-spacing: 0.5px;
-    font-style: italic;
     line-height: 1.3;
   }
 
   .event-date {
     font-size: 0.9rem;
     color: rgba(0, 0, 0, 0.6);
-    font-style: italic;
     margin: 0;
-    font-family: 'Georgia', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 }
 
@@ -667,7 +653,7 @@
   border: 2px solid rgba(107, 31, 31, 0.15);
 
   h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     color: #8B3A3A;
     margin-bottom: 0.5rem;
     font-size: 1.8rem;
@@ -676,7 +662,6 @@
   .order-name {
     margin-bottom: 1.5rem;
     color: rgba(0, 0, 0, 0.7);
-    font-style: italic;
   }
 
   .modal-label {
@@ -693,7 +678,7 @@
     border: 2px solid rgba(107, 31, 31, 0.2);
     border-radius: 12px;
     font-size: 1rem;
-    font-family: 'Georgia', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin-bottom: 1.25rem;
     background: white;
     transition: all 0.3s ease;
@@ -875,7 +860,69 @@
   font-size: 0.9rem;
   margin-bottom: 1rem;
   text-align: center;
-  font-style: italic;
+}
+
+// Upload Progress
+.upload-progress-container {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: rgba(107, 31, 31, 0.03);
+  border-radius: 12px;
+  border: 2px solid rgba(107, 31, 31, 0.1);
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+
+    .progress-percentage {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #8B3A3A;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .progress-time {
+      font-size: 0.9rem;
+      color: rgba(0, 0, 0, 0.6);
+      font-weight: 600;
+    }
+  }
+
+  .progress-bar-wrapper {
+    width: 100%;
+    height: 12px;
+    background: rgba(107, 31, 31, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #8B3A3A 0%, #6B1F1F 100%);
+      border-radius: 6px;
+      transition: width 0.3s ease;
+      box-shadow: 0 2px 8px rgba(139, 58, 58, 0.3);
+    }
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: rgba(0, 0, 0, 0.7);
+
+    .progress-size {
+      font-weight: 600;
+    }
+
+    .progress-speed {
+      color: #8B3A3A;
+      font-weight: 600;
+    }
+  }
 }
 
 // Upload Result Modal
@@ -911,11 +958,10 @@
     }
 
     h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 1.8rem;
       margin-bottom: 1rem;
       color: #8B3A3A;
-      font-style: italic;
     }
 
     .result-message {
@@ -1017,7 +1063,7 @@
     border: 2px solid rgba(107, 31, 31, 0.2);
     border-radius: 10px;
     font-size: 0.95rem;
-    font-family: 'Georgia', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: white;
     color: #333;
     resize: vertical;
@@ -1033,7 +1079,6 @@
 
     &::placeholder {
       color: rgba(0, 0, 0, 0.4);
-      font-style: italic;
     }
 
     &:disabled {
@@ -1054,7 +1099,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(107, 31, 31, 0.2);
-    font-family: 'Georgia', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1085,7 +1130,6 @@
     margin-top: 0.75rem;
     color: #28A745;
     font-size: 0.85rem;
-    font-style: italic;
     text-align: center;
   }
 
@@ -1093,7 +1137,6 @@
     margin-top: 0.75rem;
     color: #dc2626;
     font-size: 0.85rem;
-    font-style: italic;
     text-align: center;
   }
 }
@@ -1115,17 +1158,15 @@
   }
 
   h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.8rem;
     color: #8B3A3A;
     margin-bottom: 0.75rem;
-    font-style: italic;
   }
 
   p {
     font-size: 1.05rem;
     line-height: 1.6;
-    font-style: italic;
     max-width: 500px;
   }
 }
@@ -1148,17 +1189,15 @@
   }
 
   h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.8rem;
     color: #8B3A3A;
     margin-bottom: 0.75rem;
-    font-style: italic;
   }
 
   p {
     font-size: 1.05rem;
     line-height: 1.6;
-    font-style: italic;
     color: rgba(0, 0, 0, 0.6);
     max-width: 500px;
     margin-bottom: 2rem;

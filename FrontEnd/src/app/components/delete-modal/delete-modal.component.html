@@ -21,8 +21,14 @@
       <p class="modal-warning">{{ warning }}</p>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" (click)="onCancel()">Cancel</button>
-      <button class="btn-delete" (click)="onConfirm()">Delete</button>
+      <button class="btn-cancel" (click)="onCancel()" [disabled]="isLoading">Cancel</button>
+      <button class="btn-delete" (click)="onConfirm()" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Delete</span>
+        <span *ngIf="isLoading" class="loading-state">
+          <span class="mini-spinner"></span>
+          Deleting...
+        </span>
+      </button>
     </div>
   </div>
 </div>

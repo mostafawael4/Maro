@@ -1,0 +1,122 @@
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(14, 9, 5, 0.85), rgba(5, 3, 2, 0.95));
+  backdrop-filter: blur(6px);
+  color: #fff8f1;
+}
+
+.overlay-content {
+  text-align: center;
+  padding: 2.5rem 3rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 12, 8, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  max-width: 420px;
+  width: calc(100% - 2rem);
+}
+
+.glow-ring {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  margin: 0 auto 1.5rem;
+}
+
+.glow-ring::after {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 65%);
+  animation: pulse 1.8s infinite ease-in-out;
+}
+
+.inner-ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #f4c8a9;
+  border-bottom-color: #f4c8a9;
+  animation: spin 1.4s linear infinite;
+}
+
+.logo-letter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #fcd9c2;
+  text-shadow: 0 0 12px rgba(252, 217, 194, 0.6);
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+}
+
+.overlay-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.overlay-subtitle {
+  font-size: 0.95rem;
+  color: rgba(255, 248, 241, 0.8);
+  margin-bottom: 1.75rem;
+}
+
+.progress-track {
+  height: 6px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  width: 60%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6b1f1f, #c88b7a, #f4c8a9);
+  animation: progress 1.6s infinite ease-in-out;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+

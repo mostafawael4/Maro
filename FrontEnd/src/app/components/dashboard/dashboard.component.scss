@@ -151,7 +151,7 @@
         }
       }
 
-      .client-name {
+      .groom-name {
         font-weight: 600;
         color: #8B3A3A;
       }
@@ -161,7 +161,23 @@
         font-size: 0.9rem;
       }
 
-      .photos-count {
+      .event-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+
+        .event-date {
+          font-weight: 600;
+          color: #5c2a2a;
+        }
+
+        .event-venue {
+          color: rgba(0, 0, 0, 0.65);
+          font-size: 0.9rem;
+        }
+      }
+
+      .media-count {
         font-weight: 600;
         color: #8B3A3A;
       }

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { OrdersService, Order } from '../../services/orders.service';
+import { OrdersService, Order, OrderPricing } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -95,5 +95,43 @@ export class OrderInfoComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatCurrency(value?: number | null): string {
+    if (value === undefined || value === null) {
+      return '0 EGP';
+    }
+    return `${value.toLocaleString('en-US', { maximumFractionDigits: 0 })} EGP`;
+  }
+
+  hasPricingSelections(pricing?: OrderPricing | null): boolean {
+    if (!pricing) {
+      return false;
+    }
+
+    const hasPackages = Array.isArray(pricing.packages) && pricing.packages.length > 0;
+    const hasCollections = Array.isArray(pricing.collections) && pricing.collections.length > 0;
+    const hasExtras = Array.isArray(pricing.extras) && pricing.extras.length > 0;
+
+    return hasPackages || hasCollections || hasExtras;
+  }
+
+  getDepositPaid(pricing?: OrderPricing | null): number {
+    if (!pricing || pricing.depositPaid === undefined || pricing.depositPaid === null) {
+      return 0;
+    }
+    return pricing.depositPaid;
+  }
+
+  getRemainingBalance(pricing?: OrderPricing | null): number {
+    if (!pricing) {
+      return 0;
+    }
+    if (pricing.remainingBalance !== undefined && pricing.remainingBalance !== null) {
+      return pricing.remainingBalance;
+    }
+    const total = pricing.total ?? 0;
+    const deposit = this.getDepositPaid(pricing);
+    return Math.max(total - deposit, 0);
   }
 }

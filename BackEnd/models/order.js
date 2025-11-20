@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const OrderFormSchema = require('./orderForm')
-const FeedbackSchema = require('./feedback')
+const FeedbackSchema = require('./orderFeedback')
 
 const OrderSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
@@ -16,6 +16,7 @@ const OrderSchema = new mongoose.Schema({
   media: [{ 
     foldername:{ type: String },
     filename: String, 
+    originalName: { type: String }, // Original filename before upload
     url: String, 
     uploadedAt: Date,
     thumbnail: { type: String, default: null }, // Thumbnail URL for videos

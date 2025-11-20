@@ -19,6 +19,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   updatingOrderId: string | null = null;
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
+  isDeletingOrder = false;
   sendingEmail: { [orderId: string]: boolean } = {};
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
   private destroy$ = new Subject<void>();
@@ -143,35 +144,94 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  getBrideAndGroomName(order: Order): string {
+    if (!order) {
+      return '—';
+    }
+
+    const rawNames =
+      order.orderForm?.brideAndGroomNames ||
+      order.orderForm?.coupleDescription ||
+      order.clientName ||
+      '';
+
+    const cleaned = rawNames.replace(/\s+/g, ' ').trim();
+    if (!cleaned) {
+      return order.clientName || '—';
+    }
+
+    // If the names are already in a combined format, return as is
+    // Otherwise, try to split and format them
+    const parts = cleaned
+      .split(/&|and|\/|\+|,|x/i)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      // Return both names formatted nicely
+      return `${parts[0]} & ${parts[1]}`;
+    }
+
+    // If only one name or couldn't split, return the original
+    return cleaned;
+  }
+
+  getEventDate(order: Order): string | null {
+    const eventDate = order.orderForm?.eventDate;
+    if (!eventDate) {
+      return null;
+    }
+
+    const parsedDate = new Date(eventDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return eventDate;
+    }
+
+    return parsedDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  getMediaCount(order: Order): number {
+    return (order.media || []).length;
+  }
+
   onDeleteClick(orderId: string): void {
     this.orderIdToDelete = orderId;
     this.showDeleteModal = true;
   }
 
   onConfirmDelete(): void {
-    if (this.orderIdToDelete) {
+    if (this.orderIdToDelete && !this.isDeletingOrder) {
+      this.isDeletingOrder = true;
       this.deleteOrder(this.orderIdToDelete);
     }
   }
 
   onCancelDelete(): void {
+    if (this.isDeletingOrder) return;
     this.showDeleteModal = false;
     this.orderIdToDelete = null;
   }
 
   deleteOrder(orderId: string): void {
-    this.showDeleteModal = false;
     this.ordersService.deleteOrder(orderId).subscribe({
       next: (response) => {
         if (response.ok) {
           // Remove the order from the list
           this.orders = this.orders.filter(order => order._id !== orderId);
         }
+        this.isDeletingOrder = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
       },
       error: (err) => {
         this.error = 'Failed to delete order';
         console.error('Error deleting order:', err);
+        this.isDeletingOrder = false;
+        this.showDeleteModal = false;
         this.orderIdToDelete = null;
         setTimeout(() => {
           this.error = '';

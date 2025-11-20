@@ -28,39 +28,44 @@ export class AuthService {
   
   // Initialize BehaviorSubject - will be updated immediately in constructor if in browser
   // Start with false as default (safe for SSR)
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private isAuthenticatedSubject = new BehaviorSubject<boolean|null>(null);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
-  private authCheckComplete = new BehaviorSubject<boolean>(false);
-  public authCheckComplete$ = this.authCheckComplete.asObservable();
 
   constructor(
     private http: HttpClient,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
-    
-    // CRITICAL: Update auth state IMMEDIATELY in browser (before any component can access it)
-    // Since constructor runs synchronously and components inject after, this prevents flash
+    // Instead of default false, start as null (still supports SSR)
     if (this.isBrowser) {
       const authState = this.readAuthFromStorage();
-      // Update the BehaviorSubject synchronously - this happens BEFORE any component renders
-      this.isAuthenticatedSubject.next(authState);
-      // Mark as complete immediately - components won't wait
-      this.authCheckComplete.next(true);
-      
-      // Verify with server in next tick (non-blocking)
-      Promise.resolve().then(() => {
-        this.checkAuth();
-      });
+      // Emit true/false only if known, else stays null
+      if (authState === true || authState === false) {
+        this.isAuthenticatedSubject.next(authState);
+      } else {
+        this.isAuthenticatedSubject.next(null);
+      }
+      Promise.resolve().then(() => { this.checkAuth(true); });
     } else {
-      // On server, stay at false and mark complete
-      this.authCheckComplete.next(true);
+      // On server-side, value is null (so UI doesn't render unauthorized flash)
+      this.isAuthenticatedSubject.next(null);
     }
   }
 
   // Synchronous getter for immediate access to auth state
   get isAuthenticatedValue(): boolean {
-    return this.isAuthenticatedSubject.value;
+    return this.isAuthenticatedSubject.value === true;
+  }
+
+  get isBrowserEnv(): boolean {
+    return this.isBrowser;
+  }
+
+  hasStoredAuth(): boolean {
+    if (!this.isBrowser) {
+      return false;
+    }
+    return this.readAuthFromStorage();
   }
 
   login(username: string, password: string): Observable<any> {
@@ -70,7 +75,16 @@ export class AuthService {
           if (response.ok) {
             this.isAuthenticatedSubject.next(true);
             if (this.isBrowser) {
-              localStorage.setItem(this.AUTH_STORAGE_KEY, 'true');
+              if (response?.session?.isAdmin) {
+                // User is admin
+                localStorage.setItem(this.AUTH_STORAGE_KEY, 'true');
+              } else if (response?.session?.isEditor) {
+                // User is editor
+                localStorage.setItem(this.AUTH_STORAGE_KEY, 'false');
+              } else {
+                // Not logged in or unknown role
+                localStorage.setItem(this.AUTH_STORAGE_KEY, 'null');
+              }
             }
           }
         })
@@ -89,40 +103,33 @@ export class AuthService {
       );
   }
 
-  checkAuth(): void {
+  checkAuth(isInitial = false): void {
     this.http.get(`${this.apiUrl}/me`, { withCredentials: true })
       .subscribe({
         next: (response: any) => {
-          const wasAuthenticated = this.isAuthenticatedSubject.value;
-          
           if (response.ok) {
-            // Only update if different (prevents unnecessary change detection triggers)
-            if (!wasAuthenticated) {
+            if (this.isAuthenticatedSubject.value !== true) {
               this.isAuthenticatedSubject.next(true);
             }
             if (this.isBrowser) {
               localStorage.setItem(this.AUTH_STORAGE_KEY, 'true');
             }
           } else {
-            // Session expired - update state and clear localStorage
-            if (wasAuthenticated) {
+            if (this.isAuthenticatedSubject.value !== false) {
               this.isAuthenticatedSubject.next(false);
             }
             if (this.isBrowser) {
               localStorage.removeItem(this.AUTH_STORAGE_KEY);
             }
           }
-          // Don't update authCheckComplete here - it's already set to true in constructor
         },
         error: () => {
-          // Server error - if we thought we were authenticated, clear it
-          const wasAuthenticated = this.isAuthenticatedSubject.value;
-          if (wasAuthenticated && this.isBrowser) {
-            // Only update if we were authenticated (localStorage said yes but server says no)
+          if (this.isAuthenticatedSubject.value !== false) {
             this.isAuthenticatedSubject.next(false);
+          }
+          if (this.isBrowser) {
             localStorage.removeItem(this.AUTH_STORAGE_KEY);
           }
-          // Don't update authCheckComplete here - it's already set to true in constructor
         }
       });
   }

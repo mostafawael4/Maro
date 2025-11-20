@@ -2,6 +2,7 @@
   <!-- Delete Confirmation Modal -->
   <app-delete-modal
     [isOpen]="showDeleteModal"
+    [isLoading]="isDeletingOrder"
     (confirm)="onConfirmDelete()"
     (cancel)="onCancelDelete()"
   ></app-delete-modal>
@@ -32,20 +33,30 @@
     <table class="orders-table">
       <thead>
         <tr>
-          <th>Client Name</th>
+          <th>Bride & Groom</th>
           <th>Email</th>
-          <th>Order Date</th>
-          <th>Photos</th>
+          <th>Date & Venue</th>
+          <th>Media</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let order of orders" [class.updating]="updatingOrderId === order._id">
-          <td class="client-name">{{ order.clientName }}</td>
+          <td class="groom-name">{{ getBrideAndGroomName(order) }}</td>
           <td class="client-email">{{ order.email }}</td>
-          <td>{{ formatDate(order.createdAt) }}</td>
-          <td class="photos-count">{{ (order.media || []).length }}</td>
+          <td class="event-details">
+            <div class="event-date" *ngIf="getEventDate(order); else createdDate">
+              {{ getEventDate(order) }}
+            </div>
+            <ng-template #createdDate>
+              <div class="event-date">{{ formatDate(order.createdAt) }}</div>
+            </ng-template>
+            <div class="event-venue" *ngIf="order.orderForm?.eventVenue">
+              {{ order.orderForm?.eventVenue }}
+            </div>
+          </td>
+          <td class="media-count">{{ getMediaCount(order) }}</td>
           <td>
             <span class="status-badge" [ngClass]="getStatusClass(order.status)">
               {{ order.status }}

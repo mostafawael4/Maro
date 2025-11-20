@@ -70,31 +70,36 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      
+      // Load order data immediately (localStorage auth is already set)
+      const orderId = this.route.snapshot.paramMap.get('id');
+      const userEmail = this.route.snapshot.queryParamMap.get('email');
+      
+      if (isAuth === null) {
+        return;
+      }
+  
+      if (!orderId) {
+        this.error = 'Order ID not found';
+        this.loading = false;
+        return;
+      }
+      console.log(this.isAuthenticated === true)
+      // Admin users: use getOrderById
+      if (this.isAuthenticated === true) {
+        this.loadOrderById(orderId);
+      } 
+      // Normal users: use getOrdersByEmail
+      else if (userEmail) {
+        this.loadOrderByEmail(userEmail, orderId);
+      }
+      else{
+        this.error = 'Access denied';
+        this.loading = false;
+      }
     });
 
-    // Load order data immediately (localStorage auth is already set)
-    const orderId = this.route.snapshot.paramMap.get('id');
-    const userEmail = this.route.snapshot.queryParamMap.get('email');
-    
-    if (!orderId) {
-      this.error = 'Order ID not found';
-      this.loading = false;
-      return;
-    }
-    
-    // Admin users: use getOrderById
-    if (this.isAuthenticated) {
-      this.loadOrderById(orderId);
-    } 
-    // Normal users: use getOrdersByEmail
-    else if (userEmail) {
-      this.loadOrderByEmail(userEmail, orderId);
-    } 
-    else {
-      this.error = 'Access denied';
-      this.loading = false;
-    }
-  }
+  } 
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -145,9 +150,10 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   loadOrderByEmail(email: string, orderId: string): void {
     this.ordersService.getOrdersByEmail(email).subscribe({
       next: (response) => {
-        // Verify the order ID matches
-        if (response.order && response.order._id === orderId) {
-          this.order = response.order;
+        // Find the specific order by ID from the array of orders
+        const foundOrder = response.orders?.find(order => order._id === orderId);
+        if (foundOrder) {
+          this.order = foundOrder;
           this.folderMedia = this.order.media || [];
           this.buildClientFoldersFromMedia();
         } else {
@@ -229,7 +235,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = media.filename;
+      link.download = media.originalName || media.filename;
       
       // Trigger download
       document.body.appendChild(link);
@@ -244,6 +250,46 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     }
   }
 
+  async downloadSelectedImages(mediaArray: OrderImage[]) {
+    if (!mediaArray || mediaArray.length === 0) return;
+
+    try {
+      // Download files sequentially to avoid browser blocking multiple downloads
+      for (let i = 0; i < mediaArray.length; i++) {
+        const media = mediaArray[i];
+        const mediaUrl = this.getImageUrl(media);
+        
+        // Fetch the media file as a blob
+        const response = await fetch(mediaUrl);
+        const blob = await response.blob();
+        
+        // Create a blob URL
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = media.originalName || media.filename;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(blobUrl);
+        
+        // Small delay between downloads to prevent browser from blocking
+        if (i < mediaArray.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading selected media:', error);
+      alert('Failed to download some files. Please try again.');
+    }
+  }
+
   onDeleteMediaClick(media: OrderImage, event?: Event): void {
     event?.stopPropagation(); // Prevent opening the slider
     if (!this.isAuthenticated) return;
@@ -252,7 +298,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onConfirmDeleteMedia(): void {
-    if (!this.mediaToDelete || !this.order) return;
+    if (!this.mediaToDelete || !this.order || this.deletingMedia) return;
     
     const orderId = this.order._id;
     this.deletingMedia = true;
@@ -289,6 +335,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onCancelDeleteMedia(): void {
+    if (this.deletingMedia) return;
     this.showDeleteModal = false;
     this.mediaToDelete = null;
   }
@@ -302,12 +349,12 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
     if (!this.order || !this.selectedVideoForThumbnail) return;
-
+    
     if (this.order.media) {
-      const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
       if (mediaIndex !== -1) {
-        this.order.media[mediaIndex].thumbnail = data.thumbnail;
-        this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+      this.order.media[mediaIndex].thumbnail = data.thumbnail;
+      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
       }
     }
 
@@ -488,7 +535,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onConfirmDeleteFolder(): void {
-    if (!this.folderToDelete || !this.order?._id) return;
+    if (!this.folderToDelete || !this.order?._id || this.deletingFolder) return;
     
     const orderId = this.order._id;
     this.deletingFolder = true;
@@ -559,6 +606,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   onCancelDeleteFolder(): void {
+    if (this.deletingFolder) return;
     this.showDeleteFolderModal = false;
     this.folderToDelete = null;
   }

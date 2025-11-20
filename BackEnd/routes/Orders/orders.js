@@ -1,16 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../../models/order.js");
-const { requireAdminAuth } = require("../../middleware/auth.js");
-const uploadService = require("../../services/upload.service.js");
+const { normalizePricingSelections } = require('../../services/pricingService');
+const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
+const { uploadMediaFiles } = require('../../services/orderMediaService');
+const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
 const multer = require("multer");
 const allowedExtensions = require("../../config/allowed_extensions.json");
 const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
-const { extractOrderVideoThumbnail, getVideoDuration } = require("../../services/videoThumbnail.service.js");
-const Credentials  = require('../../config/Credentials.js');
-
+const Credentials = require('../../config/Credentials.js')
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -24,11 +24,22 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ ok: false, message: "Invalid order form format" });
     }
     // create an order; you may want to check duplicates or generate a separate order code
+    let normalizedOrderForm = orderForm;
+    if (orderForm?.pricing) {
+      const normalizedPricing = await normalizePricingSelections(orderForm.pricing);
+      normalizedOrderForm = { ...orderForm };
+      if (normalizedPricing) {
+        normalizedOrderForm.pricing = normalizedPricing;
+      } else {
+        delete normalizedOrderForm.pricing;
+      }
+    }
+
     const order = await Order.create({
       email,
       clientName,
       notes,
-      orderForm, // store all wedding form data here
+      orderForm: normalizedOrderForm, // store all wedding form data here
     });
     logger.info(`Order created: ${order._id} for email ${email}`);
     return res.json({ ok: true, order });
@@ -39,7 +50,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET /orders - admin only: list all orders
-router.get("/", requireAdminAuth, async (req, res) => {
+router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
     logger.info(
@@ -118,6 +129,15 @@ router.put("/:orderId", requireAdminAuth, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
+    if (updateFields.orderForm?.pricing) {
+      const normalizedPricing = await normalizePricingSelections(updateFields.orderForm.pricing);
+      if (normalizedPricing) {
+        updateFields.orderForm.pricing = normalizedPricing;
+      } else {
+        delete updateFields.orderForm.pricing;
+      }
+    }
+
     // Update only the fields sent
     if (updateFields.orderForm) {
       deepMerge(order.orderForm, updateFields.orderForm);
@@ -192,11 +212,6 @@ router.post(
   async (req, res) => {
     try {
       const orderId = req.params.orderId;
-      const order = await Order.findById(orderId);
-      if (!order) {
-        logger.warn(`Upload attempted to non-existent order ${orderId}`);
-        return res.status(404).json({ ok: false, message: "Order not found" });
-      }
 
       const files = req.files || [];
       const { foldername } = req.body;
@@ -207,49 +222,18 @@ router.post(
         logger.info(`Uploading ${files.length} files to order ${orderId}`);
       }
 
-      // Save each file using the uploadService
-      const fileObjs = await Promise.all(files.map(async (f) => {
-        const url = uploadService.saveFile(orderId, f.buffer, f.originalname, {
-          isGallery: false,
-          isFilm: false,
-        });
-        logger.info(
-          `Saved file "${f.originalname}" for order ${orderId} (URL: ${url})`
-        );
-        
-        const fileObj = {
-          foldername: foldername || null,
-          filename: url.split("/").pop(),
-          url,
-          uploadedAt: new Date(),
-        };
-
-        // Check if it's a video file and extract thumbnail automatically
-        const isVideo = allowedExtensions.videos.includes(f.mimetype);
-        if (isVideo) {
-          try {
-            const thumbnailResult = await extractOrderVideoThumbnail(orderId, fileObj.filename, 1);
-            fileObj.thumbnail = thumbnailResult.thumbnailUrl;
-            fileObj.thumbnailFilename = thumbnailResult.thumbnailFilename;
-            logger.info(`Thumbnail extracted for video ${fileObj.filename}`);
-          } catch (thumbErr) {
-            logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${thumbErr.message}`);
-            // Continue without thumbnail if extraction fails
-          }
-        }
-
-        return fileObj;
-      }));
-
-      order.media.push(...fileObjs);
-      await order.save();
+      const result = await uploadMediaFiles(orderId, files, foldername);
 
       logger.info(
-        `Files added to order ${orderId}: [${fileObjs
+        `Files added to order ${orderId}: [${(result.fileObjs || [])
           .map((f) => f.filename)
           .join(", ")}]`
       );
-      return res.json({ ok: true, added: fileObjs, order });
+
+      return res.json({
+        ok: true,
+        ...result,
+      });
     } catch (err) {
       logger.error(
         `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`
@@ -282,7 +266,7 @@ router.get("/view/by-email", async (req, res) => {
   }
 });
 
-// GET /orders/by-email?email=... (admin only) - returns ALL orders for a given email
+// GET /orders/by-email?email=... (public) - returns ALL orders for a given email
 router.get("/view/orders-by-email",
   async (req, res) => {
     try {
@@ -396,25 +380,9 @@ router.get("/:orderId/video/:filename/duration", requireAdminAuth, async (req, r
   try {
     const { orderId, filename } = req.params;
     const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ ok: false, message: "Order not found" });
-    }
+    
+    const duration = await getVideoDurationService(orderId, filename);
 
-    const videoFile = order.media.find(m => m.filename === filename);
-    if (!videoFile) {
-      return res.status(404).json({ ok: false, message: "Video not found in order" });
-    }
-
-    const path = require("path");
-    const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
-    const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
-
-    const fs = require("fs");
-    if (!fs.existsSync(videoPath)) {
-      return res.status(404).json({ ok: false, message: "Video file not found on server" });
-    }
-
-    const duration = await getVideoDuration(videoPath);
     return res.json({ ok: true, duration });
   } catch (err) {
     logger.error(`GET /orders/:orderId/video/:filename/duration failed: ${err.stack || err}`);
@@ -433,13 +401,7 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    const videoFile = order.media.find(m => m.filename === filename);
-    if (!videoFile) {
-      return res.status(404).json({ ok: false, message: "Video not found in order" });
-    }
-
-    const time = timeInSeconds && timeInSeconds > 0 ? timeInSeconds : 1;
-    const thumbnailResult = await extractOrderVideoThumbnail(orderId, filename, time);
+    const thumbnailResult = await extractThumbnailService(orderId, filename, timeInSeconds);
 
     // Update the video file in the order with the new thumbnail
     const mediaIndex = order.media.findIndex(m => m.filename === filename);
@@ -464,7 +426,7 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
       await order.save();
     }
 
-    logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId} at ${time}s`);
+    logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
     return res.json({ 
       ok: true, 
       thumbnail: thumbnailResult.thumbnailUrl,

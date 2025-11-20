@@ -13,20 +13,27 @@ export class DeleteModalComponent {
   @Input() title: string = 'Delete Order';
   @Input() message: string = 'Are you sure you want to delete this order?';
   @Input() warning: string = 'This action cannot be undone.';
+  @Input() isLoading: boolean = false;
   
   @Output() confirm = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
 
   onConfirm(): void {
-    this.confirm.emit();
+    if (!this.isLoading) {
+      this.confirm.emit();
+    }
   }
 
   onCancel(): void {
-    this.cancel.emit();
+    if (!this.isLoading) {
+      this.cancel.emit();
+    }
   }
 
   onOverlayClick(): void {
-    this.cancel.emit();
+    if (!this.isLoading) {
+      this.cancel.emit();
+    }
   }
 }
 

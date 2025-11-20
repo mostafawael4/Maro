@@ -38,6 +38,10 @@ export class AdminComponent implements OnInit, AfterViewInit {
     // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+
+      if (this.isAuthenticated && isPlatformBrowser(this.platformId)) {
+        this.router.navigate(['/dashboard']);
+      }
     });
   }
 
@@ -46,6 +50,9 @@ export class AdminComponent implements OnInit, AfterViewInit {
     // This handles edge cases where constructor check might have failed
     if (isPlatformBrowser(this.platformId) && !this.isClientReady) {
       this.isClientReady = true;
+      if (this.isAuthenticated) {
+        this.router.navigate(['/dashboard']);
+      }
     }
   }
 

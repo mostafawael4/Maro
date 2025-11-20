@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface OrderImage {
   filename: string;
+  originalName?: string; // Original filename before upload
   url: string;
   uploadedAt: string;
   _id?: string;
@@ -34,6 +35,44 @@ export interface OrderFormFilmEditing {
   teaserStyleLinks?: string[];
 }
 
+export interface SelectedPackageOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+}
+
+export interface SelectedCollectionOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  collectionId: string;
+  collectionName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface SelectedExtraOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  extraId: string;
+  extraName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface OrderPricing {
+  packages?: SelectedPackageOption[];
+  collections?: SelectedCollectionOption[];
+  extras?: SelectedExtraOption[];
+  promoCode?: string;
+  subtotal?: number;
+  discount?: number;
+  total?: number;
+  depositPaid?: number;
+  remainingBalance?: number;
+}
+
 export interface OrderForm {
   _id?: string;
   brideAndGroomNames?: string;
@@ -52,6 +91,7 @@ export interface OrderForm {
   filmEditing?: OrderFormFilmEditing;
   socialMediaInspiration?: string[];
   tiktokIdeas?: string[];
+  pricing?: OrderPricing;
 }
 
 export interface Feedback {
@@ -140,11 +180,15 @@ export class OrdersService {
       formData.append('media', file); // Changed from 'images' to 'media' to match backend
     });
     formData.append('foldername', folderName);
-    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { withCredentials: true });
+    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { 
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
-  getOrdersByEmail(email: string): Observable<SingleOrderResponse> {
-    return this.http.get<SingleOrderResponse>(`${this.apiUrl}/view/by-email?email=${email}`);
+  getOrdersByEmail(email: string): Observable<OrdersResponse> {
+    return this.http.get<OrdersResponse>(`${this.apiUrl}/view/orders-by-email?email=${email}`);
   }
 
   updateOrderStatus(orderId: string, status: string): Observable<any> {
@@ -167,16 +211,23 @@ export class OrdersService {
   }
 
   submitFeedback(orderId: string, feedback: string): Observable<any> {
-    // The endpoint is /feedbacks/:orderId/feedback based on backend routes
-    return this.http.post<any>(`${environment.apiUrl}/feedbacks/${orderId}/feedback`, 
+    // The endpoint is /feedbacks/orders/:orderId/feedback based on backend routes
+    return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`, 
       { feedback },
       { withCredentials: true }
     );
   }
 
+  getOrderFeedbacks(orderId: string): Observable<any> {
+    // The endpoint is /feedbacks/orders/:orderId/feedbacks based on backend routes
+    return this.http.get<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedbacks`, {
+      withCredentials: true
+    });
+  }
+
   getAllFeedbacks(feedbackCounts?: number): Observable<any> {
-    // The endpoint is /feedbacks/all-feedbacks based on backend routes
-    let url = `${environment.apiUrl}/feedbacks/all-feedbacks`;
+    // The endpoint is /feedbacks/all based on backend routes
+    let url = `${environment.apiUrl}/feedbacks/all`;
     if (feedbackCounts) {
       url += `?feedbackCounts=${feedbackCounts}`;
     }
@@ -186,8 +237,8 @@ export class OrdersService {
   }
 
   deleteFeedback(orderId: string, feedbackId: string): Observable<any> {
-    // The endpoint is /feedbacks/:orderId/:feedbackId based on backend routes
-    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${orderId}/${feedbackId}`, {
+    // The endpoint is /feedbacks/orders/:orderId/:feedbackId based on backend routes
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/${feedbackId}`, {
       withCredentials: true
     });
   }

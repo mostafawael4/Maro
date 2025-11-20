@@ -14,6 +14,7 @@ import { FeedbacksComponent } from './components/feedbacks/feedbacks.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
 import { adminGuard } from './guards/admin.guard';
+import { adminLoginGuard } from './guards/admin-login.guard';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -27,7 +28,7 @@ export const routes: Routes = [
     { path: 'dashboard', component: DashboardComponent, canActivate: [adminGuard] },
     { path: 'order-info/:id', component: OrderInfoComponent },
     { path: 'contact', component: ContactComponent },
-    { path: 'admin', component: AdminComponent },
+    { path: 'admin', component: AdminComponent, canActivate: [adminLoginGuard] },
     { path: 'feedbacks', component: FeedbacksComponent },
     { path: 'calendar', component: CalendarComponent, canActivate: [adminGuard] },
     { path: '**', component: NotFoundComponent }, // 404 - must be last

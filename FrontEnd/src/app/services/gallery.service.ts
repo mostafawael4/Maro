@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { HttpEventType } from '@angular/common/http';
 
 export interface GalleryImage {
   _id: string;
@@ -29,7 +30,11 @@ export class GalleryService {
     files.forEach(file => {
       formData.append('images', file);
     });
-    return this.http.post(`${this.apiUrl}/upload`, formData, { withCredentials: true });
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
   }
 
   // Delete an image from gallery (requires admin authentication)
