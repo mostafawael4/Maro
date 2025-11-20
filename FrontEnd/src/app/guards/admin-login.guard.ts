@@ -4,15 +4,23 @@ import { AuthService } from '../services/auth.service';
 import { map } from 'rxjs';
 
 /**
- * Prevents authenticated admins from seeing the login page again.
- * If the user already has a valid session, redirect straight to the dashboard.
+ * Prevents authenticated users from seeing the login page again.
+ * If the user already has a valid session, redirect based on role:
+ * - Admin -> /dashboard
+ * - Editor -> /calendar
  */
 export const adminLoginGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
   if (authService.isAuthenticatedValue || authService.hasStoredAuth()) {
-    return router.createUrlTree(['/dashboard']);
+    // Redirect based on role
+    if (authService.isAdmin()) {
+      return router.createUrlTree(['/dashboard']);
+    } else if (authService.isEditor()) {
+      return router.createUrlTree(['/calendar']);
+    }
+    return router.createUrlTree(['/dashboard']); // Default fallback
   }
 
   if (!authService.isBrowserEnv) {
@@ -24,7 +32,13 @@ export const adminLoginGuard: CanActivateFn = () => {
   return authService.isAuthenticated$.pipe(
     map(isAuthenticated => {
       if (isAuthenticated) {
-        return router.createUrlTree(['/dashboard']);
+        // Redirect based on role
+        if (authService.isAdmin()) {
+          return router.createUrlTree(['/dashboard']);
+        } else if (authService.isEditor()) {
+          return router.createUrlTree(['/calendar']);
+        }
+        return router.createUrlTree(['/dashboard']); // Default fallback
       }
       return true;
     })

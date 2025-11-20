@@ -28,6 +28,7 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
   // Edit modal
   showEditModal: boolean = false;
   isAuthenticated: boolean = false;
+  isAdmin: boolean = false;
   
   // Animation states
   visiblePackages: Set<number> = new Set();
@@ -49,7 +50,13 @@ export class CinematographyComponent implements OnInit, AfterViewInit, OnDestroy
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      this.isAdmin = this.authService.isAdmin();
     });
+    
+    // Initialize admin status
+    if (this.isBrowser) {
+      this.isAdmin = this.authService.isAdmin();
+    }
   }
   
   ngAfterViewInit(): void {

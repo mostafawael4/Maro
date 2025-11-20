@@ -64,7 +64,7 @@
       <div class="feedback-quote">
         <!-- Delete Icon (Admin Only) -->
         <button 
-          *ngIf="isAuthenticated"
+          *ngIf="isAuthenticated && isAdmin"
           class="action-icon delete-icon"
           (click)="onDeleteClick($event, feedback)"
           title="Delete this feedback"

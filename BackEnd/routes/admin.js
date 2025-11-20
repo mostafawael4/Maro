@@ -122,7 +122,7 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /admin/logout
-router.post('/logout', requireAdminAuth, (req, res) => {
+router.post('/logout', requireAdminOrEditorAuth, (req, res) => {
   const userType = req.session.isAdmin ? 'admin' : req.session.isEditor ? 'editor' : 'unknown';
   const userIdOrUsername = req.session.isAdmin
     ? req.session.adminId || 'unknown'

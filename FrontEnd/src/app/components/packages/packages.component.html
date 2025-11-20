@@ -34,7 +34,7 @@
         
         <!-- Edit Package Button (Admin Only) -->
         <button 
-          *ngIf="isAuthenticated" 
+          *ngIf="isAuthenticated && isAdmin" 
           class="edit-package-btn"
           (click)="openEditModal('cinematography')"
         >
@@ -119,7 +119,7 @@
         
         <!-- Edit Package Button (Admin Only) -->
         <button 
-          *ngIf="isAuthenticated" 
+          *ngIf="isAuthenticated && isAdmin" 
           class="edit-package-btn"
           (click)="openEditModal('photography')"
         >
@@ -204,7 +204,7 @@
         
         <!-- Edit Package Button (Admin Only) -->
         <button 
-          *ngIf="isAuthenticated" 
+          *ngIf="isAuthenticated && isAdmin" 
           class="edit-package-btn"
           (click)="openEditModal('fullRecording')"
         >

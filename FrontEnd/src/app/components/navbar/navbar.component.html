@@ -34,6 +34,7 @@
             style="background-color: rgba(255, 250, 245, 0.98); border: 1px solid rgba(200, 155, 123, 0.2); margin-top: 4px;"
           >
             <a 
+              *ngIf="isAdmin"
               routerLink="/dashboard" 
               routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: false}"
@@ -272,7 +273,7 @@
         </a>
         
         <a 
-          *ngIf="isAuthenticated"
+          *ngIf="isAuthenticated && isAdmin"
           routerLink="/dashboard" 
           routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"

@@ -25,6 +25,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   showImageSlider: boolean = false;
   currentImageIndex: number = 0;
   isAuthenticated: any = false;
+  isAdmin: boolean = false;
   
   // Admin upload/delete states
   showUploadModal: boolean = false;
@@ -50,7 +51,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated  = isAuth;
+      this.isAdmin = this.authService.isAdmin();
     });
+    
+    // Initialize admin status
+    if (this.isBrowser) {
+      this.isAdmin = this.authService.isAdmin();
+    }
     
     // Load homepage images
     this.loadHomePageImages();

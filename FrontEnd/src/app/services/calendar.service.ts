@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { OrdersService, Order } from './orders.service';
+import { OrdersService, Order, OrderFormFilmEditing } from './orders.service';
 
 export interface WeddingCalendarEvent {
   id: string;
@@ -11,6 +11,16 @@ export interface WeddingCalendarEvent {
   location?: string;
   color?: string;
   notes?: string;
+  favoriteSongs?: string[];
+  stylePreferences?: string[];
+  highlightPreferences?: string[];
+  moodboardLinks?: string[];
+  socialIdeas?: string[];
+  editingSequence?: string;
+  includeAccessoriesShots?: boolean;
+  editingNotes?: string;
+  specialRequests?: string;
+  timelineNote?: string;
 }
 
 @Injectable({
@@ -42,6 +52,15 @@ export class CalendarService {
           `Wedding booking – ${groomName || order.clientName || 'Client'}`;
         const location = order.orderForm?.eventVenue || order.notes;
 
+        const favoriteSongs = order.orderForm?.favoriteSongs?.filter(Boolean);
+        const stylePreferences = order.orderForm?.filmEditing?.stylePreference?.filter(Boolean);
+        const highlightPreferences = order.orderForm?.filmEditing?.highlightPreference?.filter(Boolean);
+        const moodboardLinks = order.orderForm?.moodBoardLinks?.filter(Boolean);
+        const socialIdeas = [
+          ...(order.orderForm?.socialMediaInspiration ?? []),
+          ...(order.orderForm?.tiktokIdeas ?? [])
+        ].filter(Boolean);
+
         return {
           id: order._id,
           date: isoDate,
@@ -50,7 +69,17 @@ export class CalendarService {
           title,
           location,
           color: this.getStatusColor(order.status),
-          notes: order.orderForm?.specialMoments || order.notes
+          notes: order.orderForm?.specialMoments || order.notes,
+          favoriteSongs,
+          stylePreferences,
+          highlightPreferences,
+          moodboardLinks,
+          socialIdeas,
+          editingSequence: order.orderForm?.filmEditing?.editSequence,
+          includeAccessoriesShots: order.orderForm?.filmEditing?.includeAccessoriesShots,
+          editingNotes: this.buildEditingNotes(order.orderForm?.filmEditing),
+          specialRequests: this.buildSpecialRequests(order),
+          timelineNote: this.buildTimelineNote(order)
         } satisfies WeddingCalendarEvent;
       })
       .filter(event => !Number.isNaN(new Date(event.date).getTime()));
@@ -113,6 +142,55 @@ export class CalendarService {
   private toIsoDate(date: Date): string {
     const pad = (value: number) => value.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  private buildSpecialRequests(order: Order): string | undefined {
+    const parts: string[] = [];
+    if (order.orderForm?.specialMoments) {
+      parts.push(`Must capture: ${order.orderForm.specialMoments}`);
+    }
+    if (order.orderForm?.excludeShots) {
+      parts.push(`Avoid: ${order.orderForm.excludeShots}`);
+    }
+    if (order.orderForm?.coupleDescription) {
+      parts.push(order.orderForm.coupleDescription);
+    }
+    return parts.length ? parts.join(' • ') : undefined;
+  }
+
+  private buildTimelineNote(order: Order): string | undefined {
+    const segments: string[] = [];
+    if (order.orderForm?.shootersStartTime) {
+      segments.push(`Shooters start: ${order.orderForm.shootersStartTime}`);
+    }
+    if (order.orderForm?.shootersEndTime) {
+      segments.push(`Shooters end: ${order.orderForm.shootersEndTime}`);
+    }
+    if (order.orderForm?.timelineOfDay) {
+      segments.push(`Timeline: ${order.orderForm.timelineOfDay}`);
+    }
+    return segments.length ? segments.join(' | ') : undefined;
+  }
+
+  private formatLabel(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    return value
+      .split(/[\s-_]/)
+      .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ');
+  }
+
+  private buildEditingNotes(filmEditing?: OrderFormFilmEditing): string | undefined {
+    if (!filmEditing) return undefined;
+    const segments: string[] = [];
+    const sequence = this.formatLabel(filmEditing.editSequence);
+    if (sequence) {
+      segments.push(`Sequence: ${sequence}`);
+    }
+    if (filmEditing.includeAccessoriesShots) {
+      segments.push('Include accessories shots');
+    }
+    return segments.length ? segments.join(' • ') : undefined;
   }
 }
 

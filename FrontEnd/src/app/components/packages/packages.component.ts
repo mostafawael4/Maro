@@ -23,6 +23,7 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Authentication
   isAuthenticated: boolean = false;
+  isAdmin: boolean = false;
 
   // Edit modals
   showCinematographyModal: boolean = false;
@@ -51,7 +52,13 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      this.isAdmin = this.authService.isAdmin();
     });
+    
+    // Initialize admin status
+    if (this.isBrowser) {
+      this.isAdmin = this.authService.isAdmin();
+    }
   }
 
   ngAfterViewInit(): void {

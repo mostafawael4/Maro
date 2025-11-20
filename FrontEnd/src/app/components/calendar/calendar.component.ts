@@ -79,6 +79,7 @@ export class CalendarComponent implements OnInit {
     day.isSelected = true;
     this.selectedDate = day;
     this.selectedEvents = day.events;
+    this.buildUpcomingEvents(); // Update upcoming events when selection changes
   }
 
   trackByWeek(_: number, week: CalendarDay[]): string {
@@ -126,7 +127,8 @@ export class CalendarComponent implements OnInit {
     }
 
     this.weeks = weeks;
-    const initialSelection = this.selectedDate?.isoDate ?? this.toIsoDate(new Date(year, month, 1));
+    // On first load, select today's date; otherwise keep the currently selected date
+    const initialSelection = this.selectedDate?.isoDate ?? todayKey;
     const initialDay = this.weeks.flat().find(day => day.isoDate === initialSelection) ?? this.weeks.flat().find(day => day.isCurrentMonth);
     if (initialDay) {
       this.selectDay(initialDay);
@@ -137,9 +139,19 @@ export class CalendarComponent implements OnInit {
   }
 
   private buildUpcomingEvents(): void {
-    const today = new Date();
+    // Use selected date if available, otherwise use today
+    const referenceDate = this.selectedDate 
+      ? new Date(this.selectedDate.date.getFullYear(), this.selectedDate.date.getMonth(), this.selectedDate.date.getDate())
+      : new Date();
+    
+    const referenceDateStr = this.toIsoDate(referenceDate);
+    
+    // Filter events that come AFTER the selected date (not on the same day)
     this.upcomingEvents = [...this.events]
-      .filter(event => new Date(event.date) >= this.stripTime(today))
+      .filter(event => {
+        const eventDateStr = this.toIsoDate(new Date(event.date));
+        return eventDateStr > referenceDateStr; // Only events after the selected date
+      })
       .sort((a, b) => +new Date(a.date) - +new Date(b.date))
       .slice(0, 6);
   }

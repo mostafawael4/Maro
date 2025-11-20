@@ -92,7 +92,70 @@
               </div>
               <div class="event-field" *ngIf="event.notes">
                 <span class="event-key">Notes</span>
-                <span class="event-value">{{ event.notes }}</span>
+                <span class="event-value multi-line">{{ event.notes }}</span>
+              </div>
+              <div class="event-field" *ngIf="event.favoriteSongs?.length">
+                <span class="event-key">Favorite Tracks</span>
+                <div class="event-tags">
+                  <span class="event-tag" *ngFor="let song of (event.favoriteSongs || []) | slice:0:4">{{ song }}</span>
+                </div>
+                <span class="event-note" *ngIf="(event.favoriteSongs?.length || 0) > 4">
+                  +{{ (event.favoriteSongs?.length || 0) - 4 }} more
+                </span>
+              </div>
+              <div class="event-field" *ngIf="event.stylePreferences?.length">
+                <span class="event-key">Edit Style</span>
+                <div class="event-tags">
+                  <span class="event-tag" *ngFor="let pref of (event.stylePreferences || []) | slice:0:4">{{ pref }}</span>
+                </div>
+              </div>
+              <div class="event-field" *ngIf="event.highlightPreferences?.length">
+                <span class="event-key">Highlight Focus</span>
+                <div class="event-tags">
+                  <span class="event-tag" *ngFor="let focus of (event.highlightPreferences || []) | slice:0:4">{{ focus }}</span>
+                </div>
+              </div>
+              <div class="event-field" *ngIf="event.socialIdeas?.length">
+                <span class="event-key">Social Ideas</span>
+                <div class="event-tags">
+                  <span class="event-tag" *ngFor="let idea of (event.socialIdeas || []) | slice:0:4">{{ idea }}</span>
+                </div>
+              </div>
+              <div class="event-field" *ngIf="event.editingSequence || event.includeAccessoriesShots || event.editingNotes">
+                <span class="event-key">Editing Notes</span>
+                <span class="event-value multi-line">
+                  <ng-container *ngIf="event.editingSequence">
+                    Sequence: {{ event.editingSequence | titlecase }}
+                  </ng-container>
+                  <ng-container *ngIf="event.includeAccessoriesShots">
+                    <span *ngIf="event.editingSequence"> • </span>Include accessories shots
+                  </ng-container>
+                  <ng-container *ngIf="event.editingNotes">
+                    <span *ngIf="event.editingSequence || event.includeAccessoriesShots"> • </span>{{ event.editingNotes }}
+                  </ng-container>
+                </span>
+              </div>
+              <div class="event-field" *ngIf="event.moodboardLinks?.length">
+                <span class="event-key">Moodboard</span>
+                <div class="event-links">
+                  <a
+                    class="event-link"
+                    *ngFor="let link of (event.moodboardLinks || []) | slice:0:3; index as i"
+                    [href]="link"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Reference {{ i + 1 }}
+                  </a>
+                </div>
+              </div>
+              <div class="event-field" *ngIf="event.specialRequests">
+                <span class="event-key">Special Requests</span>
+                <span class="event-value multi-line">{{ event.specialRequests }}</span>
+              </div>
+              <div class="event-field" *ngIf="event.timelineNote">
+                <span class="event-key">Timeline</span>
+                <span class="event-value multi-line">{{ event.timelineNote }}</span>
               </div>
               <div class="event-field">
                 <span class="event-key">Booking ID</span>
@@ -138,6 +201,14 @@
                 <div class="event-field" *ngIf="event.location">
                   <span class="event-key">Venue</span>
                   <span class="event-value">{{ event.location }}</span>
+                </div>
+                <div class="event-field" *ngIf="event.favoriteSongs?.length">
+                  <span class="event-key">Track</span>
+                  <span class="event-value">{{ event.favoriteSongs?.[0] }}</span>
+                </div>
+                <div class="event-field" *ngIf="event.stylePreferences?.length">
+                  <span class="event-key">Style</span>
+                  <span class="event-value">{{ event.stylePreferences?.[0] }}</span>
                 </div>
                 <div class="event-field">
                   <span class="event-key">Booking ID</span>

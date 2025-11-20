@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, Inject, PLATFORM_ID, OnInit } from '@angular/core';
+import { Component, HostListener, Input, Inject, PLATFORM_ID, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -15,32 +15,53 @@ export class NavbarComponent implements OnInit {
   isMobileMenuOpen = false;
   isScrolled = false;
   isAuthenticated = false;
+  isAdmin = false;
   isDropdownOpen = false;
   isGalleryDropdownOpen = false;
   isClientReady = false;
+  private isBrowser: boolean;
   @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
   constructor(
     private authService: AuthService,
     public router: Router,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    if (isPlatformBrowser(this.platformId)) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+    if (this.isBrowser) {
       this.isAuthenticated = this.authService.isAuthenticatedValue || this.authService.hasStoredAuth();
+      this.isAdmin = this.authService.isAdmin();
     }
 
     // Subscribe to authentication state
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      // Update admin status when auth state changes
+      if (this.isBrowser) {
+        // Use setTimeout to ensure localStorage is updated after login
+        setTimeout(() => {
+          this.isAdmin = this.authService.isAdmin();
+          this.cdr.markForCheck();
+        }, 0);
+      }
       if (isPlatformBrowser(this.platformId)) {
         this.isClientReady = true;
       }
     });
+    
+    // Initialize admin status in browser
+    if (this.isBrowser) {
+      this.isAdmin = this.authService.isAdmin();
+    }
   }
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.isClientReady = true;
+      // Refresh admin status on init
+      this.isAdmin = this.authService.isAdmin();
+      this.cdr.markForCheck();
     }
   }
 

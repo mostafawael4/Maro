@@ -21,6 +21,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading: boolean = true;
   errorMessage: string = '';
   isAuthenticated: boolean = false;
+  isAdmin: boolean = false;
   showDeleteModal: boolean = false;
   showUploadModal: boolean = false;
   showVideoPosterSelector: boolean = false;
@@ -45,7 +46,13 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      this.isAdmin = this.authService.isAdmin();
     });
+    
+    // Initialize admin status
+    if (this.isBrowser) {
+      this.isAdmin = this.authService.isAdmin();
+    }
   }
 
   ngAfterViewInit() {

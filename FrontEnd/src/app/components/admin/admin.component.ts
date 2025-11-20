@@ -40,7 +40,14 @@ export class AdminComponent implements OnInit, AfterViewInit {
       this.isAuthenticated = isAuth ?? false;
 
       if (this.isAuthenticated && isPlatformBrowser(this.platformId)) {
-        this.router.navigate(['/dashboard']);
+        // Redirect based on role
+        if (this.authService.isAdmin()) {
+          this.router.navigate(['/dashboard']);
+        } else if (this.authService.isEditor()) {
+          this.router.navigate(['/calendar']);
+        } else {
+          this.router.navigate(['/dashboard']); // Default fallback
+        }
       }
     });
   }
@@ -51,7 +58,14 @@ export class AdminComponent implements OnInit, AfterViewInit {
     if (isPlatformBrowser(this.platformId) && !this.isClientReady) {
       this.isClientReady = true;
       if (this.isAuthenticated) {
-        this.router.navigate(['/dashboard']);
+        // Redirect based on role
+        if (this.authService.isAdmin()) {
+          this.router.navigate(['/dashboard']);
+        } else if (this.authService.isEditor()) {
+          this.router.navigate(['/calendar']);
+        } else {
+          this.router.navigate(['/dashboard']); // Default fallback
+        }
       }
     }
   }
@@ -73,8 +87,14 @@ export class AdminComponent implements OnInit, AfterViewInit {
         if (response.ok) {
           this.isLoading = false;
           console.log('Logged in successfully');
-          // Redirect to home page after successful login
-          this.router.navigate(['/']);
+          // Redirect based on role after successful login
+          if (response?.session?.isAdmin) {
+            this.router.navigate(['/dashboard']);
+          } else if (response?.session?.isEditor) {
+            this.router.navigate(['/calendar']);
+          } else {
+            this.router.navigate(['/']); // Default fallback
+          }
         }
       },
       error: (error) => {

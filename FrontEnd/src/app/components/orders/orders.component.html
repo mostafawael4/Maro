@@ -134,8 +134,8 @@
   </div>
 
   <ng-container *ngIf="isAuthenticated !== null">
-    <!-- Email Modal for Normal Users -->
-    <div *ngIf="showEmailModal && !isAuthenticated" class="email-modal-overlay">
+    <!-- Email Modal for Normal Users and Editors -->
+    <div *ngIf="showEmailModal && (!isAuthenticated || (isAuthenticated && !isAdmin))" class="email-modal-overlay">
       <div class="email-modal">
         <div class="modal-header">
           <h2>Track Your Orders</h2>
@@ -173,7 +173,7 @@
     </div>
 
     <!-- Admin View: All Orders -->
-    <ng-container *ngIf="isAuthenticated">
+    <ng-container *ngIf="isAuthenticated && isAdmin">
       <!-- Search Filter -->
       <div class="search-filter" *ngIf="!loading && orders.length > 0">
         <input 
@@ -372,8 +372,8 @@
       </div>
     </ng-container>
 
-    <!-- Normal User View: Orders by Email -->
-    <ng-container *ngIf="!isAuthenticated && !showEmailModal">
+    <!-- Normal User and Editor View: Orders by Email -->
+    <ng-container *ngIf="(!isAuthenticated || (isAuthenticated && !isAdmin)) && !showEmailModal">
       <!-- Change Email Button -->
       <div class="user-email-info">
         <span class="viewing-as">Viewing orders for: <strong>{{ userEmail }}</strong></span>

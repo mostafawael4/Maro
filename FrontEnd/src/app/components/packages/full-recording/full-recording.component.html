@@ -11,7 +11,7 @@
     
     <!-- Edit Package Button (Admin Only) -->
     <button 
-      *ngIf="isAuthenticated && fullPackageData" 
+      *ngIf="isAuthenticated && isAdmin && fullPackageData" 
       class="edit-package-btn"
       (click)="openEditModal()"
     >

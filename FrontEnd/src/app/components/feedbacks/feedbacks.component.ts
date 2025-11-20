@@ -25,6 +25,7 @@ export class FeedbacksComponent implements OnInit {
   loading = true;
   error = '';
   isAuthenticated = false;
+  isAdmin: boolean = false;
   newFeedback = '';
   submitError = '';
   submitSuccess = '';
@@ -44,7 +45,11 @@ export class FeedbacksComponent implements OnInit {
     // Check authentication status for admin features
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      this.isAdmin = this.authService.isAdmin();
     });
+    
+    // Initialize admin status
+    this.isAdmin = this.authService.isAdmin();
     
     this.loadFeedbacks();
   }

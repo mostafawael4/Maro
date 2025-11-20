@@ -7,7 +7,7 @@
 }
 
 .calendar-hero {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto 2.5rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -66,9 +66,9 @@
 
 .calendar-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
   gap: 2rem;
-  max-width: 1120px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -232,6 +232,48 @@
   font-weight: 600;
   color: #1f1b16;
   word-break: break-word;
+}
+
+.event-value.multi-line {
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.event-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.event-tag {
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(139, 58, 58, 0.1);
+  color: #6b1f1f;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.event-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.event-link {
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.event-link:hover {
+  text-decoration: underline;
+}
+
+.event-note {
+  font-size: 0.8rem;
+  color: #8c7a6a;
 }
 
 .event-value.monospace {

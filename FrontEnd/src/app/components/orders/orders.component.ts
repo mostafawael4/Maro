@@ -22,6 +22,7 @@ export class OrdersComponent implements OnInit {
   error = '';
   baseUrl = environment.apiUrl;
   isAuthenticated: boolean|null = null;
+  isAdmin: boolean = false;
   searchEmail = '';
   uploadingOrderId: string | null = null;
   uploadSuccess: string = '';
@@ -76,14 +77,26 @@ export class OrdersComponent implements OnInit {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth;
+      this.isAdmin = this.authService.isAdmin();
+      
       if (this.isAuthenticated === true) {
-        this.loadOrders();
+        // If admin, load all orders; if editor, show email modal like client
+        if (this.isAdmin) {
+          this.loadOrders();
+        } else {
+          // Editor: show email modal like client mode
+          this.loading = false;
+          this.showEmailModal = true;
+        }
       } else if (this.isAuthenticated === false) {
         this.loading = false;
         this.showEmailModal = true;
       }
       // If null, UI will not show either yet
     });
+    
+    // Initialize admin status
+    this.isAdmin = this.authService.isAdmin();
   }
 
   loadOrders(): void {

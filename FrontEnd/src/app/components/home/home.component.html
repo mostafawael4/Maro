@@ -16,7 +16,7 @@
     
     <!-- Admin Upload Button -->
     <button 
-      *ngIf="isAuthenticated" 
+      *ngIf="isAuthenticated && isAdmin" 
       class="admin-upload-btn"
       (click)="openUploadModal()"
       title="Upload homepage images">
@@ -53,7 +53,7 @@
       
       <!-- Admin Delete Button -->
       <button 
-        *ngIf="isAuthenticated"
+        *ngIf="isAuthenticated && isAdmin"
         class="admin-delete-btn"
         (click)="onDeleteClick(image, $event)"
         [disabled]="isDeleting(image._id)"
