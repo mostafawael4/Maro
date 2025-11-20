@@ -70,31 +70,36 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     // Subscribe to auth changes
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
+      
+      // Load order data immediately (localStorage auth is already set)
+      const orderId = this.route.snapshot.paramMap.get('id');
+      const userEmail = this.route.snapshot.queryParamMap.get('email');
+      
+      if (isAuth === null) {
+        return;
+      }
+  
+      if (!orderId) {
+        this.error = 'Order ID not found';
+        this.loading = false;
+        return;
+      }
+      console.log(this.isAuthenticated === true)
+      // Admin users: use getOrderById
+      if (this.isAuthenticated === true) {
+        this.loadOrderById(orderId);
+      } 
+      // Normal users: use getOrdersByEmail
+      else if (userEmail) {
+        this.loadOrderByEmail(userEmail, orderId);
+      }
+      else{
+        this.error = 'Access denied';
+        this.loading = false;
+      }
     });
 
-    // Load order data immediately (localStorage auth is already set)
-    const orderId = this.route.snapshot.paramMap.get('id');
-    const userEmail = this.route.snapshot.queryParamMap.get('email');
-    
-    if (!orderId) {
-      this.error = 'Order ID not found';
-      this.loading = false;
-      return;
-    }
-    
-    // Admin users: use getOrderById
-    if (this.isAuthenticated) {
-      this.loadOrderById(orderId);
-    } 
-    // Normal users: use getOrdersByEmail
-    else if (userEmail) {
-      this.loadOrderByEmail(userEmail, orderId);
-    } 
-    else {
-      this.error = 'Access denied';
-      this.loading = false;
-    }
-  }
+  } 
 
   ngOnDestroy(): void {
     this.destroy$.next();

@@ -31,15 +31,15 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.authService.initialAuthResolved$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(resolved => {
-        if (resolved) {
-          setTimeout(() => {
-            this.showOverlay = false;
-          }, 2000);
-        }
-      });
+    this.authService.isAuthenticated$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(isAuth => {
+      if (isAuth !== null) {
+        setTimeout(() => {
+          this.showOverlay = false;
+        }, 2000);
+      }
+    });
   }
 
   ngOnDestroy(): void {

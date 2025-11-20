@@ -24,7 +24,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   isAboutVisible: boolean = false;
   showImageSlider: boolean = false;
   currentImageIndex: number = 0;
-  isAuthenticated: boolean = false;
+  isAuthenticated: any = false;
   
   // Admin upload/delete states
   showUploadModal: boolean = false;
@@ -49,7 +49,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
+      this.isAuthenticated  = isAuth;
     });
     
     // Load homepage images

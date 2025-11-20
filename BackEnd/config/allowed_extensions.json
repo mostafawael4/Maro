@@ -8,6 +8,7 @@
   "videos":[
     "video/mp4",
     "video/quicktime",
-    "video/x-matroska"
+    "video/x-matroska",
+    "video/mov"
   ]
 }

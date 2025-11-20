@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Order = require("../../models/order.js");
 const { normalizePricingSelections } = require('../../services/pricingService');
-const { requireAdminAuth } = require("../../middleware/auth.js");
+const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
 const { uploadMediaFiles } = require('../../services/orderMediaService');
 const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
 const multer = require("multer");
@@ -50,7 +50,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET /orders - admin only: list all orders
-router.get("/", requireAdminAuth, async (req, res) => {
+router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
     logger.info(

@@ -21,7 +21,7 @@ export class OrdersComponent implements OnInit {
   loading = true;
   error = '';
   baseUrl = environment.apiUrl;
-  isAuthenticated = false;
+  isAuthenticated: boolean|null = null;
   searchEmail = '';
   uploadingOrderId: string | null = null;
   uploadSuccess: string = '';
@@ -46,6 +46,7 @@ export class OrdersComponent implements OnInit {
   
   // For normal users
   showEmailModal = false;
+  authLoaded = false;
   userEmail = '';
   emailError = '';
   
@@ -70,16 +71,17 @@ export class OrdersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // debugger;
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth ?? false;
-      if (this.isAuthenticated) {
+      this.isAuthenticated = isAuth;
+      if (this.isAuthenticated === true) {
         this.loadOrders();
-      } else {
-        // For normal users, show email modal
+      } else if (this.isAuthenticated === false) {
         this.loading = false;
         this.showEmailModal = true;
       }
+      // If null, UI will not show either yet
     });
   }
 
