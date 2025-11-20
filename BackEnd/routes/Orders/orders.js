@@ -111,7 +111,7 @@ const deepMerge = (target, source) => {
     }
   }
 }
-router.put("/:orderId", requireAdminAuth, async (req, res) => {
+router.put("/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
     const updateFields = req.body;
