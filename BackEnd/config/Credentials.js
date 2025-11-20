@@ -15,7 +15,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || '';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '.';
 const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || '.';
 const UPLOAD_DIR_GALLERY = process.env.UPLOAD_DIR_GALLERY || '.';
-const UPLOAD_DIR_FILMS = process.env.UPLOAD_DIR_GALLERY || '.';
+const UPLOAD_DIR_FILMS = process.env.UPLOAD_DIR_FILMS || '.';
 const UPLOAD_DIR_HOMEPAGE = process.env.UPLOAD_DIR_HOMEPAGE || '.';
 
 const LOG_DIR = process.env.LOGGING_PATH;

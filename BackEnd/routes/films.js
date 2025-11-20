@@ -8,7 +8,9 @@ const uploadService = require("../services/upload.service");
 const allowedExtensions = require("../config/allowed_extensions");
 const logger = require("../utils/logger");
 const { handleMulterErrors } = require("../middleware/upload").default;
+const { requireAdminAuth, requireAdminOrEditorAuth } = require("../middleware/auth.js");
 const { deleteFileByPath } = require("../utils/fileProccess");
+const { extractThumbnailForFilmsService } = require('../services/videoService');
 
 // Upload video with description
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
@@ -44,7 +46,7 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 
     // Optionally generate/save unique filename with timestamp if desired
     const newFilm = await Film.create({
-      filename: file.originalname || file.filename,
+      filename: fileUrl.split("/").pop(),
       url: fileUrl,
       description,
     });
@@ -135,6 +137,60 @@ router.delete("/delete", async (req, res) => {
   } catch (err) {
     logger.error("Failed to delete film:", err);
     res.status(500).json({ error: "Failed to delete film" });
+  }
+});
+// POST /films/:id/thumbnail - admin only: extract thumbnail for a film video
+router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { timeInSeconds } = req.body; // Time in seconds (optional, default: 1)
+
+    // Find the film by id
+    const film = await Film.findById(id);
+    if (!film) {
+      return res.status(404).json({ ok: false, message: "Film not found" });
+    }
+
+    // Extract new thumbnail
+    const thumbnailResult = await extractThumbnailForFilmsService(
+      film._id.toString(),
+      film.filename,
+      timeInSeconds
+    );
+
+    // Delete old thumbnail if exists
+    if (film.thumbnailFilename) {
+      const fs = require("fs");
+      const path = require("path");
+      const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS || "./uploads/films";
+      const oldThumbPath = path.resolve(UPLOAD_DIR_FILMS, film.thumbnailFilename);
+      if (fs.existsSync(oldThumbPath)) {
+        try {
+          fs.unlinkSync(oldThumbPath);
+        } catch (err) {
+          logger.warn(`Failed to delete old film thumbnail: ${oldThumbPath}`);
+        }
+      }
+    }
+
+    // Update film document with new thumbnail info
+    film.thumbnail = thumbnailResult.thumbnailUrl;
+    film.thumbnailFilename = thumbnailResult.thumbnailFilename;
+    await film.save();
+
+    logger.info(`Thumbnail extracted and set for film ${film.filename} (${film._id})`);
+    return res.json({
+      ok: true,
+      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnailFilename: thumbnailResult.thumbnailFilename
+    });
+  } catch (err) {
+    logger.error(`POST /films/:id/thumbnail failed: ${err.stack || err}`);
+    return res.status(500).json({
+      ok: false,
+      message: "Server error",
+      error: err.message
+    });
   }
 });
 
