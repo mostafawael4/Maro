@@ -73,33 +73,13 @@
       <!-- Film Video -->
       <div class="film-video-wrapper">
         <video 
-          *ngIf="!getThumbnailUrl(film)"
           [src]="getFilmUrl(film)"
+          [poster]="getThumbnailUrl(film) || ''"
           controls
           class="film-video"
         >
           Your browser does not support the video tag.
         </video>
-        <div 
-          *ngIf="getThumbnailUrl(film)"
-          class="film-thumbnail-wrapper"
-        >
-          <img 
-            [src]="getThumbnailUrl(film) || ''"
-            [alt]="film.filename"
-            class="film-thumbnail"
-          />
-          <a 
-            [href]="getFilmUrl(film)" 
-            target="_blank"
-            class="play-overlay"
-            [attr.aria-label]="'Play ' + film.filename"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-          </a>
-        </div>
         <!-- Admin Buttons -->
         <div *ngIf="isAuthenticated" class="admin-buttons">
           <!-- Thumbnail Selector Button -->

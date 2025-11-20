@@ -70,7 +70,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
     
     const options = {
       root: null,
-      rootMargin: '50px',
+      rootMargin: '100px', // Start animation earlier (when element is 100px away from viewport)
       threshold: 0.1
     };
 
@@ -79,9 +79,15 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
         if (entry.isIntersecting) {
           const element = entry.target as HTMLElement;
           const index = parseInt(element.getAttribute('data-index') || '0', 10);
+          // Add slight delay based on index for staggered effect
           setTimeout(() => {
             this.visibleFilms.add(index);
-          }, 0);
+          }, index * 100); // Stagger each film by 100ms
+          
+          // Once animated, stop observing this element
+          if (this.intersectionObserver) {
+            this.intersectionObserver.unobserve(element);
+          }
         }
       });
     }, options);
