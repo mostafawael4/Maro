@@ -65,8 +65,7 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
   );
 
   // Save thumbnail to disk
-  const thumbnailExt = path.extname(thumbnailFilename) || '.jpg';
-  const newThumbnailFilename = `${thumbBase}_thumb_${Date.now()}${thumbnailExt}`;
+  const newThumbnailFilename = thumbnailFilename;
 
   // Prepare URL (you may have a helper for this, or adjust path)
   const thumbnailUrl = `/uploads/films/${newThumbnailFilename}`;
