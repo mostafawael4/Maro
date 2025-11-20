@@ -1,0 +1,99 @@
+<div class="films-container">
+  <!-- Delete Confirmation Modal -->
+  <app-delete-modal
+    [isOpen]="showDeleteModal"
+    [isLoading]="deleteModalLoading"
+    title="Delete Film"
+    [message]="'Are you sure you want to delete this film?'"
+    warning="This action cannot be undone."
+    (confirm)="onConfirmDelete()"
+    (cancel)="onCancelDelete()"
+  ></app-delete-modal>
+
+  <!-- Header Section -->
+  <div class="header">
+    <h1>Our Films</h1>
+    <p>"Capturing moments in motion, telling stories through time."</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading beautiful films...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <p>{{ errorMessage }}</p>
+    <button (click)="loadFilms()" class="retry-btn">Retry</button>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !errorMessage && films.length === 0" class="empty-container">
+    <p>No films available yet.</p>
+  </div>
+
+  <!-- Films List -->
+  <div *ngIf="!isLoading && !errorMessage && films.length > 0" class="films-list">
+    <div 
+      *ngFor="let film of films; let i = index" 
+      class="film-item"
+      [attr.data-index]="i"
+      [class.animate-in]="isFilmVisible(i)"
+    >
+      <!-- Film Video -->
+      <div class="film-video-wrapper">
+        <video 
+          *ngIf="!getThumbnailUrl(film)"
+          [src]="getFilmUrl(film)"
+          controls
+          class="film-video"
+        >
+          Your browser does not support the video tag.
+        </video>
+        <div 
+          *ngIf="getThumbnailUrl(film)"
+          class="film-thumbnail-wrapper"
+        >
+          <img 
+            [src]="getThumbnailUrl(film) || ''"
+            [alt]="film.filename"
+            class="film-thumbnail"
+          />
+          <a 
+            [href]="getFilmUrl(film)" 
+            target="_blank"
+            class="play-overlay"
+            [attr.aria-label]="'Play ' + film.filename"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </a>
+        </div>
+        <!-- Delete Button (Admin Only) -->
+        <button 
+          *ngIf="isAuthenticated"
+          class="delete-btn"
+          (click)="onDeleteClick(film, $event)"
+          [disabled]="isDeleting(film._id)"
+          [attr.aria-label]="'Delete ' + film.filename"
+        >
+          <svg *ngIf="!isDeleting(film._id)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+          <div *ngIf="isDeleting(film._id)" class="delete-spinner"></div>
+        </button>
+      </div>
+
+      <!-- Film Description Section -->
+      <div class="film-description">
+        <p class="film-text">{{ film.description || 'No description available.' }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+

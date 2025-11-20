@@ -1,0 +1,329 @@
+.films-container {
+  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+  font-family: 'Georgia', serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 50px;
+  animation: fadeIn 0.8s ease-out;
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    font-weight: 400;
+    color: #8B3A3A;
+    margin-bottom: 0.75rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  p {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 1rem;
+    font-style: italic;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2rem;
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Loading State
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(139, 58, 58, 0.1);
+    border-top-color: #8B3A3A;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    margin-top: 20px;
+    color: #8B3A3A;
+    font-size: 1.1em;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Error State
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  
+  p {
+    color: #dc2626;
+    font-size: 1.1em;
+    margin-bottom: 20px;
+  }
+
+  .retry-btn {
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(107, 31, 31, 0.4);
+    }
+  }
+}
+
+// Empty State
+.empty-container {
+  text-align: center;
+  padding: 100px 20px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 1.2em;
+}
+
+// Films List
+.films-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.film-item {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 30px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  
+  // Initial state before animation
+  opacity: 0;
+  transform: translateY(30px);
+  
+  // Smooth animation when scrolling into view
+  &.animate-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+  }
+}
+
+// Film Video Wrapper
+.film-video-wrapper {
+  flex: 0 0 400px;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+
+  @media (max-width: 768px) {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .film-video {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+  }
+
+  .film-thumbnail-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; // 16:9 aspect ratio
+    overflow: hidden;
+
+    .film-thumbnail {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .play-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(139, 58, 58, 0.8);
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+
+      svg {
+        margin-left: 4px; // Slight offset for play icon
+      }
+
+      &:hover {
+        background: rgba(139, 58, 58, 1);
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+    }
+  }
+
+  // Delete Button
+  .delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background: rgba(220, 38, 38, 1);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+
+  // Delete spinner
+  .delete-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+}
+
+// Film Description Section
+.film-description {
+  flex: 1;
+  display: flex;
+  align-items: center;
+
+  .film-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: rgba(0, 0, 0, 0.7);
+    margin: 0;
+  }
+}
+
+// Fade in and slide up animation
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .film-video-wrapper {
+    flex: 0 0 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .films-container {
+    padding: 20px 10px;
+  }
+
+  .films-list {
+    padding: 10px;
+    gap: 30px;
+  }
+
+  .film-item {
+    gap: 20px;
+    padding: 20px;
+  }
+
+  .film-video-wrapper {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .film-description {
+    .film-text {
+      font-size: 1rem;
+    }
+  }
+}
+

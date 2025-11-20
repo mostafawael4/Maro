@@ -67,14 +67,43 @@
         >
           Packages
         </a>
-        <a 
-          routerLink="/gallery" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
+        <!-- Photography and Films Dropdown -->
+        <div 
+          class="relative dropdown-container"
+          (mouseenter)="openGalleryDropdown()"
+          (mouseleave)="closeGalleryDropdown()"
         >
-          Gallery
-        </a>
+          <a 
+            class="nav-link-desktop dropdown-trigger"
+            [class.active]="router.url.includes('/gallery') || router.url.includes('/films')"
+          >
+            Gallery
+            <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </a>
+          <div 
+            class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[180px] z-50"
+            style="background-color: rgba(255, 250, 245, 0.98); border: 1px solid rgba(200, 155, 123, 0.2); margin-top: 4px;"
+          >
+            <a 
+              routerLink="/gallery" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2"
+            >
+              Photography
+            </a>
+            <a 
+              routerLink="/films" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2"
+            >
+              Films
+            </a>
+          </div>
+        </div>
         <a 
           routerLink="/faqs" 
           routerLinkActive="active"
@@ -192,7 +221,22 @@
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            Gallery
+            Photography
+          </span>
+        </a>
+        
+        <a 
+          routerLink="/films" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
+          (click)="closeMobileMenu()"
+        >
+          <span class="flex items-center">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Films
           </span>
         </a>
         

@@ -16,6 +16,7 @@ export class NavbarComponent implements OnInit {
   isScrolled = false;
   isAuthenticated = false;
   isDropdownOpen = false;
+  isGalleryDropdownOpen = false;
   isClientReady = false;
   @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
 
@@ -74,6 +75,14 @@ export class NavbarComponent implements OnInit {
 
   closeDropdown(): void {
     this.isDropdownOpen = false;
+  }
+
+  openGalleryDropdown(): void {
+    this.isGalleryDropdownOpen = true;
+  }
+
+  closeGalleryDropdown(): void {
+    this.isGalleryDropdownOpen = false;
   }
 
 }
