@@ -1,0 +1,116 @@
+<!-- Upload Modal -->
+<div *ngIf="show" class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Upload Film</h2>
+      <button class="close-btn" (click)="close()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Description Input -->
+      <div class="description-input-container">
+        <label for="description-input" class="description-label">
+          Description <span class="required-indicator">*</span>
+        </label>
+        <textarea 
+          id="description-input"
+          [(ngModel)]="description"
+          class="description-textarea"
+          placeholder="Enter a description for this film..."
+          rows="4"
+          [disabled]="isUploading"
+          required
+        ></textarea>
+      </div>
+
+      <!-- File Input -->
+      <div class="file-input-container">
+        <label 
+          for="file-input" 
+          class="file-input-label"
+          [class.dragging]="isDragging"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+          <span *ngIf="!isDragging">Click to select video or drag and drop</span>
+          <span *ngIf="isDragging" class="drop-here">Drop video here</span>
+          <input 
+            id="file-input" 
+            type="file" 
+            accept="video/*" 
+            (change)="onFileSelected($event)"
+            [disabled]="isUploading"
+            style="display: none;"
+          />
+        </label>
+      </div>
+
+      <!-- Selected File Preview -->
+      <div *ngIf="selectedFile" class="selected-file">
+        <div class="file-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+          <span class="file-name">{{ selectedFile.name }}</span>
+          <span class="file-size">({{ formatBytes(selectedFile.size) }})</span>
+          <button class="remove-file-btn" (click)="removeFile()" [disabled]="isUploading">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload Progress -->
+      <div *ngIf="isUploading" class="upload-progress-container">
+        <div class="progress-header">
+          <span class="progress-percentage">{{ uploadProgress }}%</span>
+          <span class="progress-time">{{ uploadElapsedTime }}</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-size">{{ formatBytes(uploadProgressBytes) }} / {{ formatBytes(uploadTotalBytes) }}</span>
+          <span class="progress-speed" *ngIf="uploadProgress > 0 && uploadElapsedTime !== '0s'">
+            {{ uploadSpeed }}/s
+          </span>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div *ngIf="uploadSuccess" class="success-message">
+        {{ uploadSuccess }}
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="uploadError" class="error-message">
+        {{ uploadError }}
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="close()" [disabled]="isUploading">
+        Cancel
+      </button>
+      <button 
+        class="upload-submit-btn" 
+        (click)="uploadFilm()" 
+        [disabled]="!selectedFile || !description || description.trim() === '' || isUploading"
+      >
+        <ng-container *ngIf="!isUploading; else uploadingState">
+          Upload Film
+        </ng-container>
+        <ng-template #uploadingState>
+          <div class="mini-spinner"></div>
+          Uploading...
+        </ng-template>
+      </button>
+    </div>
+  </div>
+</div>
+

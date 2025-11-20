@@ -25,6 +25,27 @@ export class FilmsService {
   // Get all films
   getAllFilms(): Observable<Film[]> {
     return this.http.get<Film[]>(this.apiUrl);
+  } 
+
+  // Upload a film (requires admin authentication)
+  uploadFilm(file: File, description: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('videos', file);
+    formData.append('description', description);
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  // Extract thumbnail for a film (requires admin authentication)
+  extractFilmThumbnail(filmId: string, timeInSeconds: number): Observable<{ ok: boolean; thumbnail: string; thumbnailFilename: string }> {
+    return this.http.post<{ ok: boolean; thumbnail: string; thumbnailFilename: string }>(
+      `${this.apiUrl}/${filmId}/thumbnail`,
+      { timeInSeconds },
+      { withCredentials: true }
+    );
   }
 
   // Delete a film (requires admin authentication)

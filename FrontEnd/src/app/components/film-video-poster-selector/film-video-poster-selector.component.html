@@ -1,0 +1,84 @@
+<div class="video-poster-selector-overlay" (click)="closeModal()">
+  <div class="video-poster-selector-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Select Film Thumbnail</h2>
+      <button class="close-btn" (click)="closeModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <div class="video-container">
+        <video
+          #videoPlayer
+          [src]="baseUrl + videoUrl"
+          controls
+          (loadedmetadata)="onLoadedMetadata()"
+          (loadeddata)="onVideoLoaded()"
+          (timeupdate)="onTimeUpdate()"
+          class="video-player">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
+      <div class="controls-section">
+        <div class="time-info">
+          <span>Current Time: {{ formatTime(currentTime) }}</span>
+          <span>Video Duration: {{ formatTime(videoDuration) }}</span>
+        </div>
+
+        <div class="time-slider-container">
+          <input
+            type="range"
+            min="0"
+            [max]="videoDuration"
+            [value]="currentTime"
+            step="0.1"
+            (input)="seekToTime(+$any($event.target).value)"
+            class="time-slider">
+        </div>
+
+        <div class="quick-seek-buttons">
+          <button (click)="seekToTime(1)" class="seek-btn">1 sec</button>
+          <button (click)="seekToTime(5)" class="seek-btn">5 sec</button>
+          <button (click)="seekToTime(10)" class="seek-btn">10 sec</button>
+          <button (click)="seekToTime(videoDuration / 4)" class="seek-btn">25%</button>
+          <button (click)="seekToTime(videoDuration / 2)" class="seek-btn">50%</button>
+          <button (click)="seekToTime(videoDuration * 0.75)" class="seek-btn">75%</button>
+        </div>
+
+        <button
+          (click)="extractThumbnailAtCurrentTime()"
+          [disabled]="isExtracting || currentTime <= 0"
+          class="extract-btn">
+          <span *ngIf="!isExtracting">Extract Thumbnail at This Time</span>
+          <span *ngIf="isExtracting">Extracting...</span>
+        </button>
+
+        <div *ngIf="error" class="error-message">
+          {{ error }}
+        </div>
+
+        <div *ngIf="previewThumbnail" class="thumbnail-preview">
+          <h3>Extracted Thumbnail:</h3>
+          <img [src]="previewThumbnail" alt="Thumbnail preview">
+          <p class="success-message">✓ Thumbnail extracted successfully!</p>
+          <button 
+            (click)="confirmThumbnail()" 
+            class="confirm-thumbnail-btn">
+            Set as Video Thumbnail
+          </button>
+        </div>
+
+        <div *ngIf="currentThumbnail" class="current-thumbnail">
+          <h3>Current Thumbnail:</h3>
+          <img [src]="baseUrl + currentThumbnail" alt="Current thumbnail">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

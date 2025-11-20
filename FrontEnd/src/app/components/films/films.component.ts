@@ -4,11 +4,14 @@ import { FilmsService, Film } from '../../services/films.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { FilmUploadModalComponent } from '../film-upload-modal/film-upload-modal.component';
+import { FilmVideoPosterSelectorComponent } from '../film-video-poster-selector/film-video-poster-selector.component';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-films',
   standalone: true,
-  imports: [CommonModule, DeleteModalComponent],
+  imports: [CommonModule, DeleteModalComponent, FilmUploadModalComponent, FilmVideoPosterSelectorComponent],
   templateUrl: './films.component.html',
   styleUrl: './films.component.scss'
 })
@@ -19,7 +22,10 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
   errorMessage: string = '';
   isAuthenticated: boolean = false;
   showDeleteModal: boolean = false;
+  showUploadModal: boolean = false;
+  showVideoPosterSelector: boolean = false;
   filmToDelete: Film | null = null;
+  selectedFilmForThumbnail: Film | null = null;
   deletingFilmId: string | null = null;
   deleteModalLoading = false;
   private intersectionObserver?: IntersectionObserver;
@@ -205,6 +211,53 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isDeleting(filmId: string): boolean {
     return this.deletingFilmId === filmId;
+  }
+
+  // Upload modal methods
+  openUploadModal() {
+    this.showUploadModal = true;
+  }
+
+  closeUploadModal() {
+    this.showUploadModal = false;
+  }
+
+  onUploadComplete() {
+    // Reload films after successful upload
+    this.loadFilms();
+  }
+
+  // Upload function to pass to FilmUploadModalComponent
+  uploadFilm(file: File, description: string): Observable<any> {
+    return this.filmsService.uploadFilm(file, description);
+  }
+
+  // Thumbnail selector methods
+  onSelectVideoThumbnail(film: Film, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedFilmForThumbnail = film;
+    this.showVideoPosterSelector = true;
+  }
+
+  onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
+    if (!this.selectedFilmForThumbnail) return;
+    
+    // Update the film in the local array
+    const filmIndex = this.films.findIndex(f => f._id === this.selectedFilmForThumbnail?._id);
+    if (filmIndex !== -1) {
+      this.films[filmIndex].thumbnail = data.thumbnail;
+      this.films[filmIndex].thumbnailFilename = data.thumbnailFilename;
+    }
+
+    // Reload films to ensure we have the latest data
+    this.loadFilms();
+  }
+
+  onCloseVideoPosterSelector(): void {
+    this.showVideoPosterSelector = false;
+    this.selectedFilmForThumbnail = null;
   }
 }
 

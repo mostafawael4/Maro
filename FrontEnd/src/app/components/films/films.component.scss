@@ -27,6 +27,39 @@
     letter-spacing: 0.5px;
   }
 
+  .upload-btn {
+    margin-top: 20px;
+    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    svg {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(107, 31, 31, 0.4);
+
+      svg {
+        transform: translateY(-2px);
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
   @media (max-width: 768px) {
     h1 {
       font-size: 2rem;
@@ -124,7 +157,7 @@
 
 .film-item {
   display: flex;
-  gap: 40px;
+  gap: 60px;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
@@ -152,11 +185,15 @@
 
 // Film Video Wrapper
 .film-video-wrapper {
-  flex: 0 0 400px;
+  flex: 0 0 550px;
   position: relative;
   border-radius: 8px;
   overflow: hidden;
   background: #000;
+
+  @media (max-width: 1024px) {
+    flex: 0 0 450px;
+  }
 
   @media (max-width: 768px) {
     flex: 1 1 auto;
@@ -211,11 +248,49 @@
     }
   }
 
-  // Delete Button
-  .delete-btn {
+  // Admin Buttons Container
+  .admin-buttons {
     position: absolute;
     top: 12px;
     right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  // Thumbnail Button
+  .thumbnail-btn {
+    background: rgba(74, 144, 226, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: rgba(74, 144, 226, 1);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  // Delete Button
+  .delete-btn {
     background: rgba(220, 38, 38, 0.9);
     color: white;
     border: none;
@@ -227,12 +302,11 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
     svg {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
     }
 
     &:hover {
@@ -264,15 +338,27 @@
 
 // Film Description Section
 .film-description {
-  flex: 1;
+  flex: 0 0 350px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  @media (max-width: 1024px) {
+    flex: 0 0 300px;
+  }
+
+  @media (max-width: 768px) {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 
   .film-text {
-    font-size: 1.1rem;
-    line-height: 1.7;
-    color: rgba(0, 0, 0, 0.7);
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #8B3A3A;
     margin: 0;
+    font-style: italic;
   }
 }
 
@@ -291,7 +377,7 @@
 // Responsive Design
 @media (max-width: 1024px) {
   .film-video-wrapper {
-    flex: 0 0 350px;
+    flex: 0 0 500px;
   }
 }
 
