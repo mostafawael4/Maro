@@ -17,6 +17,7 @@ import { CalendarComponent } from './components/calendar/calendar.component';
 import { adminGuard } from './guards/admin.guard';
 import { adminLoginGuard } from './guards/admin-login.guard';
 import { authGuard } from './guards/auth.guard';
+import { ordersAccessGuard } from './guards/orders-access.guard';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -25,7 +26,7 @@ export const routes: Routes = [
     { path: 'gallery', component: GalleryComponent },
     { path: 'films', component: FilmsComponent },
     { path: 'faqs', component: FaqsComponent },
-    { path: 'orders', component: OrdersComponent },
+    { path: 'orders', component: OrdersComponent, canActivate: [ordersAccessGuard] },
     { path: 'create-order', component: CreateOrderComponent },
     { path: 'edit-order/:id', component: CreateOrderComponent },
     { path: 'order-details/:id', component: OrderDetailsComponent },

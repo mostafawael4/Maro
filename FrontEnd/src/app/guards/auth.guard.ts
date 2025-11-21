@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { map, take } from 'rxjs/operators';
+import { filter, map, take } from 'rxjs/operators';
 
 /**
  * Allows both admin and editor to access routes.
@@ -11,14 +11,14 @@ export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Check immediate auth state (from localStorage)
-  if (!authService.isAuthenticatedValue) {
-    router.navigate(['/admin']);
-    return false;
+  if (!authService.isBrowserEnv) {
+    return true;
   }
 
-  // Verify with server
+  authService.checkAuth();
+
   return authService.isAuthenticated$.pipe(
+    filter((value): value is boolean => value !== null),
     take(1),
     map(isAuthenticated => {
       if (!isAuthenticated) {

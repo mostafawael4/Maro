@@ -1,36 +1,31 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { map, take } from 'rxjs/operators';
+import { filter, map, take } from 'rxjs/operators';
 
 export const adminGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Check immediate auth state (from localStorage)
-  if (!authService.isAuthenticatedValue) {
-    router.navigate(['/admin']);
-    return false;
+  if (!authService.isBrowserEnv) {
+    return true;
   }
 
-  // Check if user is admin (not editor)
-  if (!authService.isAdmin()) {
-    // Editor trying to access admin-only route, redirect to calendar
-    router.navigate(['/calendar']);
-    return false;
-  }
+  authService.checkAuth();
 
-  // Verify with server
   return authService.isAuthenticated$.pipe(
+    filter((value): value is boolean => value !== null),
     take(1),
     map(isAuthenticated => {
       if (!isAuthenticated) {
         router.navigate(['/admin']);
         return false;
       }
-      // Double-check admin role after server verification
       if (!authService.isAdmin()) {
-        router.navigate(['/calendar']);
+        if (typeof window !== 'undefined') {
+          window.alert('Authentication required. Please log in as admin to continue.');
+        }
+        router.navigate(['/admin']);
         return false;
       }
       return true;

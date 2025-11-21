@@ -30,20 +30,16 @@ export class NavbarComponent implements OnInit {
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
     if (this.isBrowser) {
-      this.isAuthenticated = this.authService.isAuthenticatedValue || this.authService.hasStoredAuth();
+      this.isAuthenticated = this.authService.isAuthenticatedValue;
       this.isAdmin = this.authService.isAdmin();
     }
 
     // Subscribe to authentication state
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
-      // Update admin status when auth state changes
       if (this.isBrowser) {
-        // Use setTimeout to ensure localStorage is updated after login
-        setTimeout(() => {
-          this.isAdmin = this.authService.isAdmin();
-          this.cdr.markForCheck();
-        }, 0);
+        this.isAdmin = this.authService.isAdmin();
+        this.cdr.markForCheck();
       }
       if (isPlatformBrowser(this.platformId)) {
         this.isClientReady = true;
