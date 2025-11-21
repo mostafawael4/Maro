@@ -604,6 +604,8 @@ export class CreateOrderComponent implements OnInit {
     } else {
       array.push(this.fb.control(eventType));
     }
+    // Mark the FormArray as touched when user interacts with checkboxes
+    array.markAsTouched();
   }
 
   isEventTypeSelected(eventType: string): boolean {

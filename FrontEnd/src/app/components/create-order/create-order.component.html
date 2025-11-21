@@ -80,10 +80,10 @@
             id="email" 
             formControlName="email" 
             class="form-control"
-            [class.invalid]="orderForm.get('email')?.invalid"
+            [class.invalid]="orderForm.get('email')?.invalid && orderForm.get('email')?.touched"
             placeholder="your.email@example.com"
           />
-          <span *ngIf="orderForm.get('email')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('email')?.invalid && orderForm.get('email')?.touched" class="error-text">
             Valid email is required
           </span>
         </div>
@@ -95,10 +95,10 @@
             id="clientName" 
             formControlName="clientName" 
             class="form-control"
-            [class.invalid]="orderForm.get('clientName')?.invalid"
+            [class.invalid]="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched"
             placeholder="Full name"
           />
-          <span *ngIf="orderForm.get('clientName')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched" class="error-text">
             Client name must be at least 3 characters
           </span>
         </div>
@@ -299,10 +299,10 @@
             id="brideAndGroomNames" 
             formControlName="brideAndGroomNames" 
             class="form-control"
-            [class.invalid]="orderForm.get('brideAndGroomNames')?.invalid"
+            [class.invalid]="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
             placeholder="e.g., John & Jane"
           />
-          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched" class="error-text">
             Bride & Groom's names are required
           </span>
         </div>
@@ -314,20 +314,20 @@
             id="eventDate" 
             formControlName="eventDate" 
             class="form-control"
-            [class.invalid]="orderForm.get('eventDate')?.invalid"
+            [class.invalid]="orderForm.get('eventDate')?.invalid && orderForm.get('eventDate')?.touched"
           />
-          <span *ngIf="orderForm.get('eventDate')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('eventDate')?.invalid && orderForm.get('eventDate')?.touched" class="error-text">
             Event date is required
           </span>
         </div>
 
         <div class="form-group">
-          <label class="required">Event Type *</label>
+          <label class="required">Event Type</label>
           <p class="field-instruction">You can select more than one if applies</p>
           <div 
             formArrayName="eventType" 
             class="checkbox-group"
-            [class.invalid]="orderForm.get('eventType')?.invalid"
+            [class.invalid]="orderForm.get('eventType')?.invalid && orderForm.get('eventType')?.touched"
           >
             <label 
               *ngFor="let eventType of eventTypes" 
@@ -351,7 +351,7 @@
               placeholder="Please specify other event type"
             />
           </div>
-          <span *ngIf="orderForm.get('eventType')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('eventType')?.invalid && orderForm.get('eventType')?.touched" class="error-text">
             Please select at least one event type
           </span>
         </div>
@@ -363,10 +363,10 @@
             id="eventVenue" 
             formControlName="eventVenue" 
             class="form-control"
-            [class.invalid]="orderForm.get('eventVenue')?.invalid"
+            [class.invalid]="orderForm.get('eventVenue')?.invalid && orderForm.get('eventVenue')?.touched"
             placeholder="Venue name and address"
           />
-          <span *ngIf="orderForm.get('eventVenue')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('eventVenue')?.invalid && orderForm.get('eventVenue')?.touched" class="error-text">
             Event venue is required
           </span>
         </div>
@@ -381,11 +381,11 @@
               id="timelineOfDay" 
               formControlName="timelineOfDay" 
               class="form-control"
-              [class.invalid]="orderForm.get('timelineOfDay')?.invalid"
+              [class.invalid]="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched"
               rows="4"
               placeholder="Describe the timeline of events for the day..."
             ></textarea>
-            <span *ngIf="orderForm.get('timelineOfDay')?.invalid" class="error-text">
+            <span *ngIf="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched" class="error-text">
               Timeline details are required
             </span>
           </div>
@@ -398,9 +398,9 @@
               id="shootersStartTime" 
               formControlName="shootersStartTime" 
               class="form-control"
-            [class.invalid]="orderForm.get('shootersStartTime')?.invalid"
+            [class.invalid]="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched"
             />
-            <span *ngIf="orderForm.get('shootersStartTime')?.invalid" class="error-text">
+            <span *ngIf="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched" class="error-text">
               Start time is required
             </span>
           </div>
@@ -413,9 +413,9 @@
               id="shootersEndTime" 
               formControlName="shootersEndTime" 
               class="form-control"
-            [class.invalid]="orderForm.get('shootersEndTime')?.invalid"
+            [class.invalid]="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched"
             />
-            <span *ngIf="orderForm.get('shootersEndTime')?.invalid" class="error-text">
+            <span *ngIf="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched" class="error-text">
               End time is required
             </span>
           </div>
@@ -441,11 +441,11 @@ dates...etc.
             id="coupleDescription" 
             formControlName="coupleDescription" 
             class="form-control"
-            [class.invalid]="orderForm.get('coupleDescription')?.invalid"
+            [class.invalid]="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched"
             rows="4"
             placeholder="Tell us about the couple, their personalities, interests..."
           ></textarea>
-          <span *ngIf="orderForm.get('coupleDescription')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched" class="error-text">
             Couple description is required
           </span>
         </div>
@@ -461,10 +461,10 @@ dates...etc.
           <textarea 
             formControlName="moodBoardLinks" 
             class="form-control mood-board-input"
-            [class.invalid]="orderForm.get('moodBoardLinks')?.invalid"
+            [class.invalid]="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched"
             rows="4"
           ></textarea>
-          <span *ngIf="orderForm.get('moodBoardLinks')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched" class="error-text">
             Mood board links are required
           </span>
         </div>
@@ -504,11 +504,11 @@ dates...etc.
             id="specialMoments" 
             formControlName="specialMoments" 
             class="form-control"
-            [class.invalid]="orderForm.get('specialMoments')?.invalid"
+            [class.invalid]="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched"
             rows="4"
             placeholder="List any special moments, traditions, or events you want captured..."
           ></textarea>
-          <span *ngIf="orderForm.get('specialMoments')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched" class="error-text">
             Please share the special moments you want covered
           </span>
         </div>
@@ -523,11 +523,11 @@ guests...etc.
             id="excludeShots" 
             formControlName="excludeShots" 
             class="form-control"
-            [class.invalid]="orderForm.get('excludeShots')?.invalid"
+            [class.invalid]="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched"
             rows="3"
             placeholder="Any shots or moments you prefer to exclude..."
           ></textarea>
-          <span *ngIf="orderForm.get('excludeShots')?.invalid" class="error-text">
+          <span *ngIf="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched" class="error-text">
             Please let us know if there are any parts to exclude
           </span>
         </div>
@@ -614,10 +614,10 @@ guests...etc.
                 id="makeupArtist" 
                 formControlName="makeupArtist" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.makeupArtist')?.invalid"
+                [class.invalid]="orderForm.get('vendors.makeupArtist')?.invalid && orderForm.get('vendors.makeupArtist')?.touched"
                 placeholder="Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.makeupArtist')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.makeupArtist')?.invalid && orderForm.get('vendors.makeupArtist')?.touched" class="error-text">
                 Makeup artist is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -629,10 +629,10 @@ guests...etc.
                 id="hairStylist" 
                 formControlName="hairStylist" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.hairStylist')?.invalid"
+                [class.invalid]="orderForm.get('vendors.hairStylist')?.invalid && orderForm.get('vendors.hairStylist')?.touched"
                 placeholder="Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.hairStylist')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.hairStylist')?.invalid && orderForm.get('vendors.hairStylist')?.touched" class="error-text">
                 Hair stylist is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -646,10 +646,10 @@ guests...etc.
                 id="dressDesigner" 
                 formControlName="dressDesigner" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.dressDesigner')?.invalid"
+                [class.invalid]="orderForm.get('vendors.dressDesigner')?.invalid && orderForm.get('vendors.dressDesigner')?.touched"
                 placeholder="Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.dressDesigner')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.dressDesigner')?.invalid && orderForm.get('vendors.dressDesigner')?.touched" class="error-text">
                 Dress designer is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -661,10 +661,10 @@ guests...etc.
                 id="eventPlanner" 
                 formControlName="eventPlanner" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.eventPlanner')?.invalid"
+                [class.invalid]="orderForm.get('vendors.eventPlanner')?.invalid && orderForm.get('vendors.eventPlanner')?.touched"
                 placeholder="Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.eventPlanner')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.eventPlanner')?.invalid && orderForm.get('vendors.eventPlanner')?.touched" class="error-text">
                 Event planner is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -678,10 +678,10 @@ guests...etc.
                 id="dj" 
                 formControlName="dj" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.dj')?.invalid"
+                [class.invalid]="orderForm.get('vendors.dj')?.invalid && orderForm.get('vendors.dj')?.touched"
                 placeholder="Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.dj')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.dj')?.invalid && orderForm.get('vendors.dj')?.touched" class="error-text">
                 DJ is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -693,10 +693,10 @@ guests...etc.
                 id="lighting" 
                 formControlName="lighting" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.lighting')?.invalid"
+                [class.invalid]="orderForm.get('vendors.lighting')?.invalid && orderForm.get('vendors.lighting')?.touched"
                 placeholder="Company/Name or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.lighting')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.lighting')?.invalid && orderForm.get('vendors.lighting')?.touched" class="error-text">
                 Lighting vendor is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -710,10 +710,10 @@ guests...etc.
                 id="entertainment" 
                 formControlName="entertainment" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.entertainment')?.invalid"
+                [class.invalid]="orderForm.get('vendors.entertainment')?.invalid && orderForm.get('vendors.entertainment')?.touched"
                 placeholder="Type of entertainment or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.entertainment')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.entertainment')?.invalid && orderForm.get('vendors.entertainment')?.touched" class="error-text">
                 Entertainment is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -725,10 +725,10 @@ guests...etc.
                 id="others" 
                 formControlName="others" 
                 class="form-control"
-                [class.invalid]="orderForm.get('vendors.others')?.invalid"
+                [class.invalid]="orderForm.get('vendors.others')?.invalid && orderForm.get('vendors.others')?.touched"
                 placeholder="Other vendors or N/A"
               />
-              <span *ngIf="orderForm.get('vendors.others')?.invalid" class="error-text">
+              <span *ngIf="orderForm.get('vendors.others')?.invalid && orderForm.get('vendors.others')?.touched" class="error-text">
                 This field is required (enter "N/A" if unknown).
               </span>
             </div>
