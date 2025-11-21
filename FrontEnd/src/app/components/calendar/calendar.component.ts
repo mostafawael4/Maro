@@ -175,6 +175,10 @@ export class CalendarComponent implements OnInit {
   private stripTime(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
+
+  getCoupleName(event: WeddingCalendarEvent): string {
+    return event.brideName ? `${event.groomName} & ${event.brideName}` : event.groomName;
+  }
 }
 
 

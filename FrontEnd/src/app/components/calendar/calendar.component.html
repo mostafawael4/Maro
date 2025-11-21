@@ -5,14 +5,14 @@
       <h1>Event Calendar</h1>
       <p class="subtitle">
         Track every ceremony, shoot, and delivery milestone in a single cinematic view.
-        Event tiles highlight groom names for quick reference before the big day.
+        Event tiles highlight couple names for quick reference before the big day.
       </p>
     </div>
     <div class="hero-card">
       <p class="hero-title">Ready-to-host calendar</p>
       <p class="hero-text">
         Drop this component anywhere in your site to showcase confirmed event days.
-        All groom names, event titles, and venues stay in sync with your dashboard data.
+        All couple names, event titles, and venues stay in sync with your dashboard data.
       </p>
     </div>
   </div>
@@ -52,7 +52,7 @@
                 class="event-dot"
                 *ngFor="let event of day.events | slice:0:3"
                 [style.background]="event.color || '#c084fc'"
-                [attr.title]="event.title + ' • ' + event.groomName"
+                [attr.title]="event.title + ' • ' + getCoupleName(event)"
               ></span>
               <span class="extra-count" *ngIf="day.events.length > 3">+{{ day.events.length - 3 }}</span>
             </div>
@@ -79,12 +79,8 @@
                 <span class="event-value">{{ event.title }}</span>
               </div>
               <div class="event-field">
-                <span class="event-key">Groom</span>
-                <span class="event-value">{{ event.groomName }}</span>
-              </div>
-              <div class="event-field" *ngIf="event.brideName">
-                <span class="event-key">Bride</span>
-                <span class="event-value">{{ event.brideName }}</span>
+                <span class="event-key">Couple</span>
+                <span class="event-value">{{ getCoupleName(event) }}</span>
               </div>
               <div class="event-field" *ngIf="event.location">
                 <span class="event-key">Venue</span>
@@ -167,7 +163,7 @@
         <ng-template #emptyDay>
           <div class="empty-state">
             <p>No confirmed events on this date.</p>
-            <span>Tap an event day in the calendar to see groom details.</span>
+            <span>Tap an event day in the calendar to see couple details.</span>
           </div>
         </ng-template>
       </section>
@@ -191,12 +187,8 @@
                   <span class="event-value">{{ event.title }}</span>
                 </div>
                 <div class="event-field">
-                  <span class="event-key">Groom</span>
-                  <span class="event-value">{{ event.groomName }}</span>
-                </div>
-                <div class="event-field" *ngIf="event.brideName">
-                  <span class="event-key">Bride</span>
-                  <span class="event-value">{{ event.brideName }}</span>
+                  <span class="event-key">Couple</span>
+                  <span class="event-value">{{ getCoupleName(event) }}</span>
                 </div>
                 <div class="event-field" *ngIf="event.location">
                   <span class="event-key">Venue</span>
