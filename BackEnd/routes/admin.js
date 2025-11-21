@@ -141,8 +141,8 @@ router.post('/logout', requireAdminOrEditorAuth, (req, res) => {
   });
 });
 
-// GET /admin/me  (protected)
-router.get('/me', requireAdminAuth, (req, res) => {
+// GET /admin/me  (protected - admin or editor)
+router.get('/me', requireAdminOrEditorAuth, (req, res) => {
   let role = 'unknown', usernameOrId = 'unknown';
   if (req.session.isAdmin) {
     role = 'admin';
