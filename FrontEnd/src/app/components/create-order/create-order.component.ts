@@ -18,6 +18,7 @@ export class CreateOrderComponent implements OnInit {
   orderForm: FormGroup;
   isSubmitting = false;
   submitError = '';
+  showErrorModal = false;
   submitSuccess = false;
   packages: Package[] = [];
   packagesLoading = false;
@@ -948,9 +949,19 @@ export class CreateOrderComponent implements OnInit {
     }
 
     if (!isValid && setSubmitError) {
-      this.submitError = 'Please complete the Packages & Pricing selections.';
-    } else if (isValid && this.submitError === 'Please complete the Packages & Pricing selections.') {
-      this.submitError = '';
+      // Build detailed error message
+      const errorMessages: string[] = [];
+      if (this.packageSelectionError) {
+        errorMessages.push(this.packageSelectionError);
+      }
+      if (this.collectionSelectionError) {
+        errorMessages.push(this.collectionSelectionError);
+      }
+      if (errorMessages.length > 0) {
+        this.submitError = errorMessages.join('\n\n');
+      } else {
+        this.submitError = 'Please complete the Packages & Pricing selections.';
+      }
     }
 
     return isValid;
@@ -1048,10 +1059,12 @@ export class CreateOrderComponent implements OnInit {
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
       this.submitError = 'Please fill in all required fields correctly.';
+      this.showErrorModal = true;
       return;
     }
 
     if (!this.validatePackageSelections(true)) {
+      this.showErrorModal = true;
       return;
     }
 
@@ -1119,6 +1132,7 @@ export class CreateOrderComponent implements OnInit {
         error: (error) => {
           this.isSubmitting = false;
           this.submitError = error.error?.message || 'Failed to update order. Please try again.';
+          this.showErrorModal = true;
           console.error('Error updating order:', error);
         }
       });
@@ -1140,6 +1154,7 @@ export class CreateOrderComponent implements OnInit {
       error: (error) => {
         this.isSubmitting = false;
         this.submitError = error.error?.message || 'Failed to create order. Please try again.';
+        this.showErrorModal = true;
         console.error('Error creating order:', error);
       }
     });
@@ -1253,6 +1268,11 @@ export class CreateOrderComponent implements OnInit {
   onSuccessModalClose(): void {
     this.submitSuccess = false;
     this.navigateAfterEdit();
+  }
+
+  onErrorModalClose(): void {
+    this.showErrorModal = false;
+    this.submitError = '';
   }
 
   private navigateAfterEdit(): void {

@@ -25,13 +25,14 @@
       (close)="onSuccessModalClose()"
     ></app-success-modal>
 
-    <!-- Error Message -->
-    <div *ngIf="submitError" class="error-message">
-      <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-      <p>{{ submitError }}</p>
-    </div>
+    <!-- Error Modal -->
+    <app-success-modal
+      [isOpen]="showErrorModal"
+      [type]="'error'"
+      title="Validation Error"
+      [message]="submitError"
+      (close)="onErrorModalClose()"
+    ></app-success-modal>
 
     <div *ngIf="isEditMode && loadingOrderData" class="loading-container">
       <div class="spinner"></div>
