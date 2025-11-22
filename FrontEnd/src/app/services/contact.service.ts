@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 export interface ContactFormData {
   clientName: string;
   email: string;
+  phoneNumber: string;
   message: string;
 }
 
