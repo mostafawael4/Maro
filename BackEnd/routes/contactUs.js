@@ -35,7 +35,8 @@ router.post("/", async (req, res) => {
                   <p style="margin:5px 0 0;">from ${clientName}</p>
                 </div>
                 <div style="padding:30px;">
-                  <p style="margin:0 0 10px;"><strong>Client Name:</strong> ${clientName} - ${phoneNumber}</p>
+                  <p style="margin:0 0 10px;"><strong>Client Name:</strong> ${clientName}</p>
+                  <p style="margin:0 0 10px;"><strong>Client's Phone Number:</strong> ${phoneNumber}</p>
                   <p style="margin:0 0 10px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#7b2e2f; text-decoration:none;">${email}</a></p>
                   <div style="margin:20px 0; padding:15px; background:#fdf8f6; border-left:4px solid #7b2e2f; border-radius:5px;">
                     <p style="margin:0; line-height:1.6; color:#444;">${message}</p>
