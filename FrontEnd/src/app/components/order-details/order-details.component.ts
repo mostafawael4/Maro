@@ -197,6 +197,11 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     }
   }
 
+  getStatusClass(status: string | undefined | null): string {
+    if (!status) return 'status-default';
+    return 'status-' + status.toLowerCase().replace(/\s+/g, '-');
+  }
+
   openImageSlider(index: number) {
     const media = this.currentMedia;
     if (!media || !media[index]) return;
