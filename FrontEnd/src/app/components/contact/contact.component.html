@@ -53,7 +53,9 @@
             [class.error]="message?.invalid && message?.touched"
           ></textarea>
           <label for="message" class="floating-label">Message</label>
-          <span *ngIf="message?.invalid && message?.touched" class="error-text">Required</span>
+          <span *ngIf="message?.invalid && message?.touched" class="error-text">
+            {{ message?.errors?.['required'] ? 'Required' : 'Message must be at least 10 characters' }}
+          </span>
         </div>
 
         <!-- Messages -->
