@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-footer',
@@ -11,6 +11,8 @@ import { RouterLink } from '@angular/router';
 })
 export class FooterComponent {
   currentYear: number = new Date().getFullYear();
+
+  constructor(private router: Router) {}
 
   // Social media links
   socialLinks = {
@@ -30,9 +32,16 @@ export class FooterComponent {
 
   // Package links
   packageLinks = [
-    { name: 'Cinematography', route: '/packages/cinematography' },
-    { name: 'Photography', route: '/packages/photography' },
-    { name: 'Full Recording', route: '/packages/fullrecording' }
+    { name: 'Cinematography', route: '/packages' },
+    { name: 'Photography', route: '/packages' },
+    { name: 'Full Recording', route: '/packages' }
   ];
+
+  navigateToPackages(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    this.router.navigate(['/packages']);
+  }
 }
 

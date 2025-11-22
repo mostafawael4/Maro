@@ -34,7 +34,7 @@
         <h3 class="footer-heading">Packages</h3>
         <ul class="footer-links">
           <li *ngFor="let package of packageLinks">
-            <a [routerLink]="package.route" class="footer-link">
+            <a (click)="navigateToPackages($event)" class="footer-link" style="cursor: pointer;">
               {{ package.name }}
             </a>
           </li>
