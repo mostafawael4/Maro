@@ -41,6 +41,21 @@
               {{ email?.errors?.['email'] ? 'Invalid email' : 'Required' }}
             </span>
           </div>
+
+          <div class="form-field">
+            <input
+              type="tel"
+              id="phoneNumber"
+              formControlName="phoneNumber"
+              class="form-input"
+              placeholder="Your Phone Number"
+              [class.error]="phoneNumber?.invalid && phoneNumber?.touched"
+            />
+            <label for="phoneNumber" class="floating-label">Phone Number</label>
+            <span *ngIf="phoneNumber?.invalid && phoneNumber?.touched" class="error-text">
+              {{ phoneNumber?.errors?.['required'] ? 'Required' : 'Please enter a valid Egyptian phone number (e.g., 01XXXXXXXXX or +201XXXXXXXXX)' }}
+            </span>
+          </div>
         </div>
 
         <div class="form-field">
@@ -53,7 +68,9 @@
             [class.error]="message?.invalid && message?.touched"
           ></textarea>
           <label for="message" class="floating-label">Message</label>
-          <span *ngIf="message?.invalid && message?.touched" class="error-text">Required</span>
+          <span *ngIf="message?.invalid && message?.touched" class="error-text">
+            {{ message?.errors?.['required'] ? 'Required' : 'Message must be at least 10 characters' }}
+          </span>
         </div>
 
         <!-- Messages -->

@@ -222,12 +222,12 @@
       <circle cx="8.5" cy="8.5" r="1.5"></circle>
       <path d="M21 15l-5-5L5 21"></path>
     </svg>
-    <h3>No Media Yet</h3>
+    <h3>We're Still Working on Your Event</h3>
     <p *ngIf="folderName; else noFolder">
-      This folder does not have any media yet.
+      We're currently processing the media for this folder. Your photos and videos will be available here soon!
     </p>
     <ng-template #noFolder>
-      <p>Photos and videos will be added to this order soon.</p>
+      <p>We're still working on your event! Your beautiful photos and videos will be added here soon. Thank you for your patience!</p>
     </ng-template>
   </div>
 

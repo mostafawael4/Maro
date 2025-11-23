@@ -10,14 +10,14 @@ router.post("/", async (req, res) => {
 
   try {
     // Destructure form fields from the request body
-    const { clientName, email, message } = req.body;
+    const { clientName, email, phoneNumber, message } = req.body;
 
     // Validate that all required fields are provided
-    if (!clientName || !email || !message) {
-      logger.warn("Validation failed: Missing clientName, email, or message.");
+    if (!clientName || !email || !message || !phoneNumber) {
+      logger.warn("Validation failed: Missing clientName, email, phoneNumber, or message.");
       return res
         .status(400)
-        .json({ ok: false, message: "clientName, email, and message are required." });
+        .json({ ok: false, message: "clientName, email, phoneNumber, and message are required." });
     }
 
     // Log info before attempting to send email
@@ -36,6 +36,7 @@ router.post("/", async (req, res) => {
                 </div>
                 <div style="padding:30px;">
                   <p style="margin:0 0 10px;"><strong>Client Name:</strong> ${clientName}</p>
+                  <p style="margin:0 0 10px;"><strong>Client's Phone Number:</strong> ${phoneNumber}</p>
                   <p style="margin:0 0 10px;"><strong>Email:</strong> <a href="mailto:${email}" style="color:#7b2e2f; text-decoration:none;">${email}</a></p>
                   <div style="margin:20px 0; padding:15px; background:#fdf8f6; border-left:4px solid #7b2e2f; border-radius:5px;">
                     <p style="margin:0; line-height:1.6; color:#444;">${message}</p>

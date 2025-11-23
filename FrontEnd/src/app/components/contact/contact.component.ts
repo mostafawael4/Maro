@@ -1,7 +1,40 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ContactService } from '../../services/contact.service';
+
+// Custom validator for Egyptian phone numbers
+function egyptianPhoneValidator(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) {
+    return null; // Let required validator handle empty values
+  }
+  
+  const phone = control.value.toString().trim();
+  
+  // Remove spaces, dashes, and parentheses for validation
+  const cleanedPhone = phone.replace(/[\s\-\(\)]/g, '');
+  
+  // Egyptian phone number patterns:
+  // 01XXXXXXXXX (11 digits starting with 0) - most common format
+  // +201XXXXXXXXX (13 characters with country code)
+  // 201XXXXXXXXX (12 digits without +)
+  
+  // Pattern matches:
+  // - 01[0125]\d{8} (starts with 01, 11, 12, or 15, then 8 digits)
+  // - \+201[0125]\d{8} (starts with +201, 11, 12, or 15, then 8 digits)
+  // - 201[0125]\d{8} (starts with 201, 11, 12, or 15, then 8 digits)
+  
+  const egyptianPhonePattern = /^(\+?20)?1[0125]\d{8}$/;
+  
+  // Also check for format starting with 0 (local format)
+  const localFormatPattern = /^01[0125]\d{8}$/;
+  
+  if (!egyptianPhonePattern.test(cleanedPhone) && !localFormatPattern.test(cleanedPhone)) {
+    return { egyptianPhone: true };
+  }
+  
+  return null;
+}
 
 @Component({
   selector: 'app-contact',
@@ -24,6 +57,7 @@ export class ContactComponent {
     this.contactForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
+      phoneNumber: ['', [Validators.required, egyptianPhoneValidator]],
       message: ['', [Validators.required, Validators.minLength(10)]]
     });
   }
@@ -34,6 +68,10 @@ export class ContactComponent {
 
   get email() {
     return this.contactForm.get('email');
+  }
+
+  get phoneNumber() {
+    return this.contactForm.get('phoneNumber');
   }
 
   get message() {
@@ -60,12 +98,13 @@ export class ContactComponent {
     this.isSubmitting = true;
 
     // Get form values
-    const { name, email, message } = this.contactForm.value;
+    const { name, email, phoneNumber, message } = this.contactForm.value;
 
     // Submit to API
     this.contactService.submitContactForm({
       clientName: name,
       email: email,
+      phoneNumber: phoneNumber,
       message: message
     }).subscribe({
       next: (response) => {

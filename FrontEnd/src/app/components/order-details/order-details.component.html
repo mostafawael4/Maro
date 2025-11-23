@@ -55,8 +55,9 @@
       <div class="order-meta">
         <div class="meta-item">
           <span class="meta-label">Status:</span>
-          <span class="status-badge" [style.background-color]="getStatusColor(order.status)">
-            {{ order.status }}
+          <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+            <span class="status-dot"></span>
+            <span class="status-text">{{ order.status }}</span>
           </span>
         </div>
         <div class="meta-item">
