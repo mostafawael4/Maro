@@ -1,16 +1,26 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../../models/order.js");
-const { normalizePricingSelections } = require('../../services/pricingService');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
-const { uploadMediaFiles } = require('../../services/orderMediaService');
-const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
+const { normalizePricingSelections } = require("../../services/pricingService");
+const {
+  requireAdminAuth,
+  requireAdminOrEditorAuth,
+} = require("../../middleware/auth.js");
+const { uploadMediaFiles } = require("../../services/orderMediaService");
+const {
+  getVideoDurationService,
+  extractThumbnailService,
+} = require("../../services/videoService");
 const multer = require("multer");
 const allowedExtensions = require("../../config/allowed_extensions.json");
 const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials = require('../../config/Credentials.js')
+const {
+  getOrderFilesPaths,
+  deleteOrderfolder,
+  deleteOrderFileByFileName,
+} = require("../../services/order.service.js");
+const Credentials = require("../../config/Credentials.js");
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -21,12 +31,16 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ ok: false, message: "Email required" });
     }
     if (orderForm && typeof orderForm !== "object") {
-      return res.status(400).json({ ok: false, message: "Invalid order form format" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Invalid order form format" });
     }
     // create an order; you may want to check duplicates or generate a separate order code
     let normalizedOrderForm = orderForm;
     if (orderForm?.pricing) {
-      const normalizedPricing = await normalizePricingSelections(orderForm.pricing);
+      const normalizedPricing = await normalizePricingSelections(
+        orderForm.pricing
+      );
       normalizedOrderForm = { ...orderForm };
       if (normalizedPricing) {
         normalizedOrderForm.pricing = normalizedPricing;
@@ -91,7 +105,7 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
  * - If a property is an object (but not an array), will recursively merge its properties.
  * - Otherwise, will overwrite the value in the target with the source value.
  * - Mutates the target object in-place.
- * 
+ *
  * @param {Object} target - The object to merge into (will be mutated).
  * @param {Object} source - The object with new values (will not be mutated).
  */
@@ -110,17 +124,28 @@ const deepMerge = (target, source) => {
       target[key] = source[key];
     }
   }
-}
+};
 router.put("/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
     const updateFields = req.body;
 
     if (!orderId) {
-      return res.status(400).json({ ok: false, message: "orderId is required" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "orderId is required" });
     }
-    if (!updateFields || typeof updateFields !== "object" || Array.isArray(updateFields)) {
-      return res.status(400).json({ ok: false, message: "You must provide fields to update in request body" });
+    if (
+      !updateFields ||
+      typeof updateFields !== "object" ||
+      Array.isArray(updateFields)
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: "You must provide fields to update in request body",
+        });
     }
 
     // Get the order by orderId before updating
@@ -130,7 +155,9 @@ router.put("/:orderId", async (req, res) => {
     }
 
     if (updateFields.orderForm?.pricing) {
-      const normalizedPricing = await normalizePricingSelections(updateFields.orderForm.pricing);
+      const normalizedPricing = await normalizePricingSelections(
+        updateFields.orderForm.pricing
+      );
       if (normalizedPricing) {
         updateFields.orderForm.pricing = normalizedPricing;
       } else {
@@ -143,7 +170,7 @@ router.put("/:orderId", async (req, res) => {
       deepMerge(order.orderForm, updateFields.orderForm);
       order.markModified("orderForm");
     }
-    
+
     // Update root fields (clientName, notes, status, etc.)
     for (const key of Object.keys(updateFields)) {
       if (key !== "orderForm") {
@@ -162,7 +189,9 @@ router.put("/:orderId", async (req, res) => {
     logger.info(`Order ${orderId} updated by admin.`);
     return res.json({ ok: true, order: updatedOrder });
   } catch (err) {
-    logger.error(`PUT /orders/:orderId failed: ${err.stack || err.message || err}`);
+    logger.error(
+      `PUT /orders/:orderId failed: ${err.stack || err.message || err}`
+    );
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
@@ -202,7 +231,7 @@ const uploadMemory = multer({
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
   },
-}).array("media", 50);
+}).array("media");
 
 router.post(
   "/:orderId/upload",
@@ -222,16 +251,31 @@ router.post(
         logger.info(`Uploading ${files.length} files to order ${orderId}`);
       }
 
-      const result = await uploadMediaFiles(orderId, files, foldername);
+      // Generate uploadIds for progress tracking
+      const uploadIds = files.map(
+        (_, index) => `upload_${orderId}_${Date.now()}_${index}`
+      );
+      console.log(uploadIds)
+      const result = await uploadMediaFiles(
+        orderId,
+        files,
+        foldername,
+        uploadIds
+      );
 
       logger.info(
-        `Files added to order ${orderId}: [${(result.fileObjs || [])
+        `Files added to order ${orderId}: [${(
+          result.fileObjs ||
+          result.added ||
+          []
+        )
           .map((f) => f.filename)
           .join(", ")}]`
       );
 
       return res.json({
         ok: true,
+        uploadIds: result.uploadIds || uploadIds, // Return uploadIds for progress tracking
         ...result,
       });
     } catch (err) {
@@ -267,176 +311,252 @@ router.get("/view/by-email", async (req, res) => {
 });
 
 // GET /orders/by-email?email=... (public) - returns ALL orders for a given email
-router.get("/view/orders-by-email",
-  async (req, res) => {
-    try {
-      const { email } = req.query;
-      if (!email) {
-        return res.status(400).json({ ok: false, message: "Email required" });
-      }
-      const orders = await Order.find({ email }).sort({ createdAt: -1 }).lean();
-      if (!orders || orders.length === 0) {
-        return res.status(404).json({ ok: false, message: "No orders found for email" });
-      }
-      logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders });
-    } catch (err) {
-      logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
-  }
-);
-
-// DELETE /:orderId (admin only) - delete order folder from the server and delete the order from db
-router.delete("/:orderId", requireAdminAuth, 
-  async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      if (!orderId) {
-        return res.status(400).json({ ok: false, message: "orderId is required" });
-      }
-      
-      // Use deleteOrderFiles service to remove folder
-      try {
-        await deleteOrderfolder(orderId);
-      } catch (deleteErr) {
-        logger.error(`Error deleting order files for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
-        return res.status(500).json({ ok: false, message: "Failed to delete order files", error: deleteErr.message || deleteErr });
-      }
-
-      // Delete the order from the database
-      const deleted = await Order.findByIdAndDelete(orderId);
-      if (!deleted) {
-        return res.status(404).json({ ok: false, message: "Order not found" });
-      }
-
-      logger.info(`Order and associated files deleted for orderId: ${orderId}`);
-      return res.json({ ok: true, orderId });
-    } catch (error) {
-      logger.error(`DELETE /orders/:orderId failed: ${error.stack || error.message || error}`);
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
-  }
-);
-
-// DELETE /deletemedia/:orderId (admin only) - delete order files[] from the server and from db by file name
-router.delete("/:orderId/deletemedia", requireAdminAuth, 
-  async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      const { filenames } = req.body;
-      if (!orderId) {
-        return res.status(400).json({ ok: false, message: "orderId is required" });
-      }
-      if (filenames.length <= 0){
-        return res.status(400).json({ ok: false, message: "filenames array is required" });
-      }
-
-      // use getOrderFilesPaths to get all files for the order
-      let filePaths;
-      try {
-        filePaths = await getOrderFilesPaths(orderId);
-      } catch (error) {
-        logger.error(`Error getting order file paths for orderId ${orderId}: ${error.stack || error.message || error}`);
-        return res.status(500).json({ ok: false, message: "Failed to fetch order file paths", error: error.message || error });
-      }
-
-      // Validate that all filenames in the array exist in the order's files
-      const missingFiles = filenames.filter(filename => !filePaths.includes(filename));
-      if (missingFiles.length > 0) {
-        logger.error(`Files not found for orderId ${orderId}: ${missingFiles.join(", ")}`);
-        return res.status(400).json({ ok: false, message: `Files do not exist for order id ${orderId}: ${missingFiles.join(", ")}`});
-      }
-
-      // Attempt to delete each requested file, collect failed deletions
-      const failedDeletions = [];
-      for (const filename of filenames) {
-        try {
-          await deleteOrderFileByFileName(orderId, filename);
-        } catch (deleteErr) {
-          logger.error(`Error deleting file ${filename} for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
-          failedDeletions.push({ filename, error: deleteErr.message || deleteErr });
-        }
-      }
-
-      if (failedDeletions.length > 0) {
-        return res.status(500).json({ 
-          ok: false, 
-          message: `Failed to delete some files for order id ${orderId}`, 
-          failedFiles: failedDeletions 
-        });
-      }
-
-      return res.json({ ok: true, orderId });
-    } catch (error) {
-      logger.error(`DELETE /orders/:orderId failed: ${error.stack || error.message || error}`);
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
-  }
-);
-
-// GET /orders/:orderId/video/:filename/duration - admin only: get video duration
-router.get("/:orderId/video/:filename/duration", requireAdminAuth, async (req, res) => {
+router.get("/view/orders-by-email", async (req, res) => {
   try {
-    const { orderId, filename } = req.params;
-    const order = await Order.findById(orderId);
-    
-    const duration = await getVideoDurationService(orderId, filename);
-
-    return res.json({ ok: true, duration });
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ ok: false, message: "Email required" });
+    }
+    const orders = await Order.find({ email }).sort({ createdAt: -1 }).lean();
+    if (!orders || orders.length === 0) {
+      return res
+        .status(404)
+        .json({ ok: false, message: "No orders found for email" });
+    }
+    logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
+    return res.json({ ok: true, orders });
   } catch (err) {
-    logger.error(`GET /orders/:orderId/video/:filename/duration failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+    logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
-// POST /orders/:orderId/video/:filename/thumbnail - admin only: extract thumbnail at specific time
-router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req, res) => {
+// DELETE /:orderId (admin only) - delete order folder from the server and delete the order from db
+router.delete("/:orderId", requireAdminAuth, async (req, res) => {
   try {
-    const { orderId, filename } = req.params;
-    const { timeInSeconds } = req.body; // Time in seconds (default: 1)
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "orderId is required" });
+    }
 
-    const order = await Order.findById(orderId);
-    if (!order) {
+    // Use deleteOrderFiles service to remove folder
+    try {
+      await deleteOrderfolder(orderId);
+    } catch (deleteErr) {
+      logger.error(
+        `Error deleting order files for orderId ${orderId}: ${
+          deleteErr.stack || deleteErr.message || deleteErr
+        }`
+      );
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message: "Failed to delete order files",
+          error: deleteErr.message || deleteErr,
+        });
+    }
+
+    // Delete the order from the database
+    const deleted = await Order.findByIdAndDelete(orderId);
+    if (!deleted) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    const thumbnailResult = await extractThumbnailService(orderId, filename, timeInSeconds);
-
-    // Update the video file in the order with the new thumbnail
-    const mediaIndex = order.media.findIndex(m => m.filename === filename);
-    if (mediaIndex !== -1) {
-      // Delete old thumbnail if exists
-      if (order.media[mediaIndex].thumbnailFilename) {
-        const path = require("path");
-        const fs = require("fs");
-        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
-        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
-        if (fs.existsSync(oldThumbPath)) {
-          try {
-            fs.unlinkSync(oldThumbPath);
-          } catch (err) {
-            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
-          }
-        }
-      }
-
-      order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
-      order.media[mediaIndex].thumbnailFilename = thumbnailResult.thumbnailFilename;
-      await order.save();
-    }
-
-    logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
-    return res.json({ 
-      ok: true, 
-      thumbnail: thumbnailResult.thumbnailUrl,
-      thumbnailFilename: thumbnailResult.thumbnailFilename
-    });
-  } catch (err) {
-    logger.error(`POST /orders/:orderId/video/:filename/thumbnail failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+    logger.info(`Order and associated files deleted for orderId: ${orderId}`);
+    return res.json({ ok: true, orderId });
+  } catch (error) {
+    logger.error(
+      `DELETE /orders/:orderId failed: ${error.stack || error.message || error}`
+    );
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+
+// DELETE /deletemedia/:orderId (admin only) - delete order files[] from the server and from db by file name
+router.delete("/:orderId/deletemedia", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filenames } = req.body;
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "orderId is required" });
+    }
+    if (filenames.length <= 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "filenames array is required" });
+    }
+
+    // use getOrderFilesPaths to get all files for the order
+    let filePaths;
+    try {
+      filePaths = await getOrderFilesPaths(orderId);
+    } catch (error) {
+      logger.error(
+        `Error getting order file paths for orderId ${orderId}: ${
+          error.stack || error.message || error
+        }`
+      );
+      return res
+        .status(500)
+        .json({
+          ok: false,
+          message: "Failed to fetch order file paths",
+          error: error.message || error,
+        });
+    }
+
+    // Validate that all filenames in the array exist in the order's files
+    const missingFiles = filenames.filter(
+      (filename) => !filePaths.includes(filename)
+    );
+    if (missingFiles.length > 0) {
+      logger.error(
+        `Files not found for orderId ${orderId}: ${missingFiles.join(", ")}`
+      );
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: `Files do not exist for order id ${orderId}: ${missingFiles.join(
+            ", "
+          )}`,
+        });
+    }
+
+    // Attempt to delete each requested file, collect failed deletions
+    const failedDeletions = [];
+    for (const filename of filenames) {
+      try {
+        await deleteOrderFileByFileName(orderId, filename);
+      } catch (deleteErr) {
+        logger.error(
+          `Error deleting file ${filename} for orderId ${orderId}: ${
+            deleteErr.stack || deleteErr.message || deleteErr
+          }`
+        );
+        failedDeletions.push({
+          filename,
+          error: deleteErr.message || deleteErr,
+        });
+      }
+    }
+
+    if (failedDeletions.length > 0) {
+      return res.status(500).json({
+        ok: false,
+        message: `Failed to delete some files for order id ${orderId}`,
+        failedFiles: failedDeletions,
+      });
+    }
+
+    return res.json({ ok: true, orderId });
+  } catch (error) {
+    logger.error(
+      `DELETE /orders/:orderId failed: ${error.stack || error.message || error}`
+    );
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+// GET /orders/:orderId/video/:filename/duration - admin only: get video duration
+router.get(
+  "/:orderId/video/:filename/duration",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { orderId, filename } = req.params;
+      const order = await Order.findById(orderId);
+
+      const duration = await getVideoDurationService(orderId, filename);
+
+      return res.json({ ok: true, duration });
+    } catch (err) {
+      logger.error(
+        `GET /orders/:orderId/video/:filename/duration failed: ${
+          err.stack || err
+        }`
+      );
+      return res
+        .status(500)
+        .json({ ok: false, message: "Server error", error: err.message });
+    }
+  }
+);
+
+// POST /orders/:orderId/video/:filename/thumbnail - admin only: extract thumbnail at specific time
+router.post(
+  "/:orderId/video/:filename/thumbnail",
+  requireAdminAuth,
+  async (req, res) => {
+    try {
+      const { orderId, filename } = req.params;
+      const { timeInSeconds } = req.body; // Time in seconds (default: 1)
+
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({ ok: false, message: "Order not found" });
+      }
+
+      const thumbnailResult = await extractThumbnailService(
+        orderId,
+        filename,
+        timeInSeconds
+      );
+
+      // Update the video file in the order with the new thumbnail
+      const mediaIndex = order.media.findIndex((m) => m.filename === filename);
+      if (mediaIndex !== -1) {
+        // Delete old thumbnail if exists
+        if (order.media[mediaIndex].thumbnailFilename) {
+          const path = require("path");
+          const fs = require("fs");
+          const UPLOAD_DIR_ORDERS =
+            Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
+          const oldThumbPath = path.resolve(
+            UPLOAD_DIR_ORDERS,
+            orderId,
+            order.media[mediaIndex].thumbnailFilename
+          );
+          if (fs.existsSync(oldThumbPath)) {
+            try {
+              fs.unlinkSync(oldThumbPath);
+            } catch (err) {
+              logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+            }
+          }
+        }
+
+        order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
+        order.media[mediaIndex].thumbnailFilename =
+          thumbnailResult.thumbnailFilename;
+        await order.save();
+      }
+
+      logger.info(
+        `Thumbnail extracted and set for video ${filename} in order ${orderId}`
+      );
+      return res.json({
+        ok: true,
+        thumbnail: thumbnailResult.thumbnailUrl,
+        thumbnailFilename: thumbnailResult.thumbnailFilename,
+      });
+    } catch (err) {
+      logger.error(
+        `POST /orders/:orderId/video/:filename/thumbnail failed: ${
+          err.stack || err
+        }`
+      );
+      return res
+        .status(500)
+        .json({ ok: false, message: "Server error", error: err.message });
+    }
+  }
+);
 
 // PUT /orders/:orderId/background-image - admin only: set background image from order's media
 router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
@@ -445,11 +565,15 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     const { filename } = req.body;
 
     if (!orderId) {
-      return res.status(400).json({ ok: false, message: "orderId is required" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "orderId is required" });
     }
 
     if (!filename) {
-      return res.status(400).json({ ok: false, message: "filename is required" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "filename is required" });
     }
 
     const order = await Order.findById(orderId);
@@ -457,12 +581,16 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    const orderMedia = order.media
+    const orderMedia = order.media;
 
-    const mediaItem = orderMedia.find(item => item.filename === filename);
+    const mediaItem = orderMedia.find((item) => item.filename === filename);
     if (!mediaItem) {
-      logger.warn(`Filename "${filename}" not found in media for order ${orderId}`);
-      return res.status(404).json({ ok: false, message: "Media file not found in this order" });
+      logger.warn(
+        `Filename "${filename}" not found in media for order ${orderId}`
+      );
+      return res
+        .status(404)
+        .json({ ok: false, message: "Media file not found in this order" });
     }
 
     // Update the order's background image
@@ -471,20 +599,24 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     await order.save();
 
     logger.info(`Background image set for order ${orderId}: ${filename}`);
-    return res.json({ 
-      ok: true, 
-      orderBackground: order.orderBackground
+    return res.json({
+      ok: true,
+      orderBackground: order.orderBackground,
     });
   } catch (err) {
-    logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+    logger.error(
+      `PUT /orders/:orderId/background-image failed: ${err.stack || err}`
+    );
+    return res
+      .status(500)
+      .json({ ok: false, message: "Server error", error: err.message });
   }
 });
 
-const orderFolderRoutes = require('./orderFolders');
+const orderFolderRoutes = require("./orderFolders");
 router.use("/folders", orderFolderRoutes);
 
-const emails = require('./emails');
+const emails = require("./emails");
 router.use("/emails", emails);
 
 module.exports = router;

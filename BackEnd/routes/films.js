@@ -36,7 +36,7 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 
     logger.info(`Processing file for film upload: ${file.originalname}`);
 
-    const fileUrl = uploadService.saveFile(
+    const fileUrl = await uploadService.saveFile(
       undefined,
       file.buffer,
       file.originalname,

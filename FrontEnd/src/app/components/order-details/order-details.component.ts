@@ -33,7 +33,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   order: Order | null = null;
   loading = true;
   error = '';
-  baseUrl = environment.apiUrl;
+  baseUrl = "";
   isAuthenticated = false;
   showImageSlider = false;
   currentImageIndex = 0;
