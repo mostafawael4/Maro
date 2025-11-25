@@ -16,6 +16,7 @@ export class NavbarComponent implements OnInit {
   isScrolled = false;
   isAuthenticated = false;
   isAdmin = false;
+  isEditor = false;
   isDropdownOpen = false;
   isGalleryDropdownOpen = false;
   isClientReady = false;
@@ -32,6 +33,7 @@ export class NavbarComponent implements OnInit {
     if (this.isBrowser) {
       this.isAuthenticated = this.authService.isAuthenticatedValue;
       this.isAdmin = this.authService.isAdmin();
+      this.isEditor = this.authService.isEditor();
     }
 
     // Subscribe to authentication state
@@ -39,6 +41,7 @@ export class NavbarComponent implements OnInit {
       this.isAuthenticated = isAuth ?? false;
       if (this.isBrowser) {
         this.isAdmin = this.authService.isAdmin();
+        this.isEditor = this.authService.isEditor();
         this.cdr.markForCheck();
       }
       if (isPlatformBrowser(this.platformId)) {
@@ -49,6 +52,7 @@ export class NavbarComponent implements OnInit {
     // Initialize admin status in browser
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
+      this.isEditor = this.authService.isEditor();
     }
   }
 
@@ -57,6 +61,7 @@ export class NavbarComponent implements OnInit {
       this.isClientReady = true;
       // Refresh admin status on init
       this.isAdmin = this.authService.isAdmin();
+      this.isEditor = this.authService.isEditor();
       this.cdr.markForCheck();
     }
   }

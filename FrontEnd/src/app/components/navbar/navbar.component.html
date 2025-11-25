@@ -50,6 +50,15 @@
             >
               Calendar
             </a>
+            <a 
+              *ngIf="isAdmin || isEditor"
+              routerLink="/change-password" 
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2"
+            >
+              Change Password
+            </a>
           </div>
         </div>
         <a 
@@ -254,6 +263,22 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a3 3 0 013-3h2a3 3 0 013 3v2m4 4H4m16 0v8a3 3 0 01-3 3H7a3 3 0 01-3-3v-8m16 0V9a3 3 0 00-3-3H7a3 3 0 00-3 3v2" />
             </svg>
             Calendar
+          </span>
+        </a>
+        
+        <a 
+          *ngIf="isAuthenticated && (isAdmin || isEditor)"
+          routerLink="/change-password" 
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
+          (click)="closeMobileMenu()"
+        >
+          <span class="flex items-center">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 2c-2.21 0-4 1.343-4 3v2h8v-2c0-1.657-1.79-3-4-3z" />
+            </svg>
+            Change Password
           </span>
         </a>
         
