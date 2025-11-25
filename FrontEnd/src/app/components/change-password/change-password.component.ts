@@ -17,6 +17,8 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
   successMessage = '';
   errorMessage = '';
   role: 'admin' | 'editor' | null = null;
+  showOldPassword = false;
+  showNewPassword = false;
 
   form!: FormGroup;
 
@@ -98,6 +100,14 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
   private setRole(role: 'admin' | 'editor'): void {
     this.role = role;
     this.form.get('username')?.setValue(role);
+  }
+
+  toggleOldPasswordVisibility(): void {
+    this.showOldPassword = !this.showOldPassword;
+  }
+
+  toggleNewPasswordVisibility(): void {
+    this.showNewPassword = !this.showNewPassword;
   }
 }
 

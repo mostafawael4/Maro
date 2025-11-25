@@ -18,6 +18,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
   isLoading: boolean = false;
   isAuthenticated: boolean = false;
   isClientReady: boolean = false; // Hide content until client-side is ready
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -103,6 +104,10 @@ export class AdminComponent implements OnInit, AfterViewInit {
         this.password = '';
       }
     });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 
   onLogout(): void {
