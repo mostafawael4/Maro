@@ -6,6 +6,7 @@ import { OrdersService, OrderForm, OrderFormVendors, OrderFormFilmEditing, Order
 import { SuccessModalComponent } from '../success-modal/success-modal.component';
 import { PackagesService, Package, PackageCollection, PackageExtra } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
+import { CurrencyService } from '../../services/currency.service';
 
 @Component({
   selector: 'app-create-order',
@@ -91,7 +92,8 @@ export class CreateOrderComponent implements OnInit {
     private packagesService: PackagesService,
     private router: Router,
     private route: ActivatedRoute,
-    private authService: AuthService
+    private authService: AuthService,
+    public currencyService: CurrencyService
   ) {
     this.orderForm = this.createForm();
     this.updateVendorControlStates();
@@ -783,7 +785,7 @@ export class CreateOrderComponent implements OnInit {
 
     this.appliedPromoCode = normalizedCode;
     this.promoError = '';
-    this.promoSuccess = `Promo code applied! Discount: ${discountValue.toLocaleString()} EGP`;
+    this.promoSuccess = `Promo code applied! Discount: ${this.currencyService.formatCurrency(discountValue)}`;
     this.updatePricingSummary();
   }
 

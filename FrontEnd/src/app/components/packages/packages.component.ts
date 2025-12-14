@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PackagesService, PackageCollection, PackageExtra, Package } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
+import { CurrencyService } from '../../services/currency.service';
 import { EditPackageModalComponent } from '../edit-package-modal/edit-package-modal.component';
 
 @Component({
@@ -41,6 +42,7 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private packagesService: PackagesService,
     private authService: AuthService,
+    public currencyService: CurrencyService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -217,5 +219,10 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   // Open WhatsApp contact
   contactUs(): void {
     window.open('https://wa.me/201025641261', '_blank');
+  }
+
+  // Format price using currency service
+  formatPrice(price: string | null | undefined): string {
+    return this.currencyService.formatPriceString(price);
   }
 }

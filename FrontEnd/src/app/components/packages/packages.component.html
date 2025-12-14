@@ -62,7 +62,7 @@
               <h3 class="package-name">{{ package.collectionName }}</h3>
               <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
               <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
-              <div class="package-price">{{ package.price }}</div>
+              <div class="package-price">{{ formatPrice(package.price) }}</div>
             </div>
 
             <!-- Package Features -->
@@ -90,7 +90,7 @@
             [attr.data-type]="'extra'"
           >
             <div class="extra-name">{{ extra.name }}</div>
-            <div class="extra-price">{{ extra.price }}</div>
+            <div class="extra-price">{{ formatPrice(extra.price) }}</div>
           </div>
         </div>
       </div>
@@ -147,7 +147,7 @@
               <h3 class="package-name">{{ package.collectionName }}</h3>
               <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
               <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
-              <div class="package-price">{{ package.price }}</div>
+              <div class="package-price">{{ formatPrice(package.price) }}</div>
             </div>
 
             <!-- Package Features -->
@@ -175,7 +175,7 @@
             [attr.data-type]="'extra'"
           >
             <div class="extra-name">{{ extra.name }}</div>
-            <div class="extra-price">{{ extra.price }}</div>
+            <div class="extra-price">{{ formatPrice(extra.price) }}</div>
           </div>
         </div>
       </div>
@@ -240,7 +240,7 @@
             <div class="service-details">
               <h3 class="service-name">{{ service.collectionName }}</h3>
               <p *ngIf="service.description" class="service-description">{{ service.description }}</p>
-              <div class="service-price">{{ service.price }}</div>
+              <div class="service-price">{{ formatPrice(service.price) }}</div>
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@
             [attr.data-type]="'extra'"
           >
             <div class="extra-name">{{ extra.name }}</div>
-            <div class="extra-price">{{ extra.price }}</div>
+            <div class="extra-price">{{ formatPrice(extra.price) }}</div>
           </div>
         </div>
       </div>

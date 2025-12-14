@@ -174,7 +174,7 @@
                     />
                     <span class="checkbox-text">
                       {{ collection.collectionName }}
-                      <small *ngIf="collection.price">- {{ collection.price }}</small>
+                      <small *ngIf="collection.price">- {{ currencyService.formatPriceString(collection.price) }}</small>
                     </span>
                   </label>
                 </div>
@@ -194,7 +194,7 @@
                     />
                     <span class="checkbox-text">
                       {{ extra.name }}
-                      <small *ngIf="extra.price">- {{ extra.price }}</small>
+                      <small *ngIf="extra.price">- {{ currencyService.formatPriceString(extra.price) }}</small>
                     </span>
                   </label>
                 </div>
@@ -207,15 +207,15 @@
           <h3>Order Total</h3>
           <div class="summary-row">
             <span>Subtotal</span>
-            <strong>{{ pricingSummary.subtotal | number:'1.0-0' }} EGP</strong>
+            <strong>{{ currencyService.formatCurrency(pricingSummary.subtotal) }}</strong>
           </div>
           <div class="summary-row">
             <span>Discount</span>
-            <strong>-{{ pricingSummary.discount | number:'1.0-0' }} EGP</strong>
+            <strong>-{{ currencyService.formatCurrency(pricingSummary.discount) }}</strong>
           </div>
           <div class="summary-row total">
             <span>Total</span>
-            <strong>{{ pricingSummary.total | number:'1.0-0' }} EGP</strong>
+            <strong>{{ currencyService.formatCurrency(pricingSummary.total) }}</strong>
           </div>
 
           <div class="summary-row">
@@ -230,14 +230,14 @@
                 (input)="onDepositChange()"
                 placeholder="0"
               />
-              <span class="currency-suffix">EGP</span>
+              <span class="currency-suffix">{{ currencyService.getCurrencySuffix() }}</span>
             </div>
           </div>
           <p class="error-text" *ngIf="depositError">{{ depositError }}</p>
 
           <div class="summary-row remaining">
             <span>Remaining Balance</span>
-            <strong>{{ pricingSummary.remaining | number:'1.0-0' }} EGP</strong>
+            <strong>{{ currencyService.formatCurrency(pricingSummary.remaining) }}</strong>
           </div>
 
           <div class="promo-section" formGroupName="pricing">
@@ -277,11 +277,11 @@
             <ul>
               <li *ngFor="let collection of getSelectedCollectionsList()">
                 {{ collection.packageDisplayName }} — {{ collection.collectionName }}
-                <span class="price-tag">{{ collection.priceLabel || (collection.priceValue | number:'1.0-0') + ' EGP' }}</span>
+                <span class="price-tag">{{ collection.priceLabel || currencyService.formatCurrency(collection.priceValue) }}</span>
               </li>
               <li *ngFor="let extra of getSelectedExtrasList()">
                 {{ extra.packageDisplayName }} — {{ extra.extraName }}
-                <span class="price-tag">{{ extra.priceLabel || (extra.priceValue | number:'1.0-0') + ' EGP' }}</span>
+                <span class="price-tag">{{ extra.priceLabel || currencyService.formatCurrency(extra.priceValue) }}</span>
               </li>
             </ul>
           </div>
