@@ -352,7 +352,12 @@ export class CreateOrderComponent implements OnInit {
     if (pricing?.collections?.length) {
       pricing.collections.forEach(collection => {
         if (collection.collectionId) {
-          this.selectedCollections.set(collection.collectionId, collection);
+          // Reformat priceLabel based on current location to ensure correct currency display
+          const formattedCollection = {
+            ...collection,
+            priceLabel: this.currencyService.formatCurrency(collection.priceValue)
+          };
+          this.selectedCollections.set(collection.collectionId, formattedCollection);
         }
       });
     }
@@ -360,7 +365,12 @@ export class CreateOrderComponent implements OnInit {
     if (pricing?.extras?.length) {
       pricing.extras.forEach(extra => {
         if (extra.extraId) {
-          this.selectedExtras.set(extra.extraId, extra);
+          // Reformat priceLabel based on current location to ensure correct currency display
+          const formattedExtra = {
+            ...extra,
+            priceLabel: this.currencyService.formatCurrency(extra.priceValue)
+          };
+          this.selectedExtras.set(extra.extraId, formattedExtra);
         }
       });
     }
@@ -824,26 +834,28 @@ export class CreateOrderComponent implements OnInit {
   }
 
   private buildCollectionSelection(pkg: Package, collection: PackageCollection): SelectedCollectionOption {
+    const priceValue = this.parsePriceValue(collection.price);
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       collectionId: collection._id,
       collectionName: collection.collectionName,
-      priceLabel: collection.price,
-      priceValue: this.parsePriceValue(collection.price)
+      priceLabel: this.currencyService.formatCurrency(priceValue),
+      priceValue: priceValue
     };
   }
 
   private buildExtraSelection(pkg: Package, extra: PackageExtra): SelectedExtraOption {
+    const priceValue = this.parsePriceValue(extra.price);
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       extraId: extra._id,
       extraName: extra.name,
-      priceLabel: extra.price,
-      priceValue: this.parsePriceValue(extra.price)
+      priceLabel: this.currencyService.formatCurrency(priceValue),
+      priceValue: priceValue
     };
   }
 
