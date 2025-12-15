@@ -37,6 +37,10 @@ export class CurrencyService {
     return this.isInEgyptSubject.value ?? true; // Default to Egypt if not detected yet
   }
 
+  get currentExchangeRate(): number {
+    return this.exchangeRateSubject.value;
+  }
+
   private detectLocation(): void {
     // Check cache first
     const cached = this.getCachedLocation();

@@ -367,7 +367,16 @@ export class CreateOrderComponent implements OnInit {
 
     const pricingGroup = this.getPricingFormGroup();
     pricingGroup?.get('promoCode')?.setValue(pricing?.promoCode || '', { emitEvent: false });
-    pricingGroup?.get('depositPaid')?.setValue(pricing?.depositPaid ?? 0, { emitEvent: false });
+    
+    // Convert deposit from EGP to USD for display if outside Egypt
+    let depositForDisplay = pricing?.depositPaid ?? 0;
+    if (!this.currencyService.isInEgyptValue && depositForDisplay > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositForDisplay = Math.round(depositForDisplay / rate);
+      }
+    }
+    pricingGroup?.get('depositPaid')?.setValue(depositForDisplay, { emitEvent: false });
 
     if (pricing) {
       this.pricingSummary = {
@@ -891,14 +900,38 @@ export class CreateOrderComponent implements OnInit {
       depositValue = 0;
       depositControl?.setValue(0, { emitEvent: false });
     }
-    if (depositValue > total) {
-      depositValue = total;
-      depositControl?.setValue(depositValue, { emitEvent: false });
+    
+    // Convert deposit to EGP for comparison if outside Egypt
+    let depositInEGP = depositValue;
+    if (!this.currencyService.isInEgyptValue) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositInEGP = depositValue * rate;
+      }
+    }
+    
+    // Compare against total (which is in EGP)
+    if (depositInEGP > total) {
+      // Set max allowed deposit based on location
+      if (this.currencyService.isInEgyptValue) {
+        // In Egypt: set to total (in EGP)
+        depositControl?.setValue(total, { emitEvent: false });
+        depositInEGP = total; // Use capped value for calculation
+      } else {
+        // Outside Egypt: convert total to USD for display
+        const rate = this.currencyService.currentExchangeRate;
+        if (rate > 0) {
+          const maxDepositUSD = Math.round(total / rate);
+          depositControl?.setValue(maxDepositUSD, { emitEvent: false });
+          depositInEGP = total; // Use capped value for calculation
+        }
+      }
       this.depositError = 'Deposit cannot exceed total amount.';
     } else {
       this.depositError = '';
     }
-    const remaining = total - depositValue;
+    
+    const remaining = total - depositInEGP;
 
     this.pricingSummary = {
       subtotal,
@@ -999,10 +1032,62 @@ export class CreateOrderComponent implements OnInit {
     if (!depositControl) {
       return;
     }
-    let value = Number(depositControl.value || 0);
+    
+    // Get raw value and sanitize it
+    let rawValue = depositControl.value;
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+      rawValue = 0;
+    }
+    
+    // Convert to number, handling string inputs
+    let value = typeof rawValue === 'string' 
+      ? parseFloat(rawValue.toString().replace(/[^\d.-]/g, '')) 
+      : Number(rawValue);
+    
+    // Validate and sanitize
     if (isNaN(value) || value < 0) {
       value = 0;
     }
+    
+    // Round to whole number (no decimals for currency)
+    value = Math.round(value);
+    
+    // Cap value to maximum before setting (prevent exceeding max)
+    // We need to calculate the max based on current total
+    const subtotal = [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
+      (sum, item) => sum + (item.priceValue || 0),
+      0
+    );
+    let discount = 0;
+    if (this.appliedPromoCode) {
+      discount = this.PROMO_CODES[this.appliedPromoCode] || 0;
+    }
+    if (discount > subtotal) {
+      discount = subtotal;
+    }
+    const total = subtotal - discount;
+    
+    // Convert value to EGP for comparison
+    let valueInEGP = value;
+    if (!this.currencyService.isInEgyptValue) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        valueInEGP = value * rate;
+      }
+    }
+    
+    // Cap to maximum
+    if (valueInEGP > total && total > 0) {
+      if (this.currencyService.isInEgyptValue) {
+        value = total;
+      } else {
+        const rate = this.currencyService.currentExchangeRate;
+        if (rate > 0) {
+          value = Math.round(total / rate);
+        }
+      }
+    }
+    
     depositControl.setValue(value, { emitEvent: false });
     this.updatePricingSummary();
   }
@@ -1035,7 +1120,15 @@ export class CreateOrderComponent implements OnInit {
     }
 
     const pricingGroup = this.getPricingFormGroup();
-    const depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
+    let depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
+
+    // Convert USD to EGP if outside Egypt before saving
+    if (!this.currencyService.isInEgyptValue && depositPaid > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositPaid = Math.round(depositPaid * rate);
+      }
+    }
 
     if (depositPaid > 0) {
       pricing.depositPaid = depositPaid;
