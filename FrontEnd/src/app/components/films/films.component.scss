@@ -1,5 +1,5 @@
 .films-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Georgia', serif;
@@ -14,14 +14,14 @@
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach
     margin-bottom: 0.75rem;
     letter-spacing: 1px;
     text-transform: uppercase;
   }
 
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9); // Light text
     font-size: 1rem;
     font-style: italic;
     letter-spacing: 0.5px;
@@ -72,6 +72,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -90,14 +91,14 @@
     width: 50px;
     height: 50px;
     border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top-color: #8B3A3A;
+    border-top-color: #ffdab9;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   p {
     margin-top: 20px;
-    color: #8B3A3A;
+    color: #ffdab9;
     font-size: 1.1em;
   }
 }
@@ -112,7 +113,7 @@
 .error-container {
   text-align: center;
   padding: 60px 20px;
-  
+
   p {
     color: #dc2626;
     font-size: 1.1em;
@@ -141,7 +142,7 @@
 .empty-container {
   text-align: center;
   padding: 100px 20px;
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.5); // Light text
   font-size: 1.2em;
 }
 
@@ -164,11 +165,11 @@
   padding: 30px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(50px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.8s ease-out forwards;
@@ -314,7 +315,7 @@
   .film-text {
     font-size: 1rem;
     line-height: 1.8;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach
     margin: 0;
     font-style: italic;
   }
@@ -326,6 +327,7 @@
     opacity: 0;
     transform: translateY(50px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -370,4 +372,3 @@
     }
   }
 }
-

@@ -4,18 +4,15 @@
     <div class="header-decoration"></div>
     <h2 class="section-title">{{ fullPackageData?.displayName || 'Full Recording (Videography)' }}</h2>
     <p class="section-subtitle">
-      Professional 4K quality recording services for your special moments. 
+      Professional 4K quality recording services for your special moments.
       Capture every detail with cinematic precision.
     </p>
     <div class="header-decoration"></div>
-    
+
     <!-- Edit Package Button (Admin Only) -->
-    <button 
-      *ngIf="isAuthenticated && isAdmin && fullPackageData" 
-      class="edit-package-btn"
-      (click)="openEditModal()"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button *ngIf="isAuthenticated && isAdmin && fullPackageData" class="edit-package-btn" (click)="openEditModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
       </svg>
@@ -37,20 +34,17 @@
   <!-- Services Grid -->
   <div *ngIf="!isLoading && !errorMessage" class="services-container">
     <div class="services-grid">
-      <div 
-        *ngFor="let service of services; let i = index" 
-        class="service-card"
-        [class.animate-in]="isServiceVisible(i)"
-        [attr.data-index]="i"
-        [attr.data-type]="'service'"
-      >
+      <div *ngFor="let service of services; let i = index" class="service-card" [class.animate-in]="isServiceVisible(i)"
+        [attr.data-index]="i" [attr.data-type]="'service'">
         <!-- Service Icon -->
         <div class="service-icon-wrapper">
           <svg *ngIf="i === 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
           <svg *ngIf="i !== 0" class="service-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
           </svg>
         </div>
 
@@ -68,26 +62,16 @@
   <div *ngIf="!isLoading && !errorMessage && extras && extras.length > 0" class="extras-section">
     <h3 class="extras-title">Extras</h3>
     <div class="extras-grid">
-      <div 
-        *ngFor="let extra of extras; let i = index" 
-        class="extra-card"
-        [class.animate-in]="isExtraVisible(i)"
-        [attr.data-index]="i"
-        [attr.data-type]="'extra'"
-      >
+      <div *ngFor="let extra of extras; let i = index" class="extra-card" [class.animate-in]="isExtraVisible(i)"
+        [attr.data-index]="i" [attr.data-type]="'extra'">
         <div class="extra-name">{{ extra.name }}</div>
         <div class="extra-price">{{ extra.price }}</div>
       </div>
     </div>
   </div>
-  
+
   <!-- Edit Package Modal -->
-  <app-edit-package-modal
-    *ngIf="fullPackageData"
-    [package]="fullPackageData"
-    [show]="showEditModal"
-    (close)="closeEditModal()"
-    (saved)="onPackageSaved()">
+  <app-edit-package-modal *ngIf="fullPackageData" [package]="fullPackageData" [show]="showEditModal"
+    (close)="closeEditModal()" (saved)="onPackageSaved()">
   </app-edit-package-modal>
 </section>
-

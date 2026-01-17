@@ -17,7 +17,8 @@
   --color-primary-200: #f9ccc6;
   --color-primary-300: #f5a99e;
   --color-primary-400: #f08676;
-  --color-primary-500: #e2725b; /* Main terracotta */
+  --color-primary-500: #e2725b;
+  /* Main terracotta */
   --color-primary-600: #d65a43;
   --color-primary-700: #b84a36;
   --color-primary-800: #9a3d2d;
@@ -29,7 +30,8 @@
   --color-secondary-100: #e9ebe4;
   --color-secondary-200: #d4d7c7;
   --color-secondary-300: #b8bca4;
-  --color-secondary-400: #9c9f84; /* Main sage green */
+  --color-secondary-400: #9c9f84;
+  /* Main sage green */
   --color-secondary-500: #83866d;
   --color-secondary-600: #6b6e5a;
   --color-secondary-700: #56584a;
@@ -47,7 +49,8 @@
   --color-accent-600: #515151;
   --color-accent-700: #434343;
   --color-accent-800: #383838;
-  --color-accent-900: #333333; /* Main charcoal */
+  --color-accent-900: #333333;
+  /* Main charcoal */
   --color-accent-950: #1a1a1a;
 
   /* Neutral Colors - Cream/Beige Tones */
@@ -55,8 +58,10 @@
   --color-neutral-100: #fdf9f2;
   --color-neutral-200: #faf2e3;
   --color-neutral-300: #f5e6c7;
-  --color-neutral-400: #f5f5dc; /* Main cream */
-  --color-neutral-500: #d8c3a5; /* Soft beige */
+  --color-neutral-400: #f5f5dc;
+  /* Main cream */
+  --color-neutral-500: #d8c3a5;
+  /* Soft beige */
   --color-neutral-600: #c4a882;
   --color-neutral-700: #a68f68;
   --color-neutral-800: #8a7555;
@@ -93,10 +98,12 @@
 /* Base styles for cinematic theme */
 body {
   font-family: var(--font-body);
-  background-color: var(--color-neutral-400); /* Cream background */
-  color: var(--color-accent-900); /* Charcoal text */
+  background-color: var(--color-neutral-400);
+  /* Cream background */
+  color: var(--color-accent-900);
+  /* Charcoal text */
   line-height: 1.6;
-  
+
   /* Ensure numbers use simple, normal font styling */
   font-variant-numeric: lining-nums tabular-nums;
 }
@@ -116,7 +123,6 @@ h6,
 .section-title,
 .component-header,
 .header-title {
-  font-family: var(--font-heading) !important;
   letter-spacing: 0.02em;
 }
 
@@ -155,9 +161,14 @@ span:has(> [class*="number"]) {
 }
 
 /* Ensure headings with numbers also use simple number style */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-variant-numeric: lining-nums !important;
-  
+
   /* Numbers within headings should use Inter font for clarity */
   span {
     font-family: var(--font-body) !important;

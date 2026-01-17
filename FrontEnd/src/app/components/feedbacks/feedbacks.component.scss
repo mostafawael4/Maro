@@ -1,5 +1,5 @@
 .feedbacks-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Georgia', serif;
@@ -14,7 +14,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach
     margin-bottom: 0.75rem;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -22,7 +22,7 @@
   }
 
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9); // Light text
     font-size: 1rem;
     font-style: italic;
     letter-spacing: 0.5px;
@@ -38,21 +38,21 @@
 .feedback-form-card {
   max-width: 700px;
   margin: 0 auto 40px;
-  background: #fff;
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 15px 40px rgba(139, 58, 58, 0.12);
-  border: 1px solid rgba(139, 58, 58, 0.08);
+  border: 1px solid rgba(255, 218, 185, 0.3);
 
   h2 {
     font-family: 'Playfair Display', serif;
-    color: #6B1F1F;
+    color: #ffdab9;
     margin-bottom: 0.5rem;
     font-size: 1.5rem;
   }
 
   p {
-    color: rgba(0, 0, 0, 0.65);
+    color: rgba(255, 255, 255, 0.9);
     margin-bottom: 1rem;
     font-style: italic;
   }
@@ -65,13 +65,13 @@
     font-size: 1rem;
     font-family: 'Georgia', serif;
     resize: none;
-    background: #fffaf5;
-    color: #4a1a1a;
+    background: rgba(26, 1, 5, 0.6);
+    color: #fdf9f2;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
     &:focus {
       outline: none;
-      border-color: #c56a6a;
+      border-color: #ffdab9;
       box-shadow: 0 0 0 3px rgba(197, 106, 106, 0.25);
     }
 
@@ -89,7 +89,7 @@
     font-size: 0.9rem;
 
     .char-count {
-      color: rgba(0, 0, 0, 0.45);
+      color: rgba(255, 255, 255, 0.6);
     }
 
     .success {
@@ -131,6 +131,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -149,21 +150,26 @@
     width: 50px;
     height: 50px;
     border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top: 4px solid #8B3A3A;
+    border-top: 4px solid #ffdab9;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   p {
     margin-top: 20px;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-style: italic;
   }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Error State
@@ -235,11 +241,11 @@
 
 // Feedback Card - Simple & Creative
 .feedback-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(107, 31, 31, 0.08);
-  border-left: 3px solid #8B3A3A;
+  border-left: 3px solid #ffdab9;
   transition: all 0.3s ease;
   animation: slideUp 0.4s ease-out;
 
@@ -326,7 +332,7 @@
       font-family: 'Georgia', serif;
       font-size: 1rem;
       line-height: 1.7;
-      color: #333;
+      color: #e0e0e0;
       font-style: italic;
       margin: 0;
       padding: 0.5rem 0;
@@ -339,7 +345,7 @@
     opacity: 1;
     transform: scale(1);
   }
-  
+
   // Keep icon visible when hovering directly on it
   &:hover .feedback-quote .action-icon:hover {
     opacity: 1;
@@ -357,6 +363,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -370,7 +377,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
   padding: 40px 20px;
   width: 100%;
   grid-column: 1 / -1;
@@ -383,7 +390,7 @@
   h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.75rem;
     font-style: italic;
   }

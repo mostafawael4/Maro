@@ -19,12 +19,12 @@
         flex-wrap: wrap;
       }
 
-      > div {
+      >div {
         h2 {
           font-family: 'Playfair Display', serif;
           font-size: 2rem;
           font-weight: 400;
-          color: #8B3A3A;
+          color: #ffdab9;
           margin: 0;
           letter-spacing: 1px;
           font-style: italic;
@@ -32,7 +32,7 @@
 
         .folder-subtitle {
           margin-top: 0.35rem;
-          color: rgba(0, 0, 0, 0.5);
+          color: rgba(255, 255, 255, 0.6);
           font-size: 0.9rem;
           font-style: italic;
         }
@@ -54,20 +54,20 @@
           position: relative;
           display: flex;
           align-items: center;
-          background: rgba(107, 31, 31, 0.03);
-          border: 2px solid rgba(107, 31, 31, 0.1);
+          background: rgba(26, 1, 5, 0.6);
+          border: 2px solid rgba(255, 218, 185, 0.3);
           border-radius: 12px;
           padding: 0.75rem 1rem;
           transition: all 0.3s ease;
 
           &:focus-within {
-            border-color: #8B3A3A;
+            border-color: #ffdab9;
             background: rgba(107, 31, 31, 0.05);
             box-shadow: 0 4px 12px rgba(139, 58, 58, 0.15);
           }
 
           .search-icon {
-            color: rgba(107, 31, 31, 0.5);
+            color: #ffdab9;
             margin-right: 0.75rem;
             flex-shrink: 0;
           }
@@ -78,11 +78,11 @@
             background: transparent;
             outline: none;
             font-size: 0.95rem;
-            color: #333;
+            color: #fdf9f2;
             font-family: inherit;
 
             &::placeholder {
-              color: rgba(0, 0, 0, 0.4);
+              color: rgba(255, 255, 255, 0.5);
             }
           }
 
@@ -94,13 +94,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(107, 31, 31, 0.6);
+            color: rgba(255, 255, 255, 0.6);
             transition: color 0.2s ease;
             margin-left: 0.5rem;
             flex-shrink: 0;
 
             &:hover {
-              color: #8B3A3A;
+              color: #ffdab9;
             }
           }
         }
@@ -116,13 +116,13 @@
         label {
           font-size: 0.85rem;
           font-weight: 600;
-          color: rgba(0, 0, 0, 0.6);
+          color: rgba(255, 255, 255, 0.6);
           letter-spacing: 0.3px;
         }
 
         .sort-toggle {
-          border: 2px solid rgba(107, 31, 31, 0.1);
-          background: rgba(107, 31, 31, 0.03);
+          border: 2px solid rgba(255, 218, 185, 0.3);
+          background: rgba(26, 1, 5, 0.6);
           border-radius: 12px;
           padding: 0.65rem 0.85rem;
           display: flex;
@@ -132,11 +132,11 @@
           font-size: 0.95rem;
           cursor: pointer;
           transition: all 0.3s ease;
-          color: #333;
+          color: #fdf9f2;
 
           &:hover,
           &.active {
-            border-color: #8B3A3A;
+            border-color: #ffdab9;
             box-shadow: 0 4px 12px rgba(139, 58, 58, 0.15);
             background: rgba(107, 31, 31, 0.05);
           }
@@ -150,7 +150,7 @@
 
           .sort-icon,
           .chevron-icon {
-            color: rgba(107, 31, 31, 0.5);
+            color: #ffdab9;
             flex-shrink: 0;
           }
 
@@ -167,8 +167,8 @@
           position: absolute;
           top: calc(100% + 8px);
           right: 0;
-          background: #fff;
-          border: 1px solid rgba(0, 0, 0, 0.08);
+          background: rgba(26, 1, 5, 0.95);
+          border: 1px solid rgba(255, 218, 185, 0.3);
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
           border-radius: 12px;
           min-width: 240px;
@@ -189,7 +189,7 @@
             font-size: 0.92rem;
             cursor: pointer;
             transition: background 0.2s ease, color 0.2s ease;
-            color: #333;
+            color: #fdf9f2;
 
             &:hover {
               background: rgba(107, 31, 31, 0.08);
@@ -197,16 +197,16 @@
 
             &.active {
               background: rgba(107, 31, 31, 0.12);
-              color: #8B3A3A;
+              color: #ffdab9;
               font-weight: 600;
 
               svg {
-                color: #8B3A3A;
+                color: #ffdab9;
               }
             }
 
             svg {
-              color: rgba(0, 0, 0, 0.45);
+              color: rgba(255, 255, 255, 0.5);
             }
           }
         }
@@ -220,6 +220,7 @@
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -257,8 +258,8 @@
 
 .select-mode-btn {
   background: rgba(107, 31, 31, 0.1);
-  border-color: rgba(107, 31, 31, 0.3);
-  color: #8B3A3A;
+  border-color: rgba(255, 218, 185, 0.3);
+  color: #ffdab9;
 
   &:hover {
     background: rgba(107, 31, 31, 0.15);
@@ -268,7 +269,7 @@
 
   &.active {
     background: rgba(107, 31, 31, 0.2);
-    border-color: #8B3A3A;
+    border-color: #ffdab9;
   }
 }
 
@@ -301,15 +302,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: rgba(107, 31, 31, 0.05);
-  border: 2px solid rgba(107, 31, 31, 0.15);
+  background: rgba(26, 1, 5, 0.8);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   border-radius: 12px;
   margin-bottom: 1rem;
   gap: 1rem;
   flex-wrap: wrap;
 
   .selection-info {
-    color: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
     font-size: 0.95rem;
   }
@@ -320,10 +321,10 @@
 
     button {
       padding: 0.5rem 1rem;
-      border: 2px solid rgba(107, 31, 31, 0.3);
+      border: 2px solid rgba(255, 218, 185, 0.3);
       border-radius: 6px;
       background: rgba(107, 31, 31, 0.1);
-      color: #8B3A3A;
+      color: #ffdab9;
       font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
@@ -365,7 +366,7 @@
 
       &.completed {
         background: rgba(107, 31, 31, 0.1);
-        color: #8B3A3A;
+        color: #ffdab9;
         border: 2px solid rgba(107, 31, 31, 0.2);
       }
 
@@ -390,7 +391,7 @@
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #ffdab9;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -400,7 +401,7 @@
   }
 
   &:hover {
-    color: #6B1F1F;
+    color: #ffdab9;
 
     svg {
       transform: translateX(-2px);
@@ -413,11 +414,11 @@
   padding: 1rem 1.25rem;
   border-radius: 12px;
   border: 2px solid rgba(107, 31, 31, 0.12);
-  background: rgba(107, 31, 31, 0.03);
+  background: rgba(26, 1, 5, 0.6);
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.9);
 
   &.error {
     border-color: rgba(220, 38, 38, 0.3);
@@ -447,7 +448,7 @@
       }
 
       &.selected {
-        border: 3px solid #8B3A3A;
+        border: 3px solid #ffdab9;
         box-shadow: 0 8px 20px rgba(139, 58, 58, 0.3);
       }
     }
@@ -459,7 +460,7 @@
   overflow: hidden;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(107, 31, 31, 0.1);
-  background: #f5f5f5;
+  background: rgba(26, 1, 5, 0.3);
   aspect-ratio: 1;
   border: 3px solid transparent;
   transition: all 0.2s ease;
@@ -495,7 +496,7 @@
     }
 
     svg {
-      color: #8B3A3A;
+      color: #ffdab9;
       width: 20px;
       height: 20px;
     }
@@ -557,7 +558,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
   svg {
-    color: #8B3A3A;
+    color: #ffdab9;
   }
 
   &:hover {
@@ -586,20 +587,20 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.6);
   padding: 60px 20px;
   min-height: 300px;
 
   svg {
     display: block;
     margin: 0 auto 16px auto;
-    color: #8B3A3A;
+    color: #ffdab9;
   }
 
   h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.75rem;
     font-style: italic;
   }
@@ -612,9 +613,9 @@
     margin-top: 1rem;
     padding: 0.5rem 1.25rem;
     background: rgba(107, 31, 31, 0.1);
-    border: 2px solid rgba(107, 31, 31, 0.2);
+    border: 2px solid rgba(255, 218, 185, 0.3);
     border-radius: 8px;
-    color: #8B3A3A;
+    color: #ffdab9;
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
@@ -632,8 +633,8 @@
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid rgba(139, 58, 58, 0.15);
-  border-top: 3px solid #8B3A3A;
+  border: 3px solid rgba(255, 218, 185, 0.3);
+  border-top: 3px solid #ffdab9;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -647,8 +648,8 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
-

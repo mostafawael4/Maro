@@ -1,6 +1,6 @@
 // Photography Section - Simple & Creative
 .photography-section {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFFFFF 50%, #FFF9F2 100%);
+  background: #580111; // Dark burgundy
   padding: 4rem 2rem;
   min-height: 100vh;
 }
@@ -12,32 +12,34 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  
+
   .spinner {
     width: 50px;
     height: 50px;
     border: 4px solid rgba(107, 31, 31, 0.1);
-    border-top-color: #6B1F1F;
+    border-top-color: #ffdab9;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
+
   p {
     margin-top: 20px;
-    color: #6B1F1F;
+    color: #ffdab9;
     font-size: 1rem;
   }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-container {
   text-align: center;
   padding: 60px 20px;
   min-height: 300px;
-  
+
   p {
     color: #dc2626;
     font-size: 1.1em;
@@ -58,6 +60,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -67,7 +70,7 @@
 .header-decoration {
   width: 80px;
   height: 3px;
-  background: linear-gradient(90deg, #6B1F1F 0%, #8B3A3A 50%, #B8826B 100%);
+  background: linear-gradient(90deg, #ffdab9 0%, #fdf9f2 50%, #ffdab9 100%);
   margin: 0 auto 1.5rem;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(107, 31, 31, 0.25);
@@ -77,11 +80,11 @@
   font-family: 'Playfair Display', serif;
   font-size: 2rem;
   font-weight: 400;
-  color: #8B3A3A;
+  color: #ffdab9;
   margin-bottom: 0.75rem;
   letter-spacing: 1px;
   // font-style: italic;
-  
+
   @media (max-width: 768px) {
     font-size: 2rem;
   }
@@ -89,7 +92,7 @@
 
 .section-subtitle {
   font-size: 1rem;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
   font-style: italic;
   line-height: 1.7;
 }
@@ -149,17 +152,17 @@
 // Package Card - Creative Design
 .package-card {
   position: relative;
-  background: #FFFFFF;
+  background: #1a0105; // Navbar color
   border-radius: 16px;
   overflow: hidden;
-  border: 2px solid rgba(139, 58, 58, 0.15);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 8px 24px rgba(139, 58, 58, 0.08);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(30px);
-  
+
   // Top accent border
   &::before {
     content: '';
@@ -168,15 +171,15 @@
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, #8B3A3A 0%, #FFDAB9 50%, #8B3A3A 100%);
+    background: linear-gradient(90deg, #ffdab9 0%, #fdf9f2 50%, #ffdab9 100%);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.6s ease-out forwards;
-    
+
     // Stagger animation for each card
     @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
@@ -188,17 +191,17 @@
   &:hover {
     transform: translateY(-8px);
     box-shadow: 0 16px 40px rgba(139, 58, 58, 0.12);
-    border-color: rgba(139, 58, 58, 0.3);
-    
+    border-color: rgba(255, 218, 185, 0.5);
+
     &::before {
       opacity: 1;
     }
   }
 
   &.popular {
-    border-color: #8B3A3A;
+    border-color: #ffdab9;
     border-width: 2.5px;
-    
+
     &::before {
       opacity: 1;
     }
@@ -207,7 +210,7 @@
 
 // Package Header - Simple Design
 .package-header {
-  background: linear-gradient(135deg, rgba(139, 58, 58, 0.04) 0%, rgba(255, 218, 185, 0.06) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   padding: 2rem 2rem;
   text-align: center;
 }
@@ -216,23 +219,23 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.6rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #ffdab9;
   margin-bottom: 0.8rem;
   letter-spacing: 0.5px;
 }
 
 .package-duration {
   font-size: 0.9rem;
-  color: #B8826B;
+  color: #fdf9f2;
   font-style: italic;
   margin-bottom: 1rem;
 }
 
 .package-price {
   font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #6B1F1F;
+  color: #ffdab9;
   letter-spacing: 0.5px;
   text-shadow: 0 2px 4px rgba(107, 31, 31, 0.08);
 }
@@ -250,19 +253,19 @@
   gap: 0.75rem;
   margin-bottom: 1rem;
   font-size: 0.95rem;
-  color: #5A5A5A;
+  color: #e0e0e0;
   line-height: 1.5;
   transition: color 0.2s ease, transform 0.2s ease;
 
   &:hover {
-    color: #8B3A3A;
+    color: #ffdab9;
     transform: translateX(4px);
   }
 
   .check-icon {
     width: 18px;
     height: 18px;
-    color: #8B3A3A;
+    color: #ffdab9;
     flex-shrink: 0;
   }
 }
@@ -278,12 +281,12 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.8rem;
   font-weight: 400;
-  color: #8B3A3A;
+  color: #ffdab9;
   font-style: italic;
   text-align: center;
   margin-bottom: 2.5rem;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -292,7 +295,7 @@
     transform: translateX(-50%);
     width: 60px;
     height: 3px;
-    background: linear-gradient(90deg, #6B1F1F 0%, #8B3A3A 50%, #B8826B 100%);
+    background: linear-gradient(90deg, #ffdab9 0%, #fdf9f2 50%, #ffdab9 100%);
     border-radius: 3px;
     box-shadow: 0 2px 6px rgba(107, 31, 31, 0.2);
   }
@@ -305,8 +308,8 @@
 }
 
 .extra-card {
-  background: #FFFFFF;
-  border: 2px solid rgba(139, 58, 58, 0.12);
+  background: rgba(26, 1, 5, 0.8);
+  border: 2px solid rgba(255, 218, 185, 0.25);
   border-radius: 12px;
   padding: 1.5rem 1.8rem;
   display: flex;
@@ -314,15 +317,15 @@
   align-items: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(139, 58, 58, 0.06);
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(20px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.5s ease-out forwards;
-    
+
     // Stagger animation for each extra
     @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
@@ -334,20 +337,20 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(139, 58, 58, 0.12);
-    border-color: rgba(139, 58, 58, 0.25);
+    border-color: rgba(255, 218, 185, 0.5);
   }
 
   .extra-name {
     font-size: 1rem;
     font-weight: 500;
-    color: #5A5A5A;
+    color: #e0e0e0;
   }
 
   .extra-price {
     font-family: 'Playfair Display', serif;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #6B1F1F;
+    color: #ffdab9;
   }
 }
 
@@ -357,14 +360,14 @@
   max-width: 650px;
   margin: 4rem auto 0;
   padding: 2.5rem 2rem;
-  background: rgba(255, 252, 248, 0.6);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
   border-radius: 16px;
-  border: 2px solid rgba(139, 58, 58, 0.1);
-  
+  border: 2px solid rgba(255, 218, 185, 0.3);
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(30px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.7s ease-out forwards;
@@ -374,7 +377,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 1.6rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9;
     font-style: italic;
     margin-bottom: 0.8rem;
 
@@ -385,7 +388,7 @@
 
   p {
     font-size: 0.95rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-style: italic;
     line-height: 1.6;
     margin-bottom: 2rem;
@@ -428,6 +431,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -448,11 +452,11 @@
   .package-card {
     padding: 0;
   }
-  
+
   .package-header {
     padding: 1.5rem 1.5rem;
   }
-  
+
   .package-features {
     padding: 1.5rem;
   }

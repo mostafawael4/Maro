@@ -1,5 +1,5 @@
 .orders-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 40px 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -14,13 +14,13 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach
     margin-bottom: 0.75rem;
     letter-spacing: 0.5px;
   }
 
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9); // Light text
     font-size: 1rem;
     font-weight: 400;
   }
@@ -37,6 +37,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -57,19 +58,19 @@
     border-radius: 10px;
     font-size: 1rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
-    color: #333;
+    background: rgba(26, 1, 5, 0.8);
+    color: #fdf9f2;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(107, 31, 31, 0.08);
 
     &:focus {
       outline: none;
-      border-color: #8B3A3A;
+      border-color: #ffdab9;
       box-shadow: 0 4px 16px rgba(107, 31, 31, 0.15);
     }
 
     &::placeholder {
-      color: rgba(0, 0, 0, 0.4);
+      color: rgba(255, 255, 255, 0.5);
     }
   }
 
@@ -78,7 +79,7 @@
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #8B3A3A;
+    color: #ffdab9;
     pointer-events: none;
   }
 }
@@ -100,29 +101,29 @@
 }
 
 .email-modal {
-  background: linear-gradient(135deg, #FFFCF8 0%, #FFF9F2 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
   border-radius: 16px;
   max-width: 500px;
   width: 90%;
   box-shadow: 0 20px 60px rgba(107, 31, 31, 0.3);
   animation: slideUp 0.4s ease-out;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
 
   .modal-header {
     padding: 2rem 2rem 1.5rem;
     text-align: center;
-    border-bottom: 2px solid rgba(107, 31, 31, 0.1);
+    border-bottom: 2px solid rgba(255, 218, 185, 0.3);
 
     h2 {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 1.8rem;
       font-weight: 400;
-      color: #8B3A3A;
+      color: #ffdab9;
       margin-bottom: 0.5rem;
     }
 
     p {
-      color: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.9);
       font-size: 0.95rem;
     }
   }
@@ -137,7 +138,7 @@
         display: block;
         font-size: 0.9rem;
         font-weight: 500;
-        color: #333;
+        color: #fdf9f2;
         margin-bottom: 0.5rem;
       }
 
@@ -148,13 +149,13 @@
         border-radius: 10px;
         font-size: 1rem;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        background: white;
-        color: #333;
+        background: rgba(26, 1, 5, 0.6);
+        color: #fdf9f2;
         transition: all 0.3s ease;
 
         &:focus {
           outline: none;
-          border-color: #8B3A3A;
+          border-color: #ffdab9;
           box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
         }
 
@@ -163,7 +164,7 @@
         }
 
         &::placeholder {
-          color: rgba(0, 0, 0, 0.4);
+          color: rgba(255, 255, 255, 0.5);
         }
       }
 
@@ -211,7 +212,7 @@
 
       .btn-cancel {
         background: transparent;
-        color: #8B3A3A;
+        color: #ffdab9;
         border: 2px solid rgba(107, 31, 31, 0.2);
 
         &:hover {
@@ -228,6 +229,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -242,17 +244,17 @@
   max-width: 800px;
   margin: 0 auto 2rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 10px;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 2px 8px rgba(107, 31, 31, 0.08);
 
   .viewing-as {
     font-size: 0.95rem;
-    color: #333;
+    color: #fdf9f2;
 
     strong {
-      color: #8B3A3A;
+      color: #ffdab9;
       font-weight: 600;
     }
   }
@@ -263,7 +265,7 @@
     gap: 0.5rem;
     padding: 0.6rem 1.2rem;
     background: transparent;
-    color: #8B3A3A;
+    color: #ffdab9;
     border: 2px solid rgba(107, 31, 31, 0.2);
     border-radius: 8px;
     font-size: 0.9rem;
@@ -278,7 +280,7 @@
 
     &:hover {
       background: rgba(107, 31, 31, 0.05);
-      border-color: #8B3A3A;
+      border-color: #ffdab9;
       transform: translateY(-1px);
     }
 
@@ -341,13 +343,18 @@
 
   p {
     margin-top: 20px;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Error State
@@ -419,6 +426,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -600,7 +608,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.2rem;
     font-weight: 600;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin: 0 0 0.4rem 0;
     letter-spacing: 0.5px;
     line-height: 1.3;
@@ -608,7 +616,7 @@
 
   .event-date {
     font-size: 0.9rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
@@ -658,29 +666,29 @@
   position: relative;
   width: 100%;
   max-width: 520px;
-  background: linear-gradient(135deg, #FFFCF8 0%, #FFF9F2 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
   border-radius: 18px;
   padding: 2rem;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-  border: 2px solid rgba(107, 31, 31, 0.15);
+  border: 2px solid rgba(255, 218, 185, 0.3);
 
   h2 {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.5rem;
     font-size: 1.8rem;
   }
 
   .order-name {
     margin-bottom: 1.5rem;
-    color: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
   }
 
   .modal-label {
     display: block;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.5rem;
   }
 
@@ -692,12 +700,12 @@
     font-size: 1rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin-bottom: 1.25rem;
-    background: white;
+    background: rgba(26, 1, 5, 0.6);
     transition: all 0.3s ease;
 
     &:focus {
       outline: none;
-      border-color: #8B3A3A;
+      border-color: #ffdab9;
       box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.15);
     }
 
@@ -734,13 +742,13 @@
   border-radius: 14px;
   padding: 2rem;
   text-align: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(26, 1, 5, 0.3);
   transition: all 0.3s ease;
   margin-bottom: 1rem;
   min-height: 200px;
 
   &.drag-over {
-    border-color: #8B3A3A;
+    border-color: #ffdab9;
     background: rgba(139, 58, 58, 0.05);
   }
 
@@ -768,7 +776,7 @@
     z-index: 0;
 
     svg {
-      color: #8B3A3A;
+      color: #ffdab9;
       margin-bottom: 0.75rem;
     }
 
@@ -782,7 +790,7 @@
       display: block;
       margin-top: 0.35rem;
       font-size: 0.85rem;
-      color: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.7);
     }
   }
 }
@@ -1012,6 +1020,7 @@
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
