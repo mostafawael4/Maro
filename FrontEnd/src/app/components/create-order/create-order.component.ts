@@ -43,9 +43,9 @@ export class CreateOrderComponent implements OnInit {
   depositError = '';
 
   private readonly PROMO_CODES: Record<string, number> = {
-    maro1000: 1000,
-    maro2000: 2000,
-    maro3000: 3000
+    sunset: 1000,
+    harmony: 2000,
+    celebration: 3000
   };
 
   // Event type options
@@ -70,7 +70,7 @@ export class CreateOrderComponent implements OnInit {
 
   // Highlight preference categories
   highlightPreferenceCategories = ['Preparations/Getting ready', 'Group shots', 'Dancing/party shots'];
-  
+
   // Highlight preference options for each category
   highlightPreferenceOptions = ['Family', 'Friends', 'Equal amount of shots'];
 
@@ -377,7 +377,7 @@ export class CreateOrderComponent implements OnInit {
 
     const pricingGroup = this.getPricingFormGroup();
     pricingGroup?.get('promoCode')?.setValue(pricing?.promoCode || '', { emitEvent: false });
-    
+
     // Convert deposit from EGP to USD for display if outside Egypt
     let depositForDisplay = pricing?.depositPaid ?? 0;
     if (!this.currencyService.isInEgyptValue && depositForDisplay > 0) {
@@ -796,7 +796,7 @@ export class CreateOrderComponent implements OnInit {
     const discountValue = this.PROMO_CODES[normalizedCode];
     if (!discountValue) {
       this.appliedPromoCode = null;
-      this.promoError = 'Invalid promo code. Try maro1000, maro2000, or maro3000.';
+      this.promoError = 'Invalid promo code. Please check your code and try again.';
       this.promoSuccess = '';
       this.updatePricingSummary();
       return;
@@ -912,7 +912,7 @@ export class CreateOrderComponent implements OnInit {
       depositValue = 0;
       depositControl?.setValue(0, { emitEvent: false });
     }
-    
+
     // Convert deposit to EGP for comparison if outside Egypt
     let depositInEGP = depositValue;
     if (!this.currencyService.isInEgyptValue) {
@@ -921,7 +921,7 @@ export class CreateOrderComponent implements OnInit {
         depositInEGP = depositValue * rate;
       }
     }
-    
+
     // Compare against total (which is in EGP)
     if (depositInEGP > total) {
       // Set max allowed deposit based on location
@@ -942,7 +942,7 @@ export class CreateOrderComponent implements OnInit {
     } else {
       this.depositError = '';
     }
-    
+
     const remaining = total - depositInEGP;
 
     this.pricingSummary = {
@@ -1044,26 +1044,26 @@ export class CreateOrderComponent implements OnInit {
     if (!depositControl) {
       return;
     }
-    
+
     // Get raw value and sanitize it
     let rawValue = depositControl.value;
     if (rawValue === null || rawValue === undefined || rawValue === '') {
       rawValue = 0;
     }
-    
+
     // Convert to number, handling string inputs
-    let value = typeof rawValue === 'string' 
-      ? parseFloat(rawValue.toString().replace(/[^\d.-]/g, '')) 
+    let value = typeof rawValue === 'string'
+      ? parseFloat(rawValue.toString().replace(/[^\d.-]/g, ''))
       : Number(rawValue);
-    
+
     // Validate and sanitize
     if (isNaN(value) || value < 0) {
       value = 0;
     }
-    
+
     // Round to whole number (no decimals for currency)
     value = Math.round(value);
-    
+
     // Cap value to maximum before setting (prevent exceeding max)
     // We need to calculate the max based on current total
     const subtotal = [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
@@ -1078,7 +1078,7 @@ export class CreateOrderComponent implements OnInit {
       discount = subtotal;
     }
     const total = subtotal - discount;
-    
+
     // Convert value to EGP for comparison
     let valueInEGP = value;
     if (!this.currencyService.isInEgyptValue) {
@@ -1087,7 +1087,7 @@ export class CreateOrderComponent implements OnInit {
         valueInEGP = value * rate;
       }
     }
-    
+
     // Cap to maximum
     if (valueInEGP > total && total > 0) {
       if (this.currencyService.isInEgyptValue) {
@@ -1099,7 +1099,7 @@ export class CreateOrderComponent implements OnInit {
         }
       }
     }
-    
+
     depositControl.setValue(value, { emitEvent: false });
     this.updatePricingSummary();
   }
@@ -1200,7 +1200,7 @@ export class CreateOrderComponent implements OnInit {
       shootersStartTime: formValue.shootersStartTime || undefined,
       shootersEndTime: formValue.shootersEndTime || undefined,
       coupleDescription: formValue.coupleDescription || undefined,
-      moodBoardLinks: formValue.moodBoardLinks 
+      moodBoardLinks: formValue.moodBoardLinks
         ? formValue.moodBoardLinks.split(',').map((link: string) => link.trim()).filter((link: string) => link)
         : undefined,
       favoriteSongs: formValue.favoriteSongs && formValue.favoriteSongs.length > 0
@@ -1305,30 +1305,30 @@ export class CreateOrderComponent implements OnInit {
 
     // Handle includeAccessoriesShots - convert radio value to boolean if needed
     // Save if user selected 'yes' or 'no', but not if 'no-preference' or empty
-    if (filmEditing.includeAccessoriesShots && 
-        filmEditing.includeAccessoriesShots !== '' && 
-        filmEditing.includeAccessoriesShots !== 'no-preference' &&
-        (filmEditing.includeAccessoriesShots === 'yes' || filmEditing.includeAccessoriesShots === 'no')) {
+    if (filmEditing.includeAccessoriesShots &&
+      filmEditing.includeAccessoriesShots !== '' &&
+      filmEditing.includeAccessoriesShots !== 'no-preference' &&
+      (filmEditing.includeAccessoriesShots === 'yes' || filmEditing.includeAccessoriesShots === 'no')) {
       filmEditingObj.includeAccessoriesShots = filmEditing.includeAccessoriesShots === 'yes';
       hasData = true;
     }
-    
+
     if (filmEditing.editSequence && filmEditing.editSequence !== '' && filmEditing.editSequence !== 'no-preference') {
       filmEditingObj.editSequence = filmEditing.editSequence;
       hasData = true;
     }
-    
+
     if (filmEditing.stylePreference && filmEditing.stylePreference.length > 0) {
       filmEditingObj.stylePreference = filmEditing.stylePreference;
       hasData = true;
     }
-    
+
     // Handle highlight preference - convert from object to array format
     // Save all selections including 'equal' to show user made a choice
     if (filmEditing.highlightPreference) {
       const highlightArray: string[] = [];
       const prefs = filmEditing.highlightPreference;
-      
+
       // Convert the object structure to array format expected by backend
       // Include 'equal' selections as well to show the user made a choice
       if (prefs.preparations && prefs.preparations !== '') {
@@ -1352,13 +1352,13 @@ export class CreateOrderComponent implements OnInit {
           highlightArray.push(`Dancing/party: ${prefs.dancingParty}`);
         }
       }
-      
+
       if (highlightArray.length > 0) {
         filmEditingObj.highlightPreference = highlightArray;
         hasData = true;
       }
     }
-    
+
     if (filmEditing.teaserStyleLinks && filmEditing.teaserStyleLinks.length > 0) {
       const filtered = filmEditing.teaserStyleLinks.filter((l: string) => l);
       if (filtered.length > 0) {

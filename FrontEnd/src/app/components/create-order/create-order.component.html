@@ -6,33 +6,25 @@
         {{ isEditMode ? 'Edit Order' : 'Create New Order' }}
       </h1>
       <p class="page-description">
-        {{ isEditMode ? 'Review the order form details below and make any necessary changes.' : 'Fill in the details below to create a new order' }}
+        {{ isEditMode ? 'Review the order form details below and make any necessary changes.' : 'Fill in the details
+        below to create a new order' }}
       </p>
     </div>
 
-    <div
-      class="info-banner"
-      *ngIf="isEditMode && !isAdminUser && !loadingOrderData && !loadOrderError"
-    >
-      Some account details (like email and client name) are locked because you are editing this form from the client portal.
+    <div class="info-banner" *ngIf="isEditMode && !isAdminUser && !loadingOrderData && !loadOrderError">
+      Some account details (like email and client name) are locked because you are editing this form from the client
+      portal.
     </div>
 
     <!-- Success Modal -->
-    <app-success-modal
-      [isOpen]="submitSuccess"
+    <app-success-modal [isOpen]="submitSuccess"
       [title]="isEditMode ? 'Order Updated Successfully!' : 'Order Created Successfully!'"
       [message]="isEditMode ? 'Your changes have been saved successfully.' : 'Your order has been created successfully. You will be redirected to the orders page.'"
-      (close)="onSuccessModalClose()"
-    ></app-success-modal>
+      (close)="onSuccessModalClose()"></app-success-modal>
 
     <!-- Error Modal -->
-    <app-success-modal
-      [isOpen]="showErrorModal"
-      [type]="'error'"
-      title="Validation Error"
-      [message]="submitError"
-      (close)="onErrorModalClose()"
-    ></app-success-modal>
+    <app-success-modal [isOpen]="showErrorModal" [type]="'error'" title="Validation Error" [message]="submitError"
+      (close)="onErrorModalClose()"></app-success-modal>
 
     <div *ngIf="isEditMode && loadingOrderData" class="loading-container">
       <div class="spinner"></div>
@@ -49,40 +41,29 @@
       </div>
     </div>
 
-    <div
-      class="date-lock-banner"
-      *ngIf="formLockedForDate"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
+    <div class="date-lock-banner" *ngIf="formLockedForDate">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
       <p>Sorry, this order can’t be edited anymore as its time has already started or passed.</p>
     </div>
 
     <!-- Order Form -->
-    <form
-      *ngIf="!loadingOrderData && !loadOrderError"
-      [formGroup]="orderForm"
-      (ngSubmit)="onSubmit()"
-      class="order-form"
-    >
-      
+    <form *ngIf="!loadingOrderData && !loadOrderError" [formGroup]="orderForm" (ngSubmit)="onSubmit()"
+      class="order-form">
+
       <!-- Basic Information Section -->
       <section class="form-section">
         <h2 class="section-title">Basic Information</h2>
-        
+
         <div class="form-group">
           <label for="email" class="required">Email Address</label>
-          <input 
-            type="email" 
-            id="email" 
-            formControlName="email" 
-            class="form-control"
+          <input type="email" id="email" formControlName="email" class="form-control"
             [class.invalid]="orderForm.get('email')?.invalid && orderForm.get('email')?.touched"
-            placeholder="your.email@example.com"
-          />
+            placeholder="your.email@example.com" />
           <span *ngIf="orderForm.get('email')?.invalid && orderForm.get('email')?.touched" class="error-text">
             Valid email is required
           </span>
@@ -90,14 +71,9 @@
 
         <div class="form-group">
           <label for="clientName" class="required">Client Name</label>
-          <input 
-            type="text" 
-            id="clientName" 
-            formControlName="clientName" 
-            class="form-control"
+          <input type="text" id="clientName" formControlName="clientName" class="form-control"
             [class.invalid]="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched"
-            placeholder="Full name"
-          />
+            placeholder="Full name" />
           <span *ngIf="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched" class="error-text">
             Client name must be at least 3 characters
           </span>
@@ -105,13 +81,8 @@
 
         <div class="form-group">
           <label for="notes">Notes</label>
-          <textarea 
-            id="notes" 
-            formControlName="notes" 
-            class="form-control"
-            rows="3"
-            placeholder="Any additional notes or special instructions..."
-          ></textarea>
+          <textarea id="notes" formControlName="notes" class="form-control" rows="3"
+            placeholder="Any additional notes or special instructions..."></textarea>
         </div>
       </section>
 
@@ -119,7 +90,8 @@
       <section class="form-section">
         <h2 class="section-title">Packages & Pricing</h2>
         <p class="section-intro">
-          Select one or more packages, collections, and extras. We will calculate the total automatically and apply promo codes that start with "maro".
+          Select one or more packages, collections, and extras. We will calculate the total automatically and apply any
+          valid promo codes.
         </p>
 
         <div class="info-banner" *ngIf="packagesLoading">
@@ -130,11 +102,8 @@
           <p>{{ packagesError }}</p>
         </div>
 
-        <div
-          *ngIf="packages.length && (packageSelectionError || collectionSelectionError)"
-          class="selection-alerts"
-          role="alert"
-        >
+        <div *ngIf="packages.length && (packageSelectionError || collectionSelectionError)" class="selection-alerts"
+          role="alert">
           <div *ngIf="packageSelectionError" class="selection-alert selection-alert--package">
             <strong>Action required</strong>
             <span>{{ packageSelectionError }}</span>
@@ -149,11 +118,7 @@
           <div class="package-card" *ngFor="let pkg of packages">
             <div class="package-header">
               <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  [checked]="isPackageSelected(pkg._id)"
-                  (change)="togglePackageSelection(pkg)"
-                />
+                <input type="checkbox" [checked]="isPackageSelected(pkg._id)" (change)="togglePackageSelection(pkg)" />
                 <span class="checkbox-text">{{ pkg.displayName }}</span>
               </label>
             </div>
@@ -163,18 +128,13 @@
                 <h4>Collections</h4>
                 <p class="empty-text" *ngIf="!pkg.collections?.length">No collections available.</p>
                 <div class="checkbox-group vertical" *ngIf="pkg.collections?.length">
-                  <label
-                    *ngFor="let collection of pkg.collections"
-                    class="checkbox-label"
-                  >
-                    <input
-                      type="checkbox"
-                      [checked]="isCollectionSelected(collection._id)"
-                      (change)="toggleCollection(pkg, collection)"
-                    />
+                  <label *ngFor="let collection of pkg.collections" class="checkbox-label">
+                    <input type="checkbox" [checked]="isCollectionSelected(collection._id)"
+                      (change)="toggleCollection(pkg, collection)" />
                     <span class="checkbox-text">
                       {{ collection.collectionName }}
-                      <small *ngIf="collection.price">- {{ currencyService.formatPriceString(collection.price) }}</small>
+                      <small *ngIf="collection.price">- {{ currencyService.formatPriceString(collection.price)
+                        }}</small>
                     </span>
                   </label>
                 </div>
@@ -183,15 +143,8 @@
               <div class="package-section" *ngIf="pkg.extras?.length">
                 <h4>Extras</h4>
                 <div class="checkbox-group vertical">
-                  <label
-                    *ngFor="let extra of pkg.extras"
-                    class="checkbox-label"
-                  >
-                    <input
-                      type="checkbox"
-                      [checked]="isExtraSelected(extra._id)"
-                      (change)="toggleExtra(pkg, extra)"
-                    />
+                  <label *ngFor="let extra of pkg.extras" class="checkbox-label">
+                    <input type="checkbox" [checked]="isExtraSelected(extra._id)" (change)="toggleExtra(pkg, extra)" />
                     <span class="checkbox-text">
                       {{ extra.name }}
                       <small *ngIf="extra.price">- {{ currencyService.formatPriceString(extra.price) }}</small>
@@ -221,15 +174,8 @@
           <div class="summary-row">
             <label for="depositPaid" class="deposit-label">Deposit Paid</label>
             <div class="deposit-input-wrapper" formGroupName="pricing">
-              <input
-                type="number"
-                id="depositPaid"
-                formControlName="depositPaid"
-                min="0"
-                class="form-control deposit-input"
-                (input)="onDepositChange()"
-                placeholder="0"
-              />
+              <input type="number" id="depositPaid" formControlName="depositPaid" min="0"
+                class="form-control deposit-input" (input)="onDepositChange()" placeholder="0" />
               <span class="currency-suffix">{{ currencyService.getCurrencySuffix() }}</span>
             </div>
           </div>
@@ -243,28 +189,13 @@
           <div class="promo-section" formGroupName="pricing">
             <label for="promoCode">Promo Code</label>
             <div class="promo-actions">
-              <input
-                type="text"
-                id="promoCode"
-                formControlName="promoCode"
-                placeholder="Enter promo code (maro1000, maro2000, maro3000)"
-                [disabled]="isEditMode"
-              />
-              <button
-                type="button"
-                class="btn-apply"
-                (click)="applyPromoCode()"
-                [disabled]="isEditMode"
-              >
+              <input type="text" id="promoCode" formControlName="promoCode" placeholder="Enter promo code"
+                [disabled]="isEditMode" />
+              <button type="button" class="btn-apply" (click)="applyPromoCode()" [disabled]="isEditMode">
                 Apply
               </button>
-              <button
-                type="button"
-                class="btn-link"
-                *ngIf="appliedPromoCode"
-                (click)="clearPromoCode()"
-                [disabled]="isEditMode"
-              >
+              <button type="button" class="btn-link" *ngIf="appliedPromoCode" (click)="clearPromoCode()"
+                [disabled]="isEditMode">
                 Remove
               </button>
             </div>
@@ -277,11 +208,13 @@
             <ul>
               <li *ngFor="let collection of getSelectedCollectionsList()">
                 {{ collection.packageDisplayName }} — {{ collection.collectionName }}
-                <span class="price-tag">{{ collection.priceLabel || currencyService.formatCurrency(collection.priceValue) }}</span>
+                <span class="price-tag">{{ collection.priceLabel ||
+                  currencyService.formatCurrency(collection.priceValue) }}</span>
               </li>
               <li *ngFor="let extra of getSelectedExtrasList()">
                 {{ extra.packageDisplayName }} — {{ extra.extraName }}
-                <span class="price-tag">{{ extra.priceLabel || currencyService.formatCurrency(extra.priceValue) }}</span>
+                <span class="price-tag">{{ extra.priceLabel || currencyService.formatCurrency(extra.priceValue)
+                  }}</span>
               </li>
             </ul>
           </div>
@@ -291,31 +224,22 @@
       <!-- Event Details Section -->
       <section class="form-section">
         <h2 class="section-title">Event Details</h2>
-        
+
         <div class="form-group">
           <label for="brideAndGroomNames" class="required">Bride & Groom's names</label>
-          <input 
-            type="text" 
-            id="brideAndGroomNames" 
-            formControlName="brideAndGroomNames" 
-            class="form-control"
+          <input type="text" id="brideAndGroomNames" formControlName="brideAndGroomNames" class="form-control"
             [class.invalid]="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
-            placeholder="e.g., John & Jane"
-          />
-          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched" class="error-text">
+            placeholder="e.g., John & Jane" />
+          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
+            class="error-text">
             Bride & Groom's names are required
           </span>
         </div>
 
         <div class="form-group">
           <label for="eventDate" class="required">Event Date</label>
-          <input 
-            type="date" 
-            id="eventDate" 
-            formControlName="eventDate" 
-            class="form-control"
-            [class.invalid]="orderForm.get('eventDate')?.invalid && orderForm.get('eventDate')?.touched"
-          />
+          <input type="date" id="eventDate" formControlName="eventDate" class="form-control"
+            [class.invalid]="orderForm.get('eventDate')?.invalid && orderForm.get('eventDate')?.touched" />
           <span *ngIf="orderForm.get('eventDate')?.invalid && orderForm.get('eventDate')?.touched" class="error-text">
             Event date is required
           </span>
@@ -324,32 +248,18 @@
         <div class="form-group">
           <label class="required">Event Type</label>
           <p class="field-instruction">You can select more than one if applies</p>
-          <div 
-            formArrayName="eventType" 
-            class="checkbox-group"
-            [class.invalid]="orderForm.get('eventType')?.invalid && orderForm.get('eventType')?.touched"
-          >
-            <label 
-              *ngFor="let eventType of eventTypes" 
-              class="checkbox-label"
-              [class.selected]="isEventTypeSelected(eventType)"
-            >
-              <input 
-                type="checkbox" 
-                [checked]="isEventTypeSelected(eventType)"
-                (change)="toggleEventType(eventType)"
-              />
+          <div formArrayName="eventType" class="checkbox-group"
+            [class.invalid]="orderForm.get('eventType')?.invalid && orderForm.get('eventType')?.touched">
+            <label *ngFor="let eventType of eventTypes" class="checkbox-label"
+              [class.selected]="isEventTypeSelected(eventType)">
+              <input type="checkbox" [checked]="isEventTypeSelected(eventType)" (change)="toggleEventType(eventType)" />
               <span class="checkbox-text">{{ eventType }}</span>
             </label>
           </div>
           <div *ngIf="isOtherEventTypeSelected()" class="other-input-wrapper">
             <label class="other-label">Other:</label>
-            <input 
-              type="text" 
-              formControlName="eventTypeOther" 
-              class="form-control other-input"
-              placeholder="Please specify other event type"
-            />
+            <input type="text" formControlName="eventTypeOther" class="form-control other-input"
+              placeholder="Please specify other event type" />
           </div>
           <span *ngIf="orderForm.get('eventType')?.invalid && orderForm.get('eventType')?.touched" class="error-text">
             Please select at least one event type
@@ -358,94 +268,74 @@
 
         <div class="form-group">
           <label for="eventVenue" class="required">Event Venue</label>
-          <input 
-            type="text" 
-            id="eventVenue" 
-            formControlName="eventVenue" 
-            class="form-control"
+          <input type="text" id="eventVenue" formControlName="eventVenue" class="form-control"
             [class.invalid]="orderForm.get('eventVenue')?.invalid && orderForm.get('eventVenue')?.touched"
-            placeholder="Venue name and address"
-          />
+            placeholder="Venue name and address" />
           <span *ngIf="orderForm.get('eventVenue')?.invalid && orderForm.get('eventVenue')?.touched" class="error-text">
             Event venue is required
           </span>
         </div>
 
         <div class="form-group">
-            <label for="timelineOfDay" class="required">Timeline of the Day:</label>
-            <p class="field-instruction">
-                Ex: Getting ready start time, Photoshoot time, Ceremony time, Guest arrival time, Reception start &
-                end time...etc
-            </p>
-            <textarea 
-              id="timelineOfDay" 
-              formControlName="timelineOfDay" 
-              class="form-control"
-              [class.invalid]="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched"
-              rows="4"
-              placeholder="Describe the timeline of events for the day..."
-            ></textarea>
-            <span *ngIf="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched" class="error-text">
-              Timeline details are required
-            </span>
-          </div>
+          <label for="timelineOfDay" class="required">Timeline of the Day:</label>
+          <p class="field-instruction">
+            Ex: Getting ready start time, Photoshoot time, Ceremony time, Guest arrival time, Reception start &
+            end time...etc
+          </p>
+          <textarea id="timelineOfDay" formControlName="timelineOfDay" class="form-control"
+            [class.invalid]="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched"
+            rows="4" placeholder="Describe the timeline of events for the day..."></textarea>
+          <span *ngIf="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched"
+            class="error-text">
+            Timeline details are required
+          </span>
+        </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="shootersStartTime" class="required">Shooters Start Time</label>
-            <input 
-              type="time" 
-              id="shootersStartTime" 
-              formControlName="shootersStartTime" 
-              class="form-control"
-            [class.invalid]="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched"
-            />
-            <span *ngIf="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched" class="error-text">
+            <input type="time" id="shootersStartTime" formControlName="shootersStartTime" class="form-control"
+              [class.invalid]="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched" />
+            <span *ngIf="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched"
+              class="error-text">
               Start time is required
             </span>
           </div>
-          
+
 
           <div class="form-group">
             <label for="shootersEndTime" class="required">Shooters End Time</label>
-            <input 
-              type="time" 
-              id="shootersEndTime" 
-              formControlName="shootersEndTime" 
-              class="form-control"
-            [class.invalid]="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched"
-            />
-            <span *ngIf="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched" class="error-text">
+            <input type="time" id="shootersEndTime" formControlName="shootersEndTime" class="form-control"
+              [class.invalid]="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched" />
+            <span *ngIf="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched"
+              class="error-text">
               End time is required
             </span>
           </div>
         </div>
 
-        
+
       </section>
 
       <!-- Couple Information Section -->
       <section class="form-section">
         <h2 class="section-title">Couple Information</h2>
-        
+
         <div class="form-group">
-          <label for="coupleDescription" class="required">Describe yourself as a couple; your hobbies, activities you like to do together, things you both share, etc</label>
+          <label for="coupleDescription" class="required">Describe yourself as a couple; your hobbies, activities you
+            like to do together, things you both share, etc</label>
           <p class="field-instruction">
             Ex:
--We are an outgoing energetic couple who love to travel a lot & explore new things together...etc.
-<br>
--We are introverted calm together who love to spend more time alone & go on romantic peaceful
-dates...etc.
+            -We are an outgoing energetic couple who love to travel a lot & explore new things together...etc.
+            <br>
+            -We are introverted calm together who love to spend more time alone & go on romantic peaceful
+            dates...etc.
           </p>
-          <textarea 
-            id="coupleDescription" 
-            formControlName="coupleDescription" 
-            class="form-control"
+          <textarea id="coupleDescription" formControlName="coupleDescription" class="form-control"
             [class.invalid]="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched"
-            rows="4"
-            placeholder="Tell us about the couple, their personalities, interests..."
-          ></textarea>
-          <span *ngIf="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched" class="error-text">
+            rows="4" placeholder="Tell us about the couple, their personalities, interests..."></textarea>
+          <span *ngIf="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched"
+            class="error-text">
             Couple description is required
           </span>
         </div>
@@ -458,32 +348,22 @@ dates...etc.
           <p class="field-instruction italic">
             Share links separated by a comma or you could share pics via whatsapp.
           </p>
-          <textarea 
-            formControlName="moodBoardLinks" 
-            class="form-control mood-board-input"
+          <textarea formControlName="moodBoardLinks" class="form-control mood-board-input"
             [class.invalid]="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched"
-            rows="4"
-          ></textarea>
-          <span *ngIf="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched" class="error-text">
+            rows="4"></textarea>
+          <span *ngIf="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched"
+            class="error-text">
             Mood board links are required
           </span>
         </div>
 
         <div class="form-group">
-          <label class="required">Share with us some of your favorite tracks/songs so that we could get to know your music taste.</label>
-          <div 
-            formArrayName="favoriteSongs" 
-            class="array-input-group"
-            [class.invalid]="favoriteSongsArray.invalid"
-          >
+          <label class="required">Share with us some of your favorite tracks/songs so that we could get to know your
+            music taste.</label>
+          <div formArrayName="favoriteSongs" class="array-input-group" [class.invalid]="favoriteSongsArray.invalid">
             <div *ngFor="let song of favoriteSongsArray.controls; let i = index" class="array-item">
-              <input 
-                type="text" 
-                [formControlName]="i"
-                class="form-control"
-                [class.invalid]="song.invalid"
-                placeholder="Song/Track name"
-              />
+              <input type="text" [formControlName]="i" class="form-control" [class.invalid]="song.invalid"
+                placeholder="Song/Track name" />
               <button type="button" class="btn-remove" (click)="removeFavoriteSong(i)">Remove</button>
             </div>
             <button type="button" class="btn-add" (click)="addFavoriteSong()">+ Add Song</button>
@@ -494,40 +374,34 @@ dates...etc.
         </div>
 
         <div class="form-group">
-          <label for="specialMoments" class="required">Share any planned special moments in your event so that we make sure it's covered.
-        </label>
-        <p class="field-instruction">
+          <label for="specialMoments" class="required">Share any planned special moments in your event so that we make
+            sure it's covered.
+          </label>
+          <p class="field-instruction">
             Ex: vows, a specific dance, speeches, entertainment, fireworks, confetti...etc.
 
           </p>
-          <textarea 
-            id="specialMoments" 
-            formControlName="specialMoments" 
-            class="form-control"
+          <textarea id="specialMoments" formControlName="specialMoments" class="form-control"
             [class.invalid]="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched"
-            rows="4"
-            placeholder="List any special moments, traditions, or events you want captured..."
-          ></textarea>
-          <span *ngIf="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched" class="error-text">
+            rows="4" placeholder="List any special moments, traditions, or events you want captured..."></textarea>
+          <span *ngIf="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched"
+            class="error-text">
             Please share the special moments you want covered
           </span>
         </div>
 
         <div class="form-group">
-          <label for="excludeShots" class="required">If there is any part that you would prefer not to include, please let us know</label>
+          <label for="excludeShots" class="required">If there is any part that you would prefer not to include, please
+            let us know</label>
           <p class="field-instruction">
             Ex: pre-makeup shots, kissing shots, zaffa part, bellydancer, certain family members, specific
-guests...etc.
+            guests...etc.
           </p>
-          <textarea 
-            id="excludeShots" 
-            formControlName="excludeShots" 
-            class="form-control"
-            [class.invalid]="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched"
-            rows="3"
-            placeholder="Any shots or moments you prefer to exclude..."
-          ></textarea>
-          <span *ngIf="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched" class="error-text">
+          <textarea id="excludeShots" formControlName="excludeShots" class="form-control"
+            [class.invalid]="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched" rows="3"
+            placeholder="Any shots or moments you prefer to exclude..."></textarea>
+          <span *ngIf="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched"
+            class="error-text">
             Please let us know if there are any parts to exclude
           </span>
         </div>
@@ -536,34 +410,21 @@ guests...etc.
       <!-- Vendors Section -->
       <section class="form-section">
         <h2 class="section-title">Vendors</h2>
-        
+
         <div formGroupName="vendors">
           <div class="form-group">
             <label class="required">Photographers</label>
             <p class="field-instruction" *ngIf="hasSelectedPhotographyPackage">
               You've selected a photography package with us, so these details aren't needed.
             </p>
-            <div 
-              formArrayName="photographers" 
-              class="array-input-group"
-              [class.invalid]="photographersArray.invalid"
-            >
+            <div formArrayName="photographers" class="array-input-group" [class.invalid]="photographersArray.invalid">
               <div *ngFor="let photographer of photographersArray.controls; let i = index" class="array-item">
-                <input 
-                  type="text" 
-                  [formControlName]="i" 
-                  class="form-control"
-                  [class.invalid]="photographer.invalid"
-                  placeholder="Photographer name or N/A"
-                />
+                <input type="text" [formControlName]="i" class="form-control" [class.invalid]="photographer.invalid"
+                  placeholder="Photographer name or N/A" />
                 <button type="button" class="btn-remove" (click)="removePhotographer(i)">Remove</button>
               </div>
-              <button 
-                type="button" 
-                class="btn-add" 
-                (click)="addPhotographer()"
-                [disabled]="hasSelectedPhotographyPackage"
-              >
+              <button type="button" class="btn-add" (click)="addPhotographer()"
+                [disabled]="hasSelectedPhotographyPackage">
                 + Add Photographer
               </button>
             </div>
@@ -577,27 +438,15 @@ guests...etc.
             <p class="field-instruction" *ngIf="hasSelectedCinematographyPackage">
               You've selected a cinematography package with us, so these details aren't needed.
             </p>
-            <div 
-              formArrayName="cinematographers" 
-              class="array-input-group"
-              [class.invalid]="cinematographersArray.invalid"
-            >
+            <div formArrayName="cinematographers" class="array-input-group"
+              [class.invalid]="cinematographersArray.invalid">
               <div *ngFor="let cinematographer of cinematographersArray.controls; let i = index" class="array-item">
-                <input 
-                  type="text" 
-                  [formControlName]="i" 
-                  class="form-control"
-                  [class.invalid]="cinematographer.invalid"
-                  placeholder="Cinematographer name or N/A"
-                />
+                <input type="text" [formControlName]="i" class="form-control" [class.invalid]="cinematographer.invalid"
+                  placeholder="Cinematographer name or N/A" />
                 <button type="button" class="btn-remove" (click)="removeCinematographer(i)">Remove</button>
               </div>
-              <button 
-                type="button" 
-                class="btn-add" 
-                (click)="addCinematographer()"
-                [disabled]="hasSelectedCinematographyPackage"
-              >
+              <button type="button" class="btn-add" (click)="addCinematographer()"
+                [disabled]="hasSelectedCinematographyPackage">
                 + Add Cinematographer
               </button>
             </div>
@@ -609,30 +458,24 @@ guests...etc.
           <div class="form-row">
             <div class="form-group">
               <label for="makeupArtist" class="required">Makeup Artist</label>
-              <input 
-                type="text" 
-                id="makeupArtist" 
-                formControlName="makeupArtist" 
-                class="form-control"
+              <input type="text" id="makeupArtist" formControlName="makeupArtist" class="form-control"
                 [class.invalid]="orderForm.get('vendors.makeupArtist')?.invalid && orderForm.get('vendors.makeupArtist')?.touched"
-                placeholder="Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.makeupArtist')?.invalid && orderForm.get('vendors.makeupArtist')?.touched" class="error-text">
+                placeholder="Name or N/A" />
+              <span
+                *ngIf="orderForm.get('vendors.makeupArtist')?.invalid && orderForm.get('vendors.makeupArtist')?.touched"
+                class="error-text">
                 Makeup artist is required (enter "N/A" if unknown).
               </span>
             </div>
 
             <div class="form-group">
               <label for="hairStylist" class="required">Hair Stylist</label>
-              <input 
-                type="text" 
-                id="hairStylist" 
-                formControlName="hairStylist" 
-                class="form-control"
+              <input type="text" id="hairStylist" formControlName="hairStylist" class="form-control"
                 [class.invalid]="orderForm.get('vendors.hairStylist')?.invalid && orderForm.get('vendors.hairStylist')?.touched"
-                placeholder="Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.hairStylist')?.invalid && orderForm.get('vendors.hairStylist')?.touched" class="error-text">
+                placeholder="Name or N/A" />
+              <span
+                *ngIf="orderForm.get('vendors.hairStylist')?.invalid && orderForm.get('vendors.hairStylist')?.touched"
+                class="error-text">
                 Hair stylist is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -641,30 +484,24 @@ guests...etc.
           <div class="form-row">
             <div class="form-group">
               <label for="dressDesigner" class="required">Dress Designer</label>
-              <input 
-                type="text" 
-                id="dressDesigner" 
-                formControlName="dressDesigner" 
-                class="form-control"
+              <input type="text" id="dressDesigner" formControlName="dressDesigner" class="form-control"
                 [class.invalid]="orderForm.get('vendors.dressDesigner')?.invalid && orderForm.get('vendors.dressDesigner')?.touched"
-                placeholder="Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.dressDesigner')?.invalid && orderForm.get('vendors.dressDesigner')?.touched" class="error-text">
+                placeholder="Name or N/A" />
+              <span
+                *ngIf="orderForm.get('vendors.dressDesigner')?.invalid && orderForm.get('vendors.dressDesigner')?.touched"
+                class="error-text">
                 Dress designer is required (enter "N/A" if unknown).
               </span>
             </div>
 
             <div class="form-group">
               <label for="eventPlanner" class="required">Event Planner</label>
-              <input 
-                type="text" 
-                id="eventPlanner" 
-                formControlName="eventPlanner" 
-                class="form-control"
+              <input type="text" id="eventPlanner" formControlName="eventPlanner" class="form-control"
                 [class.invalid]="orderForm.get('vendors.eventPlanner')?.invalid && orderForm.get('vendors.eventPlanner')?.touched"
-                placeholder="Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.eventPlanner')?.invalid && orderForm.get('vendors.eventPlanner')?.touched" class="error-text">
+                placeholder="Name or N/A" />
+              <span
+                *ngIf="orderForm.get('vendors.eventPlanner')?.invalid && orderForm.get('vendors.eventPlanner')?.touched"
+                class="error-text">
                 Event planner is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -673,30 +510,22 @@ guests...etc.
           <div class="form-row">
             <div class="form-group">
               <label for="dj" class="required">DJ</label>
-              <input 
-                type="text" 
-                id="dj" 
-                formControlName="dj" 
-                class="form-control"
+              <input type="text" id="dj" formControlName="dj" class="form-control"
                 [class.invalid]="orderForm.get('vendors.dj')?.invalid && orderForm.get('vendors.dj')?.touched"
-                placeholder="Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.dj')?.invalid && orderForm.get('vendors.dj')?.touched" class="error-text">
+                placeholder="Name or N/A" />
+              <span *ngIf="orderForm.get('vendors.dj')?.invalid && orderForm.get('vendors.dj')?.touched"
+                class="error-text">
                 DJ is required (enter "N/A" if unknown).
               </span>
             </div>
 
             <div class="form-group">
               <label for="lighting" class="required">Lighting</label>
-              <input 
-                type="text" 
-                id="lighting" 
-                formControlName="lighting" 
-                class="form-control"
+              <input type="text" id="lighting" formControlName="lighting" class="form-control"
                 [class.invalid]="orderForm.get('vendors.lighting')?.invalid && orderForm.get('vendors.lighting')?.touched"
-                placeholder="Company/Name or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.lighting')?.invalid && orderForm.get('vendors.lighting')?.touched" class="error-text">
+                placeholder="Company/Name or N/A" />
+              <span *ngIf="orderForm.get('vendors.lighting')?.invalid && orderForm.get('vendors.lighting')?.touched"
+                class="error-text">
                 Lighting vendor is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -705,30 +534,23 @@ guests...etc.
           <div class="form-row">
             <div class="form-group">
               <label for="entertainment" class="required">Entertainment</label>
-              <input 
-                type="text" 
-                id="entertainment" 
-                formControlName="entertainment" 
-                class="form-control"
+              <input type="text" id="entertainment" formControlName="entertainment" class="form-control"
                 [class.invalid]="orderForm.get('vendors.entertainment')?.invalid && orderForm.get('vendors.entertainment')?.touched"
-                placeholder="Type of entertainment or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.entertainment')?.invalid && orderForm.get('vendors.entertainment')?.touched" class="error-text">
+                placeholder="Type of entertainment or N/A" />
+              <span
+                *ngIf="orderForm.get('vendors.entertainment')?.invalid && orderForm.get('vendors.entertainment')?.touched"
+                class="error-text">
                 Entertainment is required (enter "N/A" if unknown).
               </span>
             </div>
 
             <div class="form-group">
               <label for="others" class="required">Others</label>
-              <input 
-                type="text" 
-                id="others" 
-                formControlName="others" 
-                class="form-control"
+              <input type="text" id="others" formControlName="others" class="form-control"
                 [class.invalid]="orderForm.get('vendors.others')?.invalid && orderForm.get('vendors.others')?.touched"
-                placeholder="Other vendors or N/A"
-              />
-              <span *ngIf="orderForm.get('vendors.others')?.invalid && orderForm.get('vendors.others')?.touched" class="error-text">
+                placeholder="Other vendors or N/A" />
+              <span *ngIf="orderForm.get('vendors.others')?.invalid && orderForm.get('vendors.others')?.touched"
+                class="error-text">
                 This field is required (enter "N/A" if unknown).
               </span>
             </div>
@@ -740,23 +562,21 @@ guests...etc.
       <section class="form-section">
         <h2 class="section-title">Film Editing Details</h2>
         <p class="section-intro">
-          Your inputs would be extremely valuable to us regarding a few specifics in your film, so please choose the answer that applies the most to you.
+          Your inputs would be extremely valuable to us regarding a few specifics in your film, so please choose the
+          answer that applies the most to you.
         </p>
-        
+
         <div formGroupName="filmEditing">
           <!-- Accessory Shots Question -->
           <div class="form-group">
-            <label class="required">We usually include shots of the bride and groom accessories during the getting ready part, however, would you like to have separate shots for your accessories alone?</label>
+            <label class="required">We usually include shots of the bride and groom accessories during the getting ready
+              part, however, would you like to have separate shots for your accessories alone?</label>
             <p class="field-instruction">
               Ex: Shoes next to Cufflinks next to belt, Perfume next to wedding ring next to heels,...etc
             </p>
             <div class="radio-group" [class.invalid]="orderForm.get('filmEditing.includeAccessoriesShots')?.invalid">
               <label *ngFor="let option of accessoryShotsOptions" class="radio-label">
-                <input 
-                  type="radio" 
-                  formControlName="includeAccessoriesShots"
-                  [value]="option.value"
-                />
+                <input type="radio" formControlName="includeAccessoriesShots" [value]="option.value" />
                 <span>{{ option.label }}</span>
               </label>
             </div>
@@ -767,18 +587,18 @@ guests...etc.
 
           <!-- Edit Sequence Question -->
           <div class="form-group">
-            <label class="required">Would you prefer your film to be edited in a chronological or random sequence?</label>
+            <label class="required">Would you prefer your film to be edited in a chronological or random
+              sequence?</label>
             <div class="definition-box">
-              <p><strong>Chronological sequence:</strong> Editing the film from start to finish according to the actual timeline of your day, which means starting with shots of getting ready, then the first look, then the photoshoot...etc.</p>
-              <p><strong>Random sequence:</strong> Editing the film by creating a unique sequence that tells a story about your day, without sticking to the actual order of your timeline.</p>
+              <p><strong>Chronological sequence:</strong> Editing the film from start to finish according to the actual
+                timeline of your day, which means starting with shots of getting ready, then the first look, then the
+                photoshoot...etc.</p>
+              <p><strong>Random sequence:</strong> Editing the film by creating a unique sequence that tells a story
+                about your day, without sticking to the actual order of your timeline.</p>
             </div>
             <div class="radio-group" [class.invalid]="orderForm.get('filmEditing.editSequence')?.invalid">
               <label *ngFor="let option of editSequenceOptions" class="radio-label">
-                <input 
-                  type="radio" 
-                  formControlName="editSequence"
-                  [value]="option.value"
-                />
+                <input type="radio" formControlName="editSequence" [value]="option.value" />
                 <span>{{ option.label }}</span>
               </label>
             </div>
@@ -788,15 +608,14 @@ guests...etc.
           </div>
 
           <!-- Style Preference -->
-          <div class="form-group" >
-            <label class="required" style="margin-top: 5rem;">We usually craft the style & direction of your film depending on your actual event day's vibes. Yet, if you have a preference from the below categories, please choose it and we'll do our best to match it.</label>
+          <div class="form-group">
+            <label class="required" style="margin-top: 5rem;">We usually craft the style & direction of your film
+              depending on your actual event day's vibes. Yet, if you have a preference from the below categories,
+              please choose it and we'll do our best to match it.</label>
             <div class="checkbox-group" [class.invalid]="stylePreferenceArray.invalid">
               <label *ngFor="let option of stylePreferenceOptions" class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  [checked]="isStylePreferenceSelected(option)"
-                  (change)="toggleStylePreference(option)"
-                />
+                <input type="checkbox" [checked]="isStylePreferenceSelected(option)"
+                  (change)="toggleStylePreference(option)" />
                 <span>{{ option }}</span>
               </label>
             </div>
@@ -807,7 +626,9 @@ guests...etc.
 
           <!-- Highlight Preference -->
           <div class="form-group">
-            <label class="required">We guarantee that all your special moments with family & friends will be covered, yet, some couples* have personalized preferences about what to highlight more in their wedding film, so help us get a better understanding of yours.</label>
+            <label class="required">We guarantee that all your special moments with family & friends will be covered,
+              yet, some couples* have personalized preferences about what to highlight more in their wedding film, so
+              help us get a better understanding of yours.</label>
             <div formGroupName="highlightPreference" class="highlight-preference-table">
               <div class="table-header">
                 <div class="table-cell"></div>
@@ -870,26 +691,19 @@ guests...etc.
       <!-- Social Media Section -->
       <section class="form-section">
         <h2 class="section-title">Social Media Inspiration</h2>
-        
+
         <div class="form-group">
-          <label class="required">If you have seen any content on social media that you liked and would like us to take it (or part of it) as a reference for your film, please share it.</label>
+          <label class="required">If you have seen any content on social media that you liked and would like us to take
+            it (or part of it) as a reference for your film, please share it.</label>
           <p class="field-instruction">
             Ex: Wedding pictures, films, teasers...etc.
           </p>
-          
-          <div 
-            formArrayName="socialMediaInspiration" 
-            class="array-input-group"
-            [class.invalid]="socialMediaInspirationArray.invalid"
-          >
+
+          <div formArrayName="socialMediaInspiration" class="array-input-group"
+            [class.invalid]="socialMediaInspirationArray.invalid">
             <div *ngFor="let link of socialMediaInspirationArray.controls; let i = index" class="array-item">
-              <input 
-                type="url" 
-                [formControlName]="i" 
-                class="form-control"
-                [class.invalid]="link.invalid"
-                placeholder="https://... or N/A"
-              />
+              <input type="url" [formControlName]="i" class="form-control" [class.invalid]="link.invalid"
+                placeholder="https://... or N/A" />
               <button type="button" class="btn-remove" (click)="removeSocialMediaInspiration(i)">Remove</button>
             </div>
             <button type="button" class="btn-add" (click)="addSocialMediaInspiration()">+ Add Link</button>
@@ -904,19 +718,10 @@ guests...etc.
           <p class="field-instruction italic">
             If yes, please share links separated by a comma & we will try our best to help you create them.
           </p>
-          <div 
-            formArrayName="tiktokIdeas" 
-            class="array-input-group"
-            [class.invalid]="tiktokIdeasArray.invalid"
-          >
+          <div formArrayName="tiktokIdeas" class="array-input-group" [class.invalid]="tiktokIdeasArray.invalid">
             <div *ngFor="let idea of tiktokIdeasArray.controls; let i = index" class="array-item">
-              <input 
-                type="text" 
-                [formControlName]="i" 
-                class="form-control"
-                [class.invalid]="idea.invalid"
-                placeholder="TikTok or Reels link (or N/A)"
-              />
+              <input type="text" [formControlName]="i" class="form-control" [class.invalid]="idea.invalid"
+                placeholder="TikTok or Reels link (or N/A)" />
               <button type="button" class="btn-remove" (click)="removeTiktokIdea(i)">Remove</button>
             </div>
             <button type="button" class="btn-add" (click)="addTiktokIdea()">+ Add Link</button>
@@ -929,24 +734,15 @@ guests...etc.
 
       <!-- Submit Button -->
       <div class="form-actions">
-        <button 
-          type="submit" 
-          class="btn-submit"
-          [disabled]="isSubmitting || formLockedForDate"
-          *ngIf="!formLockedForDate"
-        >
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting || formLockedForDate"
+          *ngIf="!formLockedForDate">
           <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Create Order' }}</span>
           <span *ngIf="isSubmitting">{{ isEditMode ? 'Saving Changes...' : 'Creating Order...' }}</span>
         </button>
-        <button 
-          type="button" 
-          class="btn-cancel"
-          (click)="onCancel()"
-        >
+        <button type="button" class="btn-cancel" (click)="onCancel()">
           Cancel
         </button>
       </div>
     </form>
   </div>
 </div>
-

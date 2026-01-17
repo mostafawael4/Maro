@@ -2,22 +2,22 @@ const Packages = require("../models/Package.js");
 
 
 const parsePriceValue = (price) => {
-    if (typeof price === "number" && Number.isFinite(price)) {
-      return price;
-    }
-    if (!price) {
-      return 0;
-    }
-    const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ""));
-    return Number.isFinite(numeric) ? numeric : 0;
+  if (typeof price === "number" && Number.isFinite(price)) {
+    return price;
+  }
+  if (!price) {
+    return 0;
+  }
+  const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
 };
 
 const PROMO_CODES = {
-    maro1000: 1000,
-    maro2000: 2000,
-    maro3000: 3000,
+  sunset: 1000,
+  harmony: 2000,
+  celebration: 3000,
 };
-const fetchPackagesMaps = async () =>  {
+const fetchPackagesMaps = async () => {
   const packagesFromDb = await Packages.find({}).lean();
   const packageMapById = new Map();
   const packageMapByName = new Map();
@@ -32,7 +32,7 @@ const fetchPackagesMaps = async () =>  {
   return { packageMapById, packageMapByName };
 }
 
-const resolvePackage = (selection, packageMapById, packageMapByName) =>  {
+const resolvePackage = (selection, packageMapById, packageMapByName) => {
   if (!selection) return null;
   if (selection.packageId && packageMapById.has(selection.packageId.toString())) {
     return packageMapById.get(selection.packageId.toString());
@@ -43,7 +43,7 @@ const resolvePackage = (selection, packageMapById, packageMapByName) =>  {
   return null;
 }
 
-const appendPackage = (pkg, packagesMap) =>  {
+const appendPackage = (pkg, packagesMap) => {
   const key = pkg._id?.toString();
   if (!key || packagesMap.has(key)) return;
   packagesMap.set(key, {
@@ -53,7 +53,7 @@ const appendPackage = (pkg, packagesMap) =>  {
   });
 }
 
-const processCollections = (collectionSelections, resolve, append, subtotal) =>  {
+const processCollections = (collectionSelections, resolve, append, subtotal) => {
   const collections = [];
   let collectionsSubtotal = 0;
   if (Array.isArray(collectionSelections)) {
@@ -82,7 +82,7 @@ const processCollections = (collectionSelections, resolve, append, subtotal) => 
   return { collections, collectionsSubtotal };
 }
 
-const processExtras = (extraSelections, resolve, append, subtotal) =>  {
+const processExtras = (extraSelections, resolve, append, subtotal) => {
   const extras = [];
   let extrasSubtotal = 0;
   if (Array.isArray(extraSelections)) {
@@ -111,7 +111,7 @@ const processExtras = (extraSelections, resolve, append, subtotal) =>  {
   return { extras, extrasSubtotal };
 }
 
-const processPackages = (packageSelections, resolve, append) =>  {
+const processPackages = (packageSelections, resolve, append) => {
   if (Array.isArray(packageSelections)) {
     packageSelections.forEach((selection) => {
       const pkg = resolve(selection);
@@ -120,7 +120,7 @@ const processPackages = (packageSelections, resolve, append) =>  {
   }
 }
 
-const handlePromoCode = (code, subtotal) =>  {
+const handlePromoCode = (code, subtotal) => {
   let promoCode, discount = 0;
   if (code) {
     const normalizedCode = code.toString().trim().toLowerCase();
@@ -133,7 +133,7 @@ const handlePromoCode = (code, subtotal) =>  {
   return { promoCode, discount };
 }
 
-const computeTotals = (pricingInput, subtotal, discount) =>  {
+const computeTotals = (pricingInput, subtotal, discount) => {
   const rawDeposit = parsePriceValue(pricingInput.depositPaid);
   let depositPaid = rawDeposit > 0 ? rawDeposit : 0;
   let total = subtotal - discount;
@@ -151,7 +151,7 @@ const computeTotals = (pricingInput, subtotal, discount) =>  {
   return { total, depositPaid, remainingBalance };
 }
 
-const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput) =>  {
+const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput) => {
   return (
     subtotal > 0 ||
     discount > 0 ||
@@ -161,7 +161,7 @@ const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput)
   );
 }
 
-const normalizePricingSelections = async(pricingInput = {}) =>  {
+const normalizePricingSelections = async (pricingInput = {}) => {
   if (!pricingInput || typeof pricingInput !== "object") return undefined;
   const { packageMapById, packageMapByName } = await fetchPackagesMaps();
   if (!packageMapById.size && !packageMapByName.size) return undefined;
