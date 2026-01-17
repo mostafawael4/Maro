@@ -85,7 +85,6 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
         this.loading = false;
         return;
       }
-      console.log(this.isAuthenticated === true)
       // Admin users: use getOrderById
       if (this.isAuthenticated === true) {
         this.loadOrderById(orderId);
@@ -629,7 +628,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
     try {
       // Show loading state (you can add a loading variable if needed)
-      console.log(`Downloading folder: ${folderName}`);
+      
 
       // Fetch folder media
       let mediaToDownload: OrderImage[] = [];
@@ -690,7 +689,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Clean up
       window.URL.revokeObjectURL(downloadUrl);
 
-      console.log(`Successfully downloaded folder: ${folderName}`);
+      
     } catch (error) {
       console.error('Error downloading folder:', error);
       alert('Failed to download folder. Please try again.');

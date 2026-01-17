@@ -116,16 +116,10 @@ export class CurrencyService {
     if (cached !== null) {
       this.exchangeRate = cached;
       this.exchangeRateSubject.next(cached);
-      console.log('💱 Using cached rate (will refresh soon):', {
-        'Rate': `1 USD = ${cached} EGP`,
-        'Source': 'Cache (recent)',
-        'Timestamp': new Date().toLocaleString()
-      });
       // Still fetch fresh in background
     }
 
     // Fetch REAL-TIME exchange rate from API - NO FIXED PRICES, NO FALLBACKS
-    console.log('🔄 Fetching REAL-TIME exchange rate from API (no fixed prices)...');
     this.http.get<any>('https://api.exchangerate-api.com/v4/latest/USD')
       .pipe(
         map((response: any) => {
@@ -150,12 +144,7 @@ export class CurrencyService {
             this.exchangeRate = rate;
             this.exchangeRateSubject.next(rate);
             this.setCachedExchangeRate(rate);
-            console.log('✅ REAL-TIME Exchange Rate:', {
-              'Rate': `1 USD = ${rate} EGP`,
-              'Source': 'Live API (Real-Time Market Data)',
-              'Timestamp': new Date().toLocaleString(),
-              'Note': 'This is the current market rate, fetched from API'
-            });
+            
           } else {
             console.error('❌ Could not get exchange rate from API. Prices may not convert correctly.');
           }
@@ -204,7 +193,7 @@ export class CurrencyService {
     if (!this.isBrowser) return;
     try {
       localStorage.removeItem(this.EXCHANGE_RATE_STORAGE_KEY);
-      console.log('🗑️ Cleared exchange rate cache');
+      
     } catch {
       // Ignore errors
     }
@@ -213,7 +202,7 @@ export class CurrencyService {
   // Public method to force refresh exchange rate (clears cache and fetches fresh)
   public forceRefreshExchangeRate(): void {
     if (!this.isBrowser) return;
-    console.log('🔄 Force refreshing exchange rate (clearing cache)...');
+    
     this.clearExchangeRateCache();
     this.fetchExchangeRate();
   }
@@ -251,15 +240,8 @@ export class CurrencyService {
       // Round to nearest whole number for USD
       const roundedUsd = Math.round(usdValue);
       
-      // Console log for debugging
-      console.log('💰 Currency Conversion:', {
-        'EGP Amount': `${numValue.toLocaleString('en-US')} LE`,
-        'Exchange Rate': `1 USD = ${this.exchangeRate} EGP`,
-        'Calculation': `${numValue} LE ÷ ${this.exchangeRate} = ${usdValue.toFixed(2)} USD`,
-        'Rounded USD': `$${roundedUsd.toLocaleString('en-US')}`,
-        'Final Display': `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-      });
       
+
       return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     }
   }
@@ -286,15 +268,7 @@ export class CurrencyService {
       // Round to nearest whole number for USD
       const roundedUsd = Math.round(usdValue);
       
-      // Console log for debugging
-      console.log('💰 Currency Conversion (from string):', {
-        'Original String': priceString,
-        'EGP Amount': `${numValue.toLocaleString('en-US')} LE`,
-        'Exchange Rate': `1 USD = ${this.exchangeRate} EGP`,
-        'Calculation': `${numValue} LE ÷ ${this.exchangeRate} = ${usdValue.toFixed(2)} USD`,
-        'Rounded USD': `$${roundedUsd.toLocaleString('en-US')}`,
-        'Final Display': `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-      });
+      
       
       return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     }

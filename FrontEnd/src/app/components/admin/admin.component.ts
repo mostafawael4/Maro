@@ -87,7 +87,6 @@ export class AdminComponent implements OnInit, AfterViewInit {
       next: (response) => {
         if (response.ok) {
           this.isLoading = false;
-          console.log('Logged in successfully');
           // Redirect based on role after successful login
           if (response?.session?.isAdmin) {
             this.router.navigate(['/dashboard']);

@@ -369,7 +369,7 @@ export class OrdersComponent implements OnInit {
 
     this.ordersService.uploadOrderImages(orderId, files, folderName).subscribe({
       next: (event: any) => {
-        console.log('Upload event:', event.type, event);
+        
         
         // Handle progress events (type 1 = UploadProgress, type 3 = DownloadProgress which can also be used for upload)
         if (event.type === HttpEventType.UploadProgress || (event.type === 3 && event.loaded !== undefined)) {
@@ -382,18 +382,18 @@ export class OrdersComponent implements OnInit {
             if (event.loaded >= event.total) {
               this.uploadProgress = 100;
               this.uploadProgressBytes = this.uploadTotalBytes;
-              console.log('Upload complete detected from progress event - setting to 100%');
+              
             } else {
               this.uploadProgress = calculatedProgress;
             }
             this.updateUploadSpeed();
-            console.log(`Upload progress: ${this.uploadProgress}% (${this.uploadProgressBytes}/${event.total} bytes)`);
+            
             this.cdr.markForCheck();
           }
         } 
         // Handle Response event (type 4 = Response)
         else if (event.type === HttpEventType.Response || event.type === 4) {
-          console.log('Response event received - upload complete');
+          
           // Stop simulation
           this.stopProgressSimulation();
           // Upload complete - ensure progress shows 100%
@@ -456,7 +456,7 @@ export class OrdersComponent implements OnInit {
         // Handle any other event that might indicate completion
         else if (event.body && event.ok !== undefined) {
           // This might be a response wrapped differently
-          console.log('Alternative response format detected - setting to 100%');
+          
           this.stopProgressSimulation();
           this.uploadProgress = 100;
           this.uploadProgressBytes = this.uploadTotalBytes;
@@ -485,9 +485,9 @@ export class OrdersComponent implements OnInit {
       complete: () => {
         // This is called when the observable completes
         // Ensure progress is at 100% if upload was successful
-        console.log('Upload observable completed');
+        
         if (this.uploadingOrderId === orderId && this.uploadProgress < 100) {
-          console.log('Forcing progress to 100% on completion');
+          
           this.uploadProgress = 100;
           this.uploadProgressBytes = this.uploadTotalBytes;
           this.updateUploadSpeed();
