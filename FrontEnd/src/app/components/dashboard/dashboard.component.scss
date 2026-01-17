@@ -1,5 +1,5 @@
 .dashboard-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Georgia', serif;
@@ -14,7 +14,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.75rem;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -22,7 +22,7 @@
   }
 
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 1rem;
     font-style: italic;
     letter-spacing: 0.5px;
@@ -52,14 +52,14 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: #fff;
+    background: rgba(26, 1, 5, 0.8);
     border-radius: 999px;
-    border: 1px solid rgba(107, 31, 31, 0.2);
+    border: 1px solid rgba(255, 218, 185, 0.3);
     padding: 0.35rem 1rem;
     box-shadow: 0 8px 20px rgba(107, 31, 31, 0.08);
 
     svg {
-      color: rgba(107, 31, 31, 0.6);
+      color: #ffdab9;
     }
 
     input {
@@ -67,7 +67,7 @@
       border: none;
       font-size: 0.95rem;
       font-family: 'Georgia', serif;
-      color: #4a1a1a;
+      color: #fdf9f2;
       background: transparent;
 
       &:focus {
@@ -77,8 +77,8 @@
 
     .clear-btn {
       border: none;
-      background: rgba(107, 31, 31, 0.08);
-      color: #6B1F1F;
+      background: rgba(107, 31, 31, 0.3);
+      color: #ffdab9;
       padding: 0.3rem 0.9rem;
       border-radius: 999px;
       font-size: 0.85rem;
@@ -98,6 +98,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -116,21 +117,26 @@
     width: 50px;
     height: 50px;
     border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top: 4px solid #8B3A3A;
+    border-top: 4px solid #ffdab9;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   p {
     margin-top: 20px;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-style: italic;
   }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Error Message
@@ -139,8 +145,8 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
-  border: 2px solid rgba(220, 38, 38, 0.3);
+  background: rgba(26, 1, 5, 0.9);
+  border: 2px solid rgba(220, 38, 38, 0.4);
   border-radius: 10px;
   color: #dc2626;
   max-width: 600px;
@@ -169,11 +175,11 @@
 .orders-table-container {
   max-width: 1400px;
   margin: 0 auto;
-  background: white;
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(107, 31, 31, 0.08);
   overflow: hidden;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
 }
 
 .orders-table {
@@ -181,8 +187,8 @@
   border-collapse: collapse;
 
   thead {
-    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
-    
+    background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
+
     tr {
       th {
         padding: 1.2rem 1rem;
@@ -190,10 +196,10 @@
         font-family: 'Playfair Display', serif;
         font-size: 0.95rem;
         font-weight: 500;
-        color: white;
+        color: #ffdab9;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        
+
         @media (max-width: 768px) {
           padding: 1rem 0.5rem;
           font-size: 0.85rem;
@@ -204,11 +210,11 @@
 
   tbody {
     tr {
-      border-bottom: 1px solid rgba(107, 31, 31, 0.1);
+      border-bottom: 1px solid rgba(255, 218, 185, 0.2);
       transition: all 0.3s ease;
 
       &:hover {
-        background: rgba(107, 31, 31, 0.02);
+        background: rgba(255, 218, 185, 0.05);
       }
 
       &.updating {
@@ -219,7 +225,7 @@
       td {
         padding: 1.2rem 1rem;
         font-size: 0.95rem;
-        color: #333;
+        color: #fdf9f2;
 
         @media (max-width: 768px) {
           padding: 1rem 0.5rem;
@@ -229,11 +235,11 @@
 
       .groom-name {
         font-weight: 600;
-        color: #8B3A3A;
+        color: #ffdab9;
       }
 
       .client-email {
-        color: rgba(0, 0, 0, 0.6);
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.9rem;
       }
 
@@ -244,18 +250,18 @@
 
         .event-date {
           font-weight: 600;
-          color: #5c2a2a;
+          color: #ffdab9;
         }
 
         .event-venue {
-          color: rgba(0, 0, 0, 0.65);
+          color: rgba(255, 255, 255, 0.7);
           font-size: 0.9rem;
         }
       }
 
       .media-count {
         font-weight: 600;
-        color: #8B3A3A;
+        color: #ffdab9;
       }
     }
   }
@@ -373,7 +379,7 @@
     &.info-btn {
       background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
       color: white;
-      
+
       svg {
         width: 16px;
         height: 16px;
@@ -471,18 +477,19 @@
   justify-content: center;
   min-height: 400px;
   text-align: center;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
   padding: 40px 20px;
 
   svg {
     margin-bottom: 20px;
-    opacity: 0.5;
+    opacity: 0.7;
+    color: #ffdab9;
   }
 
   h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.75rem;
     font-style: italic;
   }
@@ -498,10 +505,10 @@
 .search-empty {
   max-width: 600px;
   margin: 40px auto 0;
-  border: 2px dashed rgba(107, 31, 31, 0.2);
+  border: 2px dashed rgba(255, 218, 185, 0.3);
   border-radius: 16px;
   padding: 40px 30px;
-  background: rgba(255, 249, 242, 0.7);
+  background: rgba(26, 1, 5, 0.4);
 
   p {
     margin-bottom: 1.5rem;
@@ -518,4 +525,3 @@
     min-width: 1000px;
   }
 }
-

@@ -37,23 +37,14 @@
 
       <div class="calendar-grid">
         <ng-container *ngFor="let week of weeks; trackBy: trackByWeek">
-          <button
-            *ngFor="let day of week; trackBy: trackByDay"
-            type="button"
-            class="day-cell"
-            [class.other-month]="!day.isCurrentMonth"
-            [class.today]="day.isToday"
-            [class.selected]="day.isSelected"
-            (click)="selectDay(day)"
-          >
+          <button *ngFor="let day of week; trackBy: trackByDay" type="button" class="day-cell"
+            [class.other-month]="!day.isCurrentMonth" [class.today]="day.isToday" [class.selected]="day.isSelected"
+            (click)="selectDay(day)">
             <span class="date-label">{{ day.date.getDate() }}</span>
             <div class="event-dots" *ngIf="day.events.length > 0">
-              <span
-                class="event-dot"
-                *ngFor="let event of day.events | slice:0:3"
+              <span class="event-dot" *ngFor="let event of day.events | slice:0:3"
                 [style.background]="event.color || '#c084fc'"
-                [attr.title]="event.title + ' • ' + getCoupleName(event)"
-              ></span>
+                [attr.title]="event.title + ' • ' + getCoupleName(event)"></span>
               <span class="extra-count" *ngIf="day.events.length > 3">+{{ day.events.length - 3 }}</span>
             </div>
           </button>
@@ -102,13 +93,15 @@
               <div class="event-field" *ngIf="event.stylePreferences?.length">
                 <span class="event-key">Edit Style</span>
                 <div class="event-tags">
-                  <span class="event-tag" *ngFor="let pref of (event.stylePreferences || []) | slice:0:4">{{ pref }}</span>
+                  <span class="event-tag" *ngFor="let pref of (event.stylePreferences || []) | slice:0:4">{{ pref
+                    }}</span>
                 </div>
               </div>
               <div class="event-field" *ngIf="event.highlightPreferences?.length">
                 <span class="event-key">Highlight Focus</span>
                 <div class="event-tags">
-                  <span class="event-tag" *ngFor="let focus of (event.highlightPreferences || []) | slice:0:4">{{ focus }}</span>
+                  <span class="event-tag" *ngFor="let focus of (event.highlightPreferences || []) | slice:0:4">{{ focus
+                    }}</span>
                 </div>
               </div>
               <div class="event-field" *ngIf="event.socialIdeas?.length">
@@ -117,7 +110,8 @@
                   <span class="event-tag" *ngFor="let idea of (event.socialIdeas || []) | slice:0:4">{{ idea }}</span>
                 </div>
               </div>
-              <div class="event-field" *ngIf="event.editingSequence || event.includeAccessoriesShots || event.editingNotes">
+              <div class="event-field"
+                *ngIf="event.editingSequence || event.includeAccessoriesShots || event.editingNotes">
                 <span class="event-key">Editing Notes</span>
                 <span class="event-value multi-line">
                   <ng-container *ngIf="event.editingSequence">
@@ -127,20 +121,16 @@
                     <span *ngIf="event.editingSequence"> • </span>Include accessories shots
                   </ng-container>
                   <ng-container *ngIf="event.editingNotes">
-                    <span *ngIf="event.editingSequence || event.includeAccessoriesShots"> • </span>{{ event.editingNotes }}
+                    <span *ngIf="event.editingSequence || event.includeAccessoriesShots"> • </span>{{ event.editingNotes
+                    }}
                   </ng-container>
                 </span>
               </div>
               <div class="event-field" *ngIf="event.moodboardLinks?.length">
                 <span class="event-key">Moodboard</span>
                 <div class="event-links">
-                  <a
-                    class="event-link"
-                    *ngFor="let link of (event.moodboardLinks || []) | slice:0:3; index as i"
-                    [href]="link"
-                    target="_blank"
-                    rel="noopener"
-                  >
+                  <a class="event-link" *ngFor="let link of (event.moodboardLinks || []) | slice:0:3; index as i"
+                    [href]="link" target="_blank" rel="noopener">
                     Reference {{ i + 1 }}
                   </a>
                 </div>
@@ -230,6 +220,3 @@
     {{ errorMessage }}
   </div>
 </section>
-
-
-x

@@ -1,8 +1,8 @@
 .calendar-page {
   padding: 7rem 1.5rem 4rem;
   min-height: 100vh;
-  background: linear-gradient(180deg, #fff9f5 0%, #fefefe 65%, #ffffff 100%);
-  color: #1f1b16;
+  background: #580111; // Dark burgundy
+  color: #fdf9f2;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -19,7 +19,7 @@
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 0.8rem;
-  color: #c27b48;
+  color: #ffdab9;
   margin-bottom: 0.75rem;
   font-weight: 600;
 }
@@ -28,7 +28,7 @@
   font-family: 'Playfair Display', serif;
   font-size: 2.5rem;
   font-weight: 400;
-  color: #8B3A3A;
+  color: #ffdab9;
   margin-bottom: 0.75rem;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -41,16 +41,16 @@
 
 .subtitle {
   max-width: 540px;
-  color: #5a4e44;
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
 }
 
 .hero-card {
-  background: #fff;
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 24px;
   padding: 1.75rem;
-  box-shadow: 0 25px 65px rgba(194, 123, 72, 0.12);
-  border: 1px solid rgba(194, 123, 72, 0.12);
+  box-shadow: 0 25px 65px rgba(139, 58, 58, 0.12);
+  border: 1px solid rgba(255, 218, 185, 0.3);
 }
 
 .hero-title {
@@ -60,7 +60,7 @@
 }
 
 .hero-text {
-  color: #5a4e44;
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.5;
 }
 
@@ -73,11 +73,11 @@
 }
 
 .calendar-board {
-  background: #fff;
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 28px;
   padding: 1.75rem;
-  box-shadow: 0 30px 70px rgba(160, 115, 84, 0.18);
-  border: 1px solid rgba(194, 123, 72, 0.12);
+  box-shadow: 0 30px 70px rgba(139, 58, 58, 0.18);
+  border: 1px solid rgba(255, 218, 185, 0.3);
 }
 
 .calendar-header {
@@ -96,8 +96,8 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  border: 1px solid rgba(28, 26, 24, 0.12);
-  background: #fff;
+  border: 1px solid rgba(255, 218, 185, 0.3);
+  background: rgba(26, 1, 5, 0.6);
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
@@ -105,8 +105,8 @@
 }
 
 .nav-btn:hover {
-  border-color: #c27b48;
-  color: #c27b48;
+  border-color: #ffdab9;
+  color: #ffdab9;
 }
 
 .weekdays {
@@ -115,7 +115,7 @@
   margin-bottom: 0.75rem;
   text-align: center;
   font-weight: 600;
-  color: #8c7a6a;
+  color: #ffdab9;
   font-size: 0.85rem;
 }
 
@@ -127,9 +127,9 @@
 
 .day-cell {
   position: relative;
-  background: #fff;
+  background: rgba(26, 1, 5, 0.4);
   border-radius: 18px;
-  border: 1px solid rgba(31, 27, 22, 0.08);
+  border: 1px solid rgba(255, 218, 185, 0.15);
   padding: 0.6rem 0.35rem 0.8rem;
   min-height: 78px;
   text-align: center;
@@ -138,7 +138,7 @@
 }
 
 .day-cell:hover {
-  border-color: rgba(194, 123, 72, 0.35);
+  border-color: rgba(255, 218, 185, 0.5);
   box-shadow: 0 12px 25px rgba(194, 123, 72, 0.12);
 }
 
@@ -147,13 +147,13 @@
 }
 
 .day-cell.today {
-  border-color: #c27b48;
+  border-color: #ffdab9;
 }
 
 .day-cell.selected {
   border-color: #1f1b16;
-  background: #1f1b16;
-  color: #fff;
+  background: #ffdab9;
+  color: #1a0105;
 }
 
 .date-label {
@@ -188,10 +188,10 @@
 
 .selected-day,
 .upcoming-events {
-  background: #fff;
+  background: rgba(26, 1, 5, 0.8);
   border-radius: 24px;
   padding: 1.5rem;
-  border: 1px solid rgba(194, 123, 72, 0.12);
+  border: 1px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 20px 50px rgba(160, 115, 84, 0.16);
 }
 
@@ -205,9 +205,9 @@
   gap: 1rem;
   padding: 1rem;
   border-radius: 18px;
-  border: 1px solid rgba(31, 27, 22, 0.08);
+  border: 1px solid rgba(255, 218, 185, 0.2);
   margin-top: 1rem;
-  background: #fffdfb;
+  background: rgba(26, 1, 5, 0.6);
 }
 
 .event-data-grid {
@@ -225,12 +225,12 @@
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8c7a6a;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .event-value {
   font-weight: 600;
-  color: #1f1b16;
+  color: #fdf9f2;
   word-break: break-word;
 }
 
@@ -249,7 +249,7 @@
   padding: 0.15rem 0.65rem;
   border-radius: 999px;
   background: rgba(139, 58, 58, 0.1);
-  color: #6b1f1f;
+  color: #ffdab9;
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -262,7 +262,7 @@
 
 .event-link {
   font-weight: 600;
-  color: #2563eb;
+  color: #ffdab9;
   text-decoration: none;
   font-size: 0.85rem;
 }
@@ -273,7 +273,7 @@
 
 .event-note {
   font-size: 0.8rem;
-  color: #8c7a6a;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .event-value.monospace {
@@ -299,7 +299,7 @@
 .event-meta,
 .event-location,
 .event-notes {
-  color: #5a4e44;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0.15rem 0;
 }
 
@@ -315,9 +315,9 @@
   gap: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 16px;
-  border: 1px solid rgba(31, 27, 22, 0.08);
+  border: 1px solid rgba(255, 218, 185, 0.2);
   align-items: center;
-  background: #fffdfb;
+  background: rgba(26, 1, 5, 0.6);
 }
 
 .upcoming-data {
@@ -330,13 +330,13 @@
   min-width: 56px;
   text-align: center;
   font-weight: 600;
-  color: #c27b48;
+  color: #ffdab9;
 }
 
 .upcoming-date strong {
   display: block;
   font-size: 1.4rem;
-  color: #1f1b16;
+  color: #fdf9f2;
 }
 
 .empty-state {
@@ -345,7 +345,7 @@
   border-radius: 18px;
   border: 1px dashed rgba(31, 27, 22, 0.25);
   text-align: center;
-  color: #5a4e44;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .loading-card,
@@ -359,7 +359,7 @@
 }
 
 .loading-card {
-  background: #fff;
+  background: rgba(26, 1, 5, 0.8);
   box-shadow: 0 20px 45px rgba(160, 115, 84, 0.12);
 }
 
@@ -385,5 +385,3 @@
     min-height: 64px;
   }
 }
-
-

@@ -21,7 +21,7 @@ export class NavbarComponent implements OnInit {
   isGalleryDropdownOpen = false;
   isClientReady = false;
   private isBrowser: boolean;
-  @Input() navbarBgColor: string = 'rgba(255, 250, 245, 0.95)'; // Light warm cream with sunshine hint
+  @Input() navbarBgColor: string = '#1a0105'; // Dark burgundy
 
   constructor(
     private authService: AuthService,
@@ -48,7 +48,7 @@ export class NavbarComponent implements OnInit {
         this.isClientReady = true;
       }
     });
-    
+
     // Initialize admin status in browser
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();

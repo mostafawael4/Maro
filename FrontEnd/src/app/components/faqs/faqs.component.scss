@@ -1,6 +1,6 @@
 // FAQs Page - Burgundy Theme
 .faqs-page {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFFFFF 50%, #FFF9F2 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 4rem 2rem 6rem;
 }
@@ -17,7 +17,7 @@
   font-family: 'Playfair Display', serif;
   font-size: 2.5rem;
   font-weight: 400;
-  color: #8B3A3A;
+  color: #ffdab9; // Light peach
   margin-bottom: 0.75rem;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -33,6 +33,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -42,7 +43,7 @@
 .header-decoration {
   width: 100px;
   height: 3px;
-  background: linear-gradient(90deg, #6B1F1F 0%, #8B3A3A 50%, #B8826B 100%);
+  background: linear-gradient(90deg, #ffdab9 0%, #fdf9f2 50%, #ffdab9 100%);
   margin: 0 auto;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(107, 31, 31, 0.25);
@@ -53,9 +54,9 @@
   max-width: 900px;
   margin: 0 auto 5rem;
   padding: 2.5rem 2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 250, 245, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 16px;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
   text-align: center;
 
@@ -78,7 +79,7 @@
   font-family: 'Playfair Display', serif;
   font-size: 1.5rem;
   font-weight: 600;
-  color: #6B1F1F;
+  color: #ffdab9;
   margin-bottom: 1.2rem;
   letter-spacing: 0.3px;
 
@@ -90,11 +91,11 @@
 .intro-text {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #5A5A5A;
+  color: #e0e0e0;
   margin-bottom: 1.2rem;
 
   strong {
-    color: #6B1F1F;
+    color: #ffdab9;
     font-weight: 600;
   }
 
@@ -105,7 +106,7 @@
 
 .intro-cta {
   font-size: 1rem;
-  color: #6B1F1F;
+  color: #fdf9f2;
   font-weight: 500;
   font-style: italic;
   margin: 0;
@@ -130,9 +131,9 @@
   display: flex;
   gap: 2rem;
   padding: 2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 250, 245, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 12px;
-  border: 1px solid rgba(107, 31, 31, 0.1);
+  border: 1px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 2px 8px rgba(107, 31, 31, 0.06);
   transition: all 0.3s ease;
 
@@ -154,7 +155,7 @@
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(107, 31, 31, 0.12);
-    border-color: rgba(107, 31, 31, 0.15);
+    border-color: rgba(255, 218, 185, 0.5);
   }
 
   @media (max-width: 768px) {
@@ -184,7 +185,7 @@
   @media (max-width: 768px) {
     width: 50px;
     height: 50px;
-    
+
     svg {
       width: 28px;
       height: 28px;
@@ -197,10 +198,9 @@
 }
 
 .faq-question {
-  font-family: 'Playfair Display', serif;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #6B1F1F;
+  color: #ffdab9;
   margin-bottom: 1rem;
   letter-spacing: 0.3px;
   line-height: 1.5;
@@ -213,7 +213,7 @@
 .faq-answer {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #5A5A5A;
+  color: #e0e0e0;
   margin: 0;
 
   @media (max-width: 768px) {
@@ -228,9 +228,9 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
