@@ -13,6 +13,7 @@ import { VideoPosterSelectorComponent } from '../video-poster-selector/video-pos
 import { BackgroundImageSelectorComponent } from '../background-image-selector/background-image-selector.component';
 import { OrderFolderPanelComponent } from '../order-folder-panel/order-folder-panel.component';
 import { FolderMediaViewComponent } from '../folder-media-view/folder-media-view.component';
+import JSZip from 'jszip';
 
 @Component({
   selector: 'app-order-details',
@@ -621,5 +622,78 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       return 'Are you sure you want to delete this folder and all its contents?';
     }
     return `Are you sure you want to delete the folder "${this.folderToDelete}" and all its contents?`;
+  }
+
+  async onDownloadFolder(folderName: string): Promise<void> {
+    if (!this.order?._id) return;
+
+    try {
+      // Show loading state (you can add a loading variable if needed)
+      console.log(`Downloading folder: ${folderName}`);
+
+      // Fetch folder media
+      let mediaToDownload: OrderImage[] = [];
+      
+      if (this.isAuthenticated) {
+        // For admin, fetch from API
+        const response = await this.ordersService.getFolderMedia(this.order._id, folderName).toPromise();
+        mediaToDownload = response?.media || [];
+      } else {
+        // For clients, filter from existing media
+        mediaToDownload = (this.order?.media || []).filter(item => item.foldername === folderName);
+      }
+
+      if (mediaToDownload.length === 0) {
+        alert('No media found in this folder');
+        return;
+      }
+
+      // Create a new JSZip instance
+      const zip = new JSZip();
+      const folder = zip.folder(folderName);
+
+      if (!folder) {
+        throw new Error('Failed to create folder in zip');
+      }
+
+      // Download each file and add to zip
+      const downloadPromises = mediaToDownload.map(async (media) => {
+        try {
+          const mediaUrl = this.getImageUrl(media);
+          const response = await fetch(mediaUrl);
+          const blob = await response.blob();
+          const filename = media.originalName || media.filename;
+          folder.file(filename, blob);
+        } catch (error) {
+          console.error(`Failed to download ${media.filename}:`, error);
+          // Continue with other files even if one fails
+        }
+      });
+
+      // Wait for all downloads to complete
+      await Promise.all(downloadPromises);
+
+      // Generate the zip file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${folderName}.zip`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log(`Successfully downloaded folder: ${folderName}`);
+    } catch (error) {
+      console.error('Error downloading folder:', error);
+      alert('Failed to download folder. Please try again.');
+    }
   }
 }
