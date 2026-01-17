@@ -605,7 +605,7 @@
 .summary-row.remaining {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #333;
+  color: #fdf9f2;
   border-top: 1px solid rgba(139, 58, 58, 0.1);
   padding-top: 0.5rem;
   margin-top: 0.5rem;
@@ -625,6 +625,20 @@
   .deposit-input {
     flex: 1;
     min-width: 120px;
+    background: rgba(26, 1, 5, 0.6);
+    color: #fdf9f2;
+    border: 2px solid rgba(255, 218, 185, 0.3);
+    border-radius: 8px;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #ffdab9;
+      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
+    }
   }
 
   .currency-suffix {
@@ -659,6 +673,18 @@
     padding: 0.6rem 0.75rem;
     border-radius: 8px;
     border: 1.5px solid rgba(255, 218, 185, 0.3);
+    background: rgba(26, 1, 5, 0.6);
+    color: #fdf9f2;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #ffdab9;
+      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
+    }
   }
 }
 
