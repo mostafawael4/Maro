@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+/* Import fonts with proper numeric features for clean, simple number display */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
@@ -95,6 +96,14 @@ body {
   background-color: var(--color-neutral-400); /* Cream background */
   color: var(--color-accent-900); /* Charcoal text */
   line-height: 1.6;
+  
+  /* Ensure numbers use simple, normal font styling */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Force simple, normal number rendering across all elements */
+* {
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 h1,
@@ -109,6 +118,83 @@ h6,
 .header-title {
   font-family: var(--font-heading) !important;
   letter-spacing: 0.02em;
+}
+
+/* ========================================
+   NUMBER STYLING - Simple & Clean Numbers
+   ========================================
+   Ensures all numbers use a simple, normal font style
+   across the entire application for better readability
+   and professional appearance.
+   ======================================== */
+
+/* Target all elements that commonly contain numbers */
+*[class*="number"],
+*[class*="count"],
+*[class*="badge"],
+*[class*="meta"],
+.meta-value,
+.folder-count-badge,
+.folder-meta span,
+input[type="number"],
+input[type="tel"],
+.price,
+.amount,
+.quantity,
+.total,
+.date,
+.time,
+.id,
+.order-id,
+.phone,
+span:has(> [class*="number"]) {
+  font-family: var(--font-body) !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
+  font-feature-settings: "tnum" 1, "lnum" 1 !important;
+  font-weight: 500;
+}
+
+/* Ensure headings with numbers also use simple number style */
+h1, h2, h3, h4, h5, h6 {
+  font-variant-numeric: lining-nums !important;
+  
+  /* Numbers within headings should use Inter font for clarity */
+  span {
+    font-family: var(--font-body) !important;
+  }
+}
+
+/* Additional specific number styling for common UI elements */
+table,
+.table,
+.data-table {
+  font-variant-numeric: lining-nums tabular-nums !important;
+}
+
+/* Ensure buttons and badges with numbers use simple font */
+button,
+.btn,
+.button,
+a {
+  font-variant-numeric: lining-nums !important;
+}
+
+/* Form inputs and text areas with numbers */
+input,
+textarea,
+select {
+  font-variant-numeric: lining-nums tabular-nums !important;
+  font-family: var(--font-body);
+}
+
+/* Pagination, counters, and status indicators */
+.pagination,
+.counter,
+.indicator,
+.status,
+.stat {
+  font-family: var(--font-body) !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
 }
 
 /* Cinematic typography classes */
