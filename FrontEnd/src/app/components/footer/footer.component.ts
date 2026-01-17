@@ -12,14 +12,14 @@ import { Router, RouterLink } from '@angular/router';
 export class FooterComponent {
   currentYear: number = new Date().getFullYear();
 
-  constructor(private router: Router) {}
+  constructor(private router: Router) { }
 
   // Social media links
   socialLinks = {
     instagram: 'https://www.instagram.com/maro.weddings',
     facebook: '#',
     whatsapp: 'https://wa.me/201025641261', // WhatsApp redirect
-    email: 'maroweddings.eg@gmail.com'
+    email: 'visualsofmaro@gmail.com'
   };
 
   // Quick links
