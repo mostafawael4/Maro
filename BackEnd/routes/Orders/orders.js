@@ -11,6 +11,8 @@ const logger = require("../../utils/logger.js");
 const { handleMulterErrors } = require("../../middleware/upload.js").default;
 const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
 const Credentials = require('../../config/Credentials.js')
+const b2 = require("../../services/b2.service.js")
+const fs = require("fs");
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -193,7 +195,15 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
 });
 
 // POST /orders/:orderId/upload - admin only upload images/videos to this order
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './tmp/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+}); // Use memory storage to access buffer
 const uploadMemory = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
@@ -202,7 +212,7 @@ const uploadMemory = multer({
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
   },
-}).array("media", 50);
+}).single("file");
 
 router.post(
   "/:orderId/upload",
@@ -242,6 +252,19 @@ router.post(
     }
   }
 );
+
+router.post("/upload", uploadMemory,  async (req, res) => {
+  try {
+    const { path, originalname } = req.file;
+
+    const buffer = fs.readFileSync(path);
+    const uploaded = await b2.upload(`orders/${originalname}`, buffer);
+    fs.unlinkSync(path);
+    res.json(uploaded);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+})
 
 // GET /order/view?email=...  (public) - returns order images if email found
 router.get("/view/by-email", async (req, res) => {

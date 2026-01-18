@@ -33,6 +33,10 @@ const SMTP_PASS = process.env.SMTP_PASS
 const FROM_EMAIL = process.env.FROM_EMAIL
 const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
 
+const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
+const B2_BUCKET_ID = process.env.B2_BUCKET_ID
+
 module.exports = {
   NODE_ENV,
   PORT,
@@ -55,5 +59,8 @@ module.exports = {
   SMTP_USER,
   SMTP_PASS,
   FROM_EMAIL,
-  CONTACT_RECEIVER
+  CONTACT_RECEIVER,
+  B2_APPLICATION_KEY_ID,
+  B2_APPLICATION_KEY,
+  B2_BUCKET_ID
 };

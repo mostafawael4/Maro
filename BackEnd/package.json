@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "backblaze-b2": "^1.7.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "connect-mongo": "^5.0.0",
