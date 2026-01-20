@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const extraSchema = new mongoose.Schema({
   name: String,
@@ -20,4 +20,4 @@ const packageSchema = new mongoose.Schema({
   extras: [extraSchema],                            // Optional extras
 });
 
-module.exports = mongoose.model('Packages', packageSchema);
+export default mongoose.model('Packages', packageSchema);

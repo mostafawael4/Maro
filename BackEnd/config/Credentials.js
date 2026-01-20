@@ -1,4 +1,4 @@
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config(); 
 
 
@@ -41,7 +41,7 @@ const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
 const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
 const B2_BUCKET_ID = process.env.B2_BUCKET_ID
 
-module.exports = {
+export default {
   NODE_ENV,
   PORT,
   SERVER_ORIGIN,

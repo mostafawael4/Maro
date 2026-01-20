@@ -1,16 +1,16 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const adminRoutes = require('./admin');
-const orderRoutes = require('./Orders/orders');
+import adminRoutes from './admin.js';
+import orderRoutes from './Orders/orders.js';
 // const logsRoutes = require('./logs');
-const galleryRoutes = require('./gallery');
-const filmsRoutes = require('./films');
-const homepage = require("./homePage")
-const packagesRoutes = require('./packages');
-const orderFeedbacksRoutes = require('./orderFeedbacks');
-const feedback = require('./feedback')
-const contactUS =  require("./contactUs");
+import galleryRoutes from './gallery.js';
+import filmsRoutes from './films.js';
+import homepage from "./homePage.js"
+import packagesRoutes from './packages.js';
+import orderFeedbacksRoutes from './orderFeedbacks.js';
+import feedback from './feedback.js'
+import contactUS from "./contactUs.js";
 
 // Mount all sub-routes under /
 router.use('/admin', adminRoutes);
@@ -24,4 +24,4 @@ router.use('/feedbacks/orders', orderFeedbacksRoutes);
 router.use('/feedbacks', feedback);
 router.use("/contact", contactUS);
 
-module.exports = router;
+export default router;

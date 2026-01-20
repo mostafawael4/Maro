@@ -1,13 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const logger = require("../utils/logger");
+import fs from 'fs';
+import path from 'path';
+import logger from "../utils/logger.js";
 
 /**
  * Delete a file by its given file system path.
  * @param {string} filePath
  * @returns {Promise<void>}
  */
-const deleteFileByPath = (filePath) => {
+export const deleteFileByPath = (filePath) => {
   return new Promise((resolve, reject) => {
     if (!filePath) {
       logger.warn('Attempted to delete file with no file path provided');
@@ -30,7 +30,7 @@ const deleteFileByPath = (filePath) => {
  * @param {string} folderPath
  * @returns {Promise<void>}
  */
-const deleteFolderByPath = (folderPath) => {
+export const deleteFolderByPath = (folderPath) => {
   return new Promise((resolve, reject) => {
     if (!folderPath) {
       logger.warn('Attempted to delete folder with no folder path provided');
@@ -46,10 +46,4 @@ const deleteFolderByPath = (folderPath) => {
       resolve();
     });
   });
-};
-
-
-module.exports = {
-  deleteFileByPath,
-  deleteFolderByPath
 };

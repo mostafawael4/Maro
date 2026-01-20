@@ -1,10 +1,10 @@
-const Order = require('../models/order');
-const uploadService = require('./upload.service'); // Adjust path as needed
-const allowedExtensions = require('../config/allowed_extensions.json');
-const { extractOrderVideoThumbnail } = require('./videoThumbnail.service');
-const logger = require('../utils/logger');
+import Order from '../models/order.js';
+import uploadService from './upload.service.js'; // Adjust path as needed
+import allowedExtensions from "../config/allowed_extensions.js";
+import { extractOrderVideoThumbnail } from './videoThumbnail.service.js';
+import logger from '../utils/logger.js';
 
-async function uploadMediaFiles(orderId, files, foldername) {
+export  async function uploadMediaFiles(orderId, files, foldername) {
   const order = await Order.findById(orderId);
   if (!order) {
     throw new Error('Order not found');
@@ -84,8 +84,3 @@ async function uploadMediaFiles(orderId, files, foldername) {
     message: `${fileObjs.length} file(s) uploaded, ${duplicates.length} duplicate(s) skipped.`
   };
 }
-
-module.exports = {
-  uploadMediaFiles,
-  // Add more media-related methods here as needed (e.g., delete media, etc.)
-};

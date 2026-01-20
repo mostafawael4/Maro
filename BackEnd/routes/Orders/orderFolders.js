@@ -1,14 +1,14 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../../models/order.js");
-const { requireAdminAuth } = require("../../middleware/auth.js");
-const uploadService = require("../../services/upload.service.js");
-const multer = require("multer");
-const allowedExtensions = require("../../config/allowed_extensions.json");
-const logger = require("../../utils/logger.js");
-const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials  = require('../../config/Credentials.js');
+import Order from "../../models/order.js";
+import { requireAdminAuth } from "../../middleware/auth.js";
+import uploadService from "../../services/upload.service.js";
+import multer from "multer";
+import allowedExtensions from "../../config/allowed_extensions.js";
+import logger from "../../utils/logger.js";
+import { handleMulterErrors } from "../../middleware/upload.js";
+import { deleteOrderFileByFileName } from "../../services/order.service.js";
+import Credentials  from '../../config/Credentials.js';
 
 
 // GET /:orderId - return order's folders count and names (admin only)
@@ -130,4 +130,4 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
 
 
 
-module.exports = router;
+export default router;

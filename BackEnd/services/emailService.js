@@ -1,6 +1,6 @@
-const nodemailer = require('nodemailer');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import nodemailer from 'nodemailer';
+import logger from '../utils/logger.js';
+import Credentials  from '../config/Credentials.js';
 
 const transporter = nodemailer.createTransport({
   host: Credentials.SMTP_HOST,
@@ -21,7 +21,7 @@ transporter.verify((error, success) => {
   }
 });
 
-async function sendMail({ to, subject, text, html }) {
+export async function sendMail({ to, subject, text, html }) {
   logger.info(
     `Attempting to send email`,
     {
@@ -52,5 +52,3 @@ async function sendMail({ to, subject, text, html }) {
     throw err;
   }
 }
-
-module.exports = { sendMail };

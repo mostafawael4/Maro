@@ -1,8 +1,8 @@
-const ffmpeg = require('fluent-ffmpeg');
-const fs = require('fs');
-const path = require('path');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import ffmpeg from 'fluent-ffmpeg';
+import fs from 'fs';
+import path from 'path';
+import logger from '../utils/logger.js';
+import Credentials  from '../config/Credentials.js';
 
 // Set FFmpeg and FFprobe paths - try to use installer, fallback to system FFmpeg
 try {
@@ -39,7 +39,7 @@ const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS;
  * @param {number} timeInSeconds - Time in seconds to extract frame (default: 1)
  * @returns {Promise<string>} Path to the generated thumbnail
  */
-async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
+export async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
   return new Promise((resolve, reject) => {
     // Ensure output directory exists
     const outputDir = path.dirname(outputPath);
@@ -70,7 +70,7 @@ async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
  * @param {string} videoPath - Full path to the video file
  * @returns {Promise<number>} Duration in seconds
  */
-async function getVideoDuration(videoPath) {
+export async function getVideoDuration(videoPath) {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
       if (err) {
@@ -91,7 +91,7 @@ async function getVideoDuration(videoPath) {
  * @param {number} timeInSeconds - Time in seconds to extract frame (default: 1)
  * @returns {Promise<{thumbnailPath: string, thumbnailUrl: string}>}
  */
-async function extractOrderVideoThumbnail(orderId, videoFilename, timeInSeconds = 1) {
+export async function extractOrderVideoThumbnail(orderId, videoFilename, timeInSeconds = 1) {
   const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, videoFilename);
   
   if (!fs.existsSync(videoPath)) {
@@ -115,10 +115,3 @@ async function extractOrderVideoThumbnail(orderId, videoFilename, timeInSeconds 
     thumbnailFilename
   };
 }
-
-module.exports = {
-  extractThumbnail,
-  getVideoDuration,
-  extractOrderVideoThumbnail
-};
-

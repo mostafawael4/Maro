@@ -1,7 +1,7 @@
 import { MulterError } from "multer";
 
 // Custom error handling middleware for Multer errors
-const handleMulterErrors = (error, req, res, next) => {
+export const handleMulterErrors = (error, req, res, next) => {
   if (error instanceof MulterError) {
     switch (error.code) {
       case "LIMIT_FILE_SIZE":
@@ -21,8 +21,4 @@ const handleMulterErrors = (error, req, res, next) => {
     }
   }
   next(error); // Pass any other errors to the next middleware function
-};
-
-export default {
-  handleMulterErrors,
 };

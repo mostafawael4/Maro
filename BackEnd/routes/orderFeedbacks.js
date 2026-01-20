@@ -1,8 +1,8 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../models/order");
-const { requireAdminAuth } = require("../middleware/auth");
-const logger = require("../utils/logger");
+import Order from "../models/order.js";
+import { requireAdminAuth } from "../middleware/auth.js";
+import logger from "../utils/logger.js";
 
 // POST /orders/:orderId/feedback - Add feedback for an order by its id (public)
 router.post("/:orderId/feedback", async (req, res) => {
@@ -154,4 +154,4 @@ router.delete("/:orderId", requireAdminAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,10 +1,10 @@
-const Credentials = require('../config/Credentials');
-const { extractOrderVideoThumbnail, getVideoDuration } = require('./videoThumbnail.service');
-const Order = require('../models/order'); // Adjust as needed
-const path = require('path');
-const fs = require('fs');
+import Credentials from '../config/Credentials.js';
+import { extractOrderVideoThumbnail, getVideoDuration } from './videoThumbnail.service.js';
+import Order from '../models/order.js'; // Adjust as needed
+import path from 'path';
+import fs from 'fs';
 
-async function getVideoDurationService(orderId, filename) {
+export async function getVideoDurationService(orderId, filename) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -19,7 +19,7 @@ async function getVideoDurationService(orderId, filename) {
   return await getVideoDuration(videoPath);
 }
 
-async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
+export async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -30,8 +30,8 @@ async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
 }
 
 // Service to extract a thumbnail for films (not order videos)
-const Film = require('../models/Film');
-const { extractThumbnail } = require('./videoThumbnail.service'); // you must have this utility for generic videos
+import Film from '../models/Film.js';
+import { extractThumbnail } from './videoThumbnail.service.js'; // you must have this utility for generic videos
 
 /**
  * Extracts and saves a thumbnail for a given film.
@@ -40,7 +40,7 @@ const { extractThumbnail } = require('./videoThumbnail.service'); // you must ha
  * @param {number} timeInSeconds - The time in seconds to extract the thumbnail (default: 1).
  * @returns {Promise<{ thumbnailUrl: string, thumbnailFilename: string }>}
  */
-async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
+export async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
   // Lookup film
   const film = await Film.findById(filmId);
   if (!film) throw new Error('Film not found');
@@ -77,9 +77,3 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
   };
 }
 
-
-module.exports = {
-  getVideoDurationService,
-  extractThumbnailService,
-  extractThumbnailForFilmsService
-};

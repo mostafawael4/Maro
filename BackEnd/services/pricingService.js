@@ -1,4 +1,4 @@
-const Packages = require("../models/Package.js");
+import Packages from "../models/Package.js";
 
 
 const parsePriceValue = (price) => {
@@ -222,8 +222,4 @@ const normalizePricingSelections = async (pricingInput = {}) => {
   return normalized;
 }
 
-module.exports = {
-  normalizePricingSelections,
-  // and, if desired, export helpers for testing:
-  // fetchPackagesMaps, resolvePackage, appendPackage, processPackages, processCollections, processExtras, handlePromoCode, computeTotals, hasPricingNumbers
-};
+export { normalizePricingSelections };

@@ -1,18 +1,22 @@
-const express = require("express");
-const cors = require("cors");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const bodyParser = require("body-parser");
-const path = require("path");
-const fs = require("fs");
-const logger = require("./utils/logger");
-const morgan = require("morgan");
+import express from "express";
+import cors from "cors";
+import session from "express-session";
+import MongoStore from "connect-mongo";
+import bodyParser from "body-parser";
+import path from "path";
+import fs from "fs";
+import morgan from "morgan";
 
-const connectDB = require("./config/db");
+import connectDB from "./config/db.js";
 
-const Credentials = require("./config/Credentials.js");
+import Credentials from "./config/Credentials.js";
 
-const allRoutes = require("./routes/routes");
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import allRoutes from "./routes/routes.js";
+import roleInjector from "./middleware/roleInjector.js";
 
 (async () => {
   try {
@@ -62,7 +66,7 @@ const allRoutes = require("./routes/routes");
     );
 
     // Role injector - attaches session role info to API JSON responses
-    app.use(require("./middleware/roleInjector"));
+    app.use(roleInjector);
 
     // routes
     app.use("/", allRoutes);
@@ -77,7 +81,7 @@ const allRoutes = require("./routes/routes");
     );
 
     app.listen(Credentials.PORT, () => {
-      logger.info(`Server listening on http://localhost:${Credentials.PORT}`);
+      console.log(`Server listening on http://localhost:${Credentials.PORT}`);
     });
   } catch (err) {
     console.error("Startup error:", err);

@@ -1,5 +1,5 @@
 // Injects req.session.isAdmin/isEditor into every JSON response (if session exists)
-module.exports = function roleInjector(req, res, next) {
+export default function roleInjector(req, res, next) {
   const oldJson = res.json;
   res.json = function (body) {
     if (req.session) {

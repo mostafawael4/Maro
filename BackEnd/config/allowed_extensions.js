@@ -1,0 +1,14 @@
+export default {
+  "images":[
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/avif"
+  ],
+  "videos":[
+    "video/mp4",
+    "video/quicktime",
+    "video/x-matroska",
+    "video/mov"
+  ]
+}

@@ -1,7 +1,7 @@
-const path = require("path");
-const logger = require("../utils/logger");
-const Order = require('../models/order');
-const { deleteFileByPath, deleteFolderByPath } = require("../utils/fileProccess");
+import path from "path";
+import logger from "../utils/logger.js";
+import Order from '../models/order.js';
+import { deleteFileByPath, deleteFolderByPath } from "../utils/fileProccess.js";
 const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
 
 /**
@@ -71,7 +71,7 @@ const deleteOrderFileByFileName = async (orderId, filename) => {
 };
 
 
-module.exports = {
+export {
   getOrderFilesPaths,
   deleteOrderfolder,
   deleteOrderFileByFileName

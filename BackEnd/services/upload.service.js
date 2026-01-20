@@ -1,7 +1,7 @@
-const fs = require("fs");
-const path = require("path");
-const Credential = require("../config/Credentials");
-const logger = require("../utils/logger");
+import fs from "fs";
+import path from "path";
+import Credential from "../config/Credentials.js";
+import logger from "../utils/logger.js";
 const UPLOAD_DIR_ORDERS = Credential.UPLOAD_DIR_ORDERS;
 const UPLOAD_DIR_GALLERY = Credential.UPLOAD_DIR_GALLERY;
 const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS;
@@ -173,7 +173,7 @@ const deleteOrderFile = (orderId, filename, options = {}) => {
   return false;
 }
 
-module.exports = {
+export default {
   ensureUploadDir,
   saveFile,
   listOrderFiles,

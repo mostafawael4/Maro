@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const gallerySchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -6,4 +6,4 @@ const gallerySchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Gallery', gallerySchema);
+export default mongoose.model('Gallery', gallerySchema);

@@ -1,18 +1,18 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../../models/order.js");
-const { normalizePricingSelections } = require('../../services/pricingService');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
-const { uploadMediaFiles } = require('../../services/orderMediaService');
-const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
-const multer = require("multer");
-const allowedExtensions = require("../../config/allowed_extensions.json");
-const logger = require("../../utils/logger.js");
-const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials = require('../../config/Credentials.js')
-const b2 = require("../../services/b2.service.js")
-const fs = require("fs");
+import Order from "../../models/order.js";
+import { normalizePricingSelections } from '../../services/pricingService.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../../middleware/auth.js";
+import { uploadMediaFiles } from '../../services/orderMediaService.js';
+import { getVideoDurationService, extractThumbnailService } from '../../services/videoService.js';
+import multer from "multer";
+import allowedExtensions from "../../config/allowed_extensions.js";
+import logger from "../../utils/logger.js";
+import { handleMulterErrors } from "../../middleware/upload.js";
+import * as orderService from "../../services/order.service.js";
+import Credentials from '../../config/Credentials.js'
+import b2 from "../../services/b2.service.js"
+import fs from "fs";
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -321,7 +321,7 @@ router.delete("/:orderId", requireAdminAuth,
       
       // Use deleteOrderFiles service to remove folder
       try {
-        await deleteOrderfolder(orderId);
+        await orderService.deleteOrderfolder(orderId);
       } catch (deleteErr) {
         logger.error(`Error deleting order files for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
         return res.status(500).json({ ok: false, message: "Failed to delete order files", error: deleteErr.message || deleteErr });
@@ -358,7 +358,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       // use getOrderFilesPaths to get all files for the order
       let filePaths;
       try {
-        filePaths = await getOrderFilesPaths(orderId);
+        filePaths = await orderService.getOrderFilesPaths(orderId);
       } catch (error) {
         logger.error(`Error getting order file paths for orderId ${orderId}: ${error.stack || error.message || error}`);
         return res.status(500).json({ ok: false, message: "Failed to fetch order file paths", error: error.message || error });
@@ -375,7 +375,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       const failedDeletions = [];
       for (const filename of filenames) {
         try {
-          await deleteOrderFileByFileName(orderId, filename);
+          await orderService.deleteOrderFileByFileName(orderId, filename);
         } catch (deleteErr) {
           logger.error(`Error deleting file ${filename} for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
           failedDeletions.push({ filename, error: deleteErr.message || deleteErr });
@@ -504,10 +504,10 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
-const orderFolderRoutes = require('./orderFolders');
+import orderFolderRoutes from './orderFolders.js';
 router.use("/folders", orderFolderRoutes);
 
-const emails = require('./emails');
+import emails from './emails.js';
 router.use("/emails", emails);
 
-module.exports = router;
+export default router;

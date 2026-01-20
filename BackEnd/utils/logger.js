@@ -1,8 +1,12 @@
-require('dotenv').config();
-const { createLogger, format, transports } = require('winston');
-const { combine, timestamp, printf, colorize, align  } = format;
-const DailyRotateFile = require('winston-daily-rotate-file');
-const path = require('path');
+import dotenv from 'dotenv';
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import path from 'path';
+
+dotenv.config();
+
+const { createLogger, format, transports } = winston;
+const { combine, timestamp, printf, colorize, align } = format;
 
 const LOG_DIR = process.env.LOG_DIR || './logs';
 
@@ -10,8 +14,11 @@ const logFormat = printf(({ level, message, timestamp }) => {
   return `${timestamp} ${level}: ${message}`;
 });
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const logger = createLogger({
     level: 'info',
+    silent: !isDevelopment, // Only log in development
     format: combine(
         colorize(),
         timestamp({ format: 'YYYY-MM-DD HH:mm:ss Z' }),
@@ -45,4 +52,4 @@ const logger = createLogger({
     ]
 });
 
-module.exports = logger
+export default logger;

@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const Feedbacks = require('../models/Feedbacks');
-const Order = require('../models/order');
+import Feedbacks from '../models/Feedbacks.js';
+import Order from '../models/order.js';
 
 // Create a new feedback
 router.post('/', async (req, res) => {
@@ -62,4 +62,4 @@ router.get('/all', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

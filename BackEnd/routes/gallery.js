@@ -1,14 +1,14 @@
-const express = require("express");
-const multer = require("multer");
-const Gallery = require("../models/Gallery");
+import express from "express";
+import multer from "multer";
+import Gallery from "../models/Gallery.js";
 const router = express.Router();
-const path  = require("path");
-const Credential = require("../config/Credentials")
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { deleteFileByPath } = require("../utils/fileProccess");
+import path  from "path";
+import Credential from "../config/Credentials.js"
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import { deleteFileByPath } from "../utils/fileProccess.js";
 
 // Upload image to gallery
 
@@ -145,4 +145,4 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

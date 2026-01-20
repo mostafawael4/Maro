@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const Admin = require('../models/admin');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import bcrypt from 'bcryptjs';
+import Admin from '../models/admin.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import Credentials  from '../config/Credentials.js';
 
 // POST /admin/setup
 // Creates admin and editor users if neither exist.
@@ -194,4 +194,4 @@ router.post('/change-password', requireAdminOrEditorAuth, async (req, res) => {
 
 
 
-module.exports = router;
+export default router;

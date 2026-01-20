@@ -1,16 +1,16 @@
-const express = require("express");
-const multer = require("multer");
-const Film = require("../models/Film");
+import express from "express";
+import multer from "multer";
+import Film from "../models/Film.js";
 const router = express.Router();
-const Credential = require("../config/Credentials")
-const path  = require("path");
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../middleware/auth.js");
-const { deleteFileByPath } = require("../utils/fileProccess");
-const { extractThumbnailForFilmsService } = require('../services/videoService');
+import Credential from "../config/Credentials.js"
+import path  from "path";
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
+import { deleteFileByPath } from "../utils/fileProccess.js";
+import { extractThumbnailForFilmsService } from '../services/videoService.js';
 
 // Upload video with description
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
@@ -195,4 +195,4 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 });
 
 
-module.exports = router;
+export default router;

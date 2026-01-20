@@ -1,8 +1,8 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { sendMail } = require("../services/emailService.js");
-const Credentials  = require('../config/Credentials.js');
-const logger = require("../utils/logger.js");
+import {sendMail} from "../services/emailService.js";
+import Credentials  from '../config/Credentials.js';
+import logger from "../utils/logger.js";
 
 router.post("/", async (req, res) => {
   // Log incoming POST request to the contact form route
@@ -63,4 +63,4 @@ router.post("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
