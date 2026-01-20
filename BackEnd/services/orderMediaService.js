@@ -36,15 +36,24 @@ async function uploadMediaFiles(orderId, files, foldername) {
 
   // Save each file using the uploadService
   const fileObjs = await Promise.all(filesToUpload.map(async (f) => {
+    // Already awaited - uploadService.saveFile() is async
+    // On Firebase: Returns full B2 URL (e.g., "https://fxxx.s3.us-west-000.backblazeb2.com/orders/123/file.jpg")
+    // On local dev: Returns relative path (e.g., "/uploads/orders/123/file.jpg")
     const url = await uploadService.saveFile(orderId, f.buffer, f.originalname, {
       isGallery: false,
       isFilm: false,
     });
+    
+    // Extract filename from URL (works for both B2 URLs and relative paths)
+    // B2 URL: "https://fxxx.s3.us-west-000.backblazeb2.com/orders/123/order-123456.jpg" -> "order-123456.jpg"
+    // Relative path: "/uploads/orders/123/order-123456.jpg" -> "order-123456.jpg"
+    const filename = url.split('/').pop();
+    
     const fileObj = {
       foldername: foldername || null,
-      filename: url.split('/').pop(),
+      filename, // Filename extracted from URL
       originalName: f.originalname,
-      url,
+      url, // Full URL (B2 URL on Firebase, relative path on local)
       uploadedAt: new Date(),
     };
 
@@ -52,6 +61,9 @@ async function uploadMediaFiles(orderId, files, foldername) {
     const isVideo = allowedExtensions.videos.includes(f.mimetype);
     if (isVideo) {
       try {
+        // extractOrderVideoThumbnail uses filename to construct the path
+        // On Firebase: Uses filename to construct B2 path "orders/{orderId}/{filename}"
+        // On local dev: Uses filename to find file in local filesystem
         const thumbnailResult = await extractOrderVideoThumbnail(orderId, fileObj.filename, 1);
         fileObj.thumbnail = thumbnailResult.thumbnailUrl;
         fileObj.thumbnailFilename = thumbnailResult.thumbnailFilename;
