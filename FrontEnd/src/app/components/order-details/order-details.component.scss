@@ -1,5 +1,5 @@
 .order-details-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%);
+  background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 40px 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -11,16 +11,16 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.25rem;
-  background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
-  color: white;
-  border: none;
+  background: rgba(26, 1, 5, 0.6);
+  color: #fdf9f2;
+  border: 1px solid rgba(255, 218, 185, 0.3);
   border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(107, 31, 31, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 58, 58, 0.1);
 
   svg {
     transition: transform 0.3s ease;
@@ -28,8 +28,10 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(107, 31, 31, 0.3);
-    
+    box-shadow: 0 6px 16px rgba(139, 58, 58, 0.2);
+    background: rgba(255, 218, 185, 0.05);
+    border-color: rgba(255, 218, 185, 0.5);
+
     svg {
       transform: translateX(-3px);
     }
@@ -52,14 +54,14 @@
     width: 50px;
     height: 50px;
     border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top: 4px solid #8B3A3A;
+    border-top: 4px solid #ffdab9;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   p {
     margin-top: 20px;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 
@@ -67,7 +69,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid rgba(139, 58, 58, 0.1);
-  border-top: 4px solid #8B3A3A;
+  border-top: 4px solid #ffdab9;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -79,8 +81,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Error State
@@ -141,6 +148,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -155,11 +163,11 @@
 
 // Order Header
 .order-header {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 250, 245, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 16px;
   padding: 2.5rem;
   margin-bottom: 3rem;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
 
   @media (max-width: 768px) {
@@ -174,7 +182,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.5rem;
     letter-spacing: 1px;
 
@@ -184,7 +192,7 @@
   }
 
   .client-email {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 1.05rem;
     margin-bottom: 1rem;
   }
@@ -211,7 +219,7 @@
 
   .meta-label {
     font-size: 0.85rem;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -219,7 +227,7 @@
 
   .meta-value {
     font-size: 1.05rem;
-    color: #333;
+    color: #fdf9f2;
     font-weight: 500;
   }
 
@@ -327,9 +335,9 @@
 }
 
 .folders-section {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 16px;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
   padding: 2rem;
   margin-bottom: 3rem;
@@ -345,13 +353,13 @@
   h2 {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.8rem;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.25rem;
   }
 
   p {
     margin: 0;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 
@@ -360,7 +368,7 @@
   border-radius: 999px;
   background: rgba(107, 31, 31, 0.1);
   border: 2px solid rgba(107, 31, 31, 0.2);
-  color: #8B3A3A;
+  color: #ffdab9;
   font-weight: 600;
   font-size: 0.85rem;
 }
@@ -375,7 +383,7 @@
 .folder-card {
   border: 2px solid rgba(107, 31, 31, 0.15);
   border-radius: 14px;
-  background: white;
+  background: rgba(26, 1, 5, 0.6);
   padding: 1.25rem;
   text-align: left;
   cursor: pointer;
@@ -392,7 +400,7 @@
   }
 
   &.active {
-    border-color: #8B3A3A;
+    border-color: #ffdab9;
     box-shadow: 0 10px 24px rgba(107, 31, 31, 0.2);
     background: linear-gradient(135deg, rgba(107, 31, 31, 0.05), rgba(139, 58, 58, 0.05));
   }
@@ -405,13 +413,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8B3A3A;
+    color: #ffdab9;
   }
 
   .folder-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #8B3A3A;
+    color: #ffdab9;
     text-transform: capitalize;
   }
 
@@ -419,12 +427,12 @@
     display: flex;
     align-items: baseline;
     gap: 0.25rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
 
     span {
       font-size: 1.4rem;
       font-weight: 600;
-      color: #333;
+      color: #e0e0e0;
     }
 
     small {
@@ -444,7 +452,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.9);
 
   &.error {
     border-color: rgba(220, 38, 38, 0.3);
@@ -455,10 +463,10 @@
   &.empty {
     flex-direction: column;
     text-align: center;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
 
     svg {
-      color: #8B3A3A;
+      color: #ffdab9;
     }
   }
 }
@@ -485,7 +493,7 @@
 
       &.completed {
         background: rgba(107, 31, 31, 0.1);
-        color: #8B3A3A;
+        color: #ffdab9;
         border: 2px solid rgba(107, 31, 31, 0.2);
       }
 
@@ -510,7 +518,7 @@
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
-  color: #8B3A3A;
+  color: #ffdab9;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -553,14 +561,14 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         font-size: 2rem;
         font-weight: 400;
-        color: #8B3A3A;
+        color: #ffdab9;
         margin: 0;
         letter-spacing: 1px;
       }
 
       .folder-subtitle {
         margin: 0.35rem 0 0;
-        color: rgba(0, 0, 0, 0.5);
+        color: rgba(255, 255, 255, 0.6);
         font-size: 0.9rem;
       }
 
@@ -646,7 +654,7 @@
     object-fit: cover;
     background: #000;
     cursor: pointer;
-    
+
     &::-webkit-media-controls-panel {
       background-color: rgba(0, 0, 0, 0.7);
     }
@@ -869,4 +877,3 @@
     max-width: 500px;
   }
 }
-

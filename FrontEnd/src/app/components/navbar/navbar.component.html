@@ -1,352 +1,246 @@
-<nav class="navbar-cinematic fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b shadow-sm" style="border-bottom-color: rgba(200, 155, 123, 0.15);" [ngStyle]="{ 'background-color': navbarBgColor }">
+<nav class="navbar-cinematic fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b shadow-sm"
+  style="border-bottom-color: rgba(200, 155, 123, 0.15);" [ngStyle]="{ 'background-color': navbarBgColor }">
   <div class="container mx-auto px-4 lg:px-6 ">
     <div class="flex items-center justify-between h-20 lg:h-24">
-      
+
       <!-- Logo Section (image only) -->
       <div class="flex items-center mt-2">
-        <img 
-          src="assets/images/maroLogo.avif" 
-          alt="Maro Weddings Logo" 
-          class="w-[141px] object-contain navbar-logo-img"
-        />
+        <img src="assets/images/maroLogo.avif" alt="Maro Weddings Logo"
+          class="w-[141px] object-contain navbar-logo-img" />
       </div>
 
       <!-- Desktop Navigation Menu -->
       <div class="hidden lg:flex items-center space-x-6 custom-links">
         <!-- Dashboard/Calendar Dropdown -->
-        <div 
-          *ngIf="isAuthenticated"
-          class="relative dropdown-container"
-          (mouseenter)="openDropdown()"
-          (mouseleave)="closeDropdown()"
-        >
-          <a 
-            class="nav-link-desktop dropdown-trigger"
-            [class.active]="router.url.includes('/dashboard') || router.url.includes('/calendar')"
-          >
+        <div *ngIf="isAuthenticated" class="relative dropdown-container" (mouseenter)="openDropdown()"
+          (mouseleave)="closeDropdown()">
+          <a class="nav-link-desktop dropdown-trigger"
+            [class.active]="router.url.includes('/dashboard') || router.url.includes('/calendar')">
             Admin Control
             <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </a>
-          <div 
-            class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[160px] z-50"
-            style="background-color: rgba(255, 250, 245, 0.98); border: 1px solid rgba(200, 155, 123, 0.2); margin-top: 4px;"
-          >
-            <a 
-              *ngIf="isAdmin"
-              routerLink="/dashboard" 
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{exact: false}"
-              class="nav-link-desktop dropdown-item block px-4 py-2"
-            >
+          <div class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[160px] z-50"
+            style="background-color: rgba(26, 1, 5, 0.98); border: 1px solid rgba(255, 218, 185, 0.2); margin-top: 4px;">
+            <a *ngIf="isAdmin" routerLink="/dashboard" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}" class="nav-link-desktop dropdown-item block px-4 py-2">
               Dashboard
             </a>
-            <a 
-              routerLink="/calendar" 
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{exact: false}"
-              class="nav-link-desktop dropdown-item block px-4 py-2"
-            >
+            <a routerLink="/calendar" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2">
               Calendar
+            </a>
+            <a *ngIf="isAdmin || isEditor" routerLink="/change-password" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: false}" class="nav-link-desktop dropdown-item block px-4 py-2">
+              Change Password
             </a>
           </div>
         </div>
-        <a 
-          routerLink="/" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: true}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link-desktop">
           Home
         </a>
-        <a 
-          routerLink="/packages" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/packages" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-desktop">
           Packages
         </a>
         <!-- Photography and Films Dropdown -->
-        <div 
-          class="relative dropdown-container"
-          (mouseenter)="openGalleryDropdown()"
-          (mouseleave)="closeGalleryDropdown()"
-        >
-          <a 
-            class="nav-link-desktop dropdown-trigger"
-            [class.active]="router.url.includes('/gallery') || router.url.includes('/films')"
-          >
+        <div class="relative dropdown-container" (mouseenter)="openGalleryDropdown()"
+          (mouseleave)="closeGalleryDropdown()">
+          <a class="nav-link-desktop dropdown-trigger"
+            [class.active]="router.url.includes('/gallery') || router.url.includes('/films')">
             Gallery
             <svg class="inline-block ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </a>
-          <div 
-            class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[180px] z-50"
-            style="background-color: rgba(255, 250, 245, 0.98); border: 1px solid rgba(200, 155, 123, 0.2); margin-top: 4px;"
-          >
-            <a 
-              routerLink="/gallery" 
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{exact: false}"
-              class="nav-link-desktop dropdown-item block px-4 py-2"
-            >
+          <div class="dropdown-menu absolute top-full left-0 bg-white rounded-lg shadow-lg py-2 min-w-[180px] z-50"
+            style="background-color: rgba(26, 1, 5, 0.98); border: 1px solid rgba(255, 218, 185, 0.2); margin-top: 4px;">
+            <a routerLink="/gallery" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2">
               Photography
             </a>
-            <a 
-              routerLink="/films" 
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{exact: false}"
-              class="nav-link-desktop dropdown-item block px-4 py-2"
-            >
+            <a routerLink="/films" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+              class="nav-link-desktop dropdown-item block px-4 py-2">
               Films
             </a>
           </div>
         </div>
-        <a 
-          routerLink="/faqs" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/faqs" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-desktop">
           FAQs
         </a>
-        <a 
-          routerLink="/orders" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/orders" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-desktop">
           Events
         </a>
-        <a 
-          routerLink="/feedbacks" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/feedbacks" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-desktop">
           Feedbacks
         </a>
-        <a 
-          routerLink="/contact" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-desktop"
-        >
+        <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-desktop">
           Contact Us
         </a>
-        <button 
-          *ngIf="isAuthenticated"
-          (click)="onLogout()"
+        <button *ngIf="isAuthenticated" (click)="onLogout()"
           class="nav-link-desktop logout-btn-desktop px-4 py-2 rounded-lg transition-all duration-200"
-          style="background-color: rgba(200, 155, 123, 0.1); border: 1px solid rgba(200, 155, 123, 0.3);"
-        >
+          style="background-color: rgba(200, 155, 123, 0.1); border: 1px solid rgba(200, 155, 123, 0.3);">
           Logout
         </button>
       </div>
 
       <!-- Mobile Menu Button -->
-      <button 
-        class="lg:hidden p-2 rounded-lg transition-colors duration-200"
-        style="color: #333333;"
-        (click)="toggleMobileMenu()"
-        [attr.aria-expanded]="isMobileMenuOpen"
-        aria-label="Toggle mobile menu"
-      >
-        <svg 
-          class="h-6 w-6 transition-transform duration-200"
-          [class.rotate-90]="isMobileMenuOpen"
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            stroke-width="2" 
-            [attr.d]="isMobileMenuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'"
-          />
+      <button class="lg:hidden p-2 rounded-lg transition-colors duration-200" style="color: #fdf9f2;"
+        (click)="toggleMobileMenu()" [attr.aria-expanded]="isMobileMenuOpen" aria-label="Toggle mobile menu">
+        <svg class="h-6 w-6 transition-transform duration-200" [class.rotate-90]="isMobileMenuOpen" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            [attr.d]="isMobileMenuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'" />
         </svg>
       </button>
     </div>
 
     <!-- Mobile Navigation Menu -->
-    <div 
-      class="lg:hidden transition-all duration-300 ease-in-out"
-      [class.max-h-0]="!isMobileMenuOpen"
-      [class.overflow-hidden]="!isMobileMenuOpen"
-      [class.overflow-y-auto]="isMobileMenuOpen"
-      [class.max-h-[calc(100vh-5rem)]]="isMobileMenuOpen"
-    >
+    <div class="lg:hidden transition-all duration-300 ease-in-out" [class.max-h-0]="!isMobileMenuOpen"
+      [class.overflow-hidden]="!isMobileMenuOpen" [class.overflow-y-auto]="isMobileMenuOpen"
+      [class.max-h-[calc(100vh-5rem)]]="isMobileMenuOpen">
       <div class="py-4 space-y-2 border-t" style="border-top-color: rgba(200, 155, 123, 0.15);">
-        <a 
-          routerLink="/" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: true}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             Home
           </span>
         </a>
-        
-        <a 
-          routerLink="/packages" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/packages" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             Packages
           </span>
         </a>
-        
-        <a 
-          routerLink="/gallery" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/gallery" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             Photography
           </span>
         </a>
-        
-        <a 
-          routerLink="/films" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/films" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
             Films
           </span>
         </a>
-        
-        <a 
-          *ngIf="isAuthenticated"
-          routerLink="/calendar" 
-          routerLinkActive="active"
+
+        <a *ngIf="isAuthenticated" routerLink="/calendar" routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a3 3 0 013-3h2a3 3 0 013 3v2m4 4H4m16 0v8a3 3 0 01-3 3H7a3 3 0 01-3-3v-8m16 0V9a3 3 0 00-3-3H7a3 3 0 00-3 3v2" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V5a3 3 0 013-3h2a3 3 0 013 3v2m4 4H4m16 0v8a3 3 0 01-3 3H7a3 3 0 01-3-3v-8m16 0V9a3 3 0 00-3-3H7a3 3 0 00-3 3v2" />
             </svg>
             Calendar
           </span>
         </a>
-        
-        <a 
-          routerLink="/faqs" 
-          routerLinkActive="active"
+
+        <a *ngIf="isAuthenticated && (isAdmin || isEditor)" routerLink="/change-password" routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 2c-2.21 0-4 1.343-4 3v2h8v-2c0-1.657-1.79-3-4-3z" />
+            </svg>
+            Change Password
+          </span>
+        </a>
+
+        <a routerLink="/faqs" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
+          <span class="flex items-center">
+            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             FAQs
           </span>
         </a>
-        
-        <a 
-          *ngIf="isAuthenticated && isAdmin"
-          routerLink="/dashboard" 
-          routerLinkActive="active"
+
+        <a *ngIf="isAuthenticated && isAdmin" routerLink="/dashboard" routerLinkActive="active"
           [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             Dashboard
           </span>
         </a>
-        
-        <a 
-          routerLink="/orders" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/orders" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Events
           </span>
         </a>
-        
-        <a 
-          routerLink="/feedbacks" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/feedbacks" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             Feedbacks
           </span>
         </a>
-        
-        <a 
-          routerLink="/contact" 
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{exact: false}"
-          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200"
-          (click)="closeMobileMenu()"
-        >
+
+        <a routerLink="/contact" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"
+          class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200" (click)="closeMobileMenu()">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Contact Us
           </span>
         </a>
-        
-        <button 
-          *ngIf="isAuthenticated"
-          (click)="onLogout()"
+
+        <button *ngIf="isAuthenticated" (click)="onLogout()"
           class="nav-link-mobile block px-4 py-3 rounded-lg transition-all duration-200 w-full text-left"
-          style="background-color: rgba(200, 155, 123, 0.1); border: 1px solid rgba(200, 155, 123, 0.3);"
-        >
+          style="background-color: rgba(200, 155, 123, 0.1); border: 1px solid rgba(200, 155, 123, 0.3);">
           <span class="flex items-center">
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
           </span>
         </button>
-        
+
       </div>
     </div>
   </div>

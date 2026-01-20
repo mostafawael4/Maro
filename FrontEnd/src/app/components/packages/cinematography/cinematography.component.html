@@ -4,18 +4,15 @@
     <div class="header-decoration"></div>
     <h2 class="section-title">{{ fullPackageData?.displayName || 'Cinematography Packages' }}</h2>
     <p class="section-subtitle">
-      Your love story deserves to be told with cinematic elegance. 
+      Your love story deserves to be told with cinematic elegance.
       Choose the perfect package to capture every precious moment.
     </p>
     <div class="header-decoration"></div>
-    
+
     <!-- Edit Package Button (Admin Only) -->
-    <button 
-      *ngIf="isAuthenticated && isAdmin && fullPackageData" 
-      class="edit-package-btn"
-      (click)="openEditModal()"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button *ngIf="isAuthenticated && isAdmin && fullPackageData" class="edit-package-btn" (click)="openEditModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
       </svg>
@@ -37,14 +34,8 @@
   <!-- Packages Grid -->
   <div *ngIf="!isLoading && !errorMessage" class="packages-container">
     <div class="packages-grid">
-      <div 
-        *ngFor="let package of cinematographyPackages; let i = index" 
-        class="package-card"
-        [class.popular]="i === 0"
-        [class.animate-in]="isPackageVisible(i)"
-        [attr.data-index]="i"
-        [attr.data-type]="'package'"
-      >
+      <div *ngFor="let package of cinematographyPackages; let i = index" class="package-card"
+        [class.animate-in]="isPackageVisible(i)" [attr.data-index]="i" [attr.data-type]="'package'">
         <!-- Package Header -->
         <div class="package-header">
           <h3 class="package-name">{{ package.collectionName }}</h3>
@@ -70,26 +61,16 @@
   <div *ngIf="!isLoading && !errorMessage && extras && extras.length > 0" class="extras-section">
     <h3 class="extras-title">Extras</h3>
     <div class="extras-grid">
-      <div 
-        *ngFor="let extra of extras; let i = index" 
-        class="extra-card"
-        [class.animate-in]="isExtraVisible(i)"
-        [attr.data-index]="i"
-        [attr.data-type]="'extra'"
-      >
+      <div *ngFor="let extra of extras; let i = index" class="extra-card" [class.animate-in]="isExtraVisible(i)"
+        [attr.data-index]="i" [attr.data-type]="'extra'">
         <div class="extra-name">{{ extra.name }}</div>
         <div class="extra-price">{{ extra.price }}</div>
       </div>
     </div>
   </div>
-  
+
   <!-- Edit Package Modal -->
-  <app-edit-package-modal
-    *ngIf="fullPackageData"
-    [package]="fullPackageData"
-    [show]="showEditModal"
-    (close)="closeEditModal()"
-    (saved)="onPackageSaved()">
+  <app-edit-package-modal *ngIf="fullPackageData" [package]="fullPackageData" [show]="showEditModal"
+    (close)="closeEditModal()" (saved)="onPackageSaved()">
   </app-edit-package-modal>
 </section>
-

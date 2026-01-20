@@ -6,6 +6,7 @@ import { OrdersService, OrderForm, OrderFormVendors, OrderFormFilmEditing, Order
 import { SuccessModalComponent } from '../success-modal/success-modal.component';
 import { PackagesService, Package, PackageCollection, PackageExtra } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
+import { CurrencyService } from '../../services/currency.service';
 
 @Component({
   selector: 'app-create-order',
@@ -42,9 +43,9 @@ export class CreateOrderComponent implements OnInit {
   depositError = '';
 
   private readonly PROMO_CODES: Record<string, number> = {
-    maro1000: 1000,
-    maro2000: 2000,
-    maro3000: 3000
+    sunset: 1000,
+    harmony: 2000,
+    celebration: 3000
   };
 
   // Event type options
@@ -69,7 +70,7 @@ export class CreateOrderComponent implements OnInit {
 
   // Highlight preference categories
   highlightPreferenceCategories = ['Preparations/Getting ready', 'Group shots', 'Dancing/party shots'];
-  
+
   // Highlight preference options for each category
   highlightPreferenceOptions = ['Family', 'Friends', 'Equal amount of shots'];
 
@@ -91,7 +92,8 @@ export class CreateOrderComponent implements OnInit {
     private packagesService: PackagesService,
     private router: Router,
     private route: ActivatedRoute,
-    private authService: AuthService
+    private authService: AuthService,
+    public currencyService: CurrencyService
   ) {
     this.orderForm = this.createForm();
     this.updateVendorControlStates();
@@ -350,7 +352,12 @@ export class CreateOrderComponent implements OnInit {
     if (pricing?.collections?.length) {
       pricing.collections.forEach(collection => {
         if (collection.collectionId) {
-          this.selectedCollections.set(collection.collectionId, collection);
+          // Reformat priceLabel based on current location to ensure correct currency display
+          const formattedCollection = {
+            ...collection,
+            priceLabel: this.currencyService.formatCurrency(collection.priceValue)
+          };
+          this.selectedCollections.set(collection.collectionId, formattedCollection);
         }
       });
     }
@@ -358,14 +365,28 @@ export class CreateOrderComponent implements OnInit {
     if (pricing?.extras?.length) {
       pricing.extras.forEach(extra => {
         if (extra.extraId) {
-          this.selectedExtras.set(extra.extraId, extra);
+          // Reformat priceLabel based on current location to ensure correct currency display
+          const formattedExtra = {
+            ...extra,
+            priceLabel: this.currencyService.formatCurrency(extra.priceValue)
+          };
+          this.selectedExtras.set(extra.extraId, formattedExtra);
         }
       });
     }
 
     const pricingGroup = this.getPricingFormGroup();
     pricingGroup?.get('promoCode')?.setValue(pricing?.promoCode || '', { emitEvent: false });
-    pricingGroup?.get('depositPaid')?.setValue(pricing?.depositPaid ?? 0, { emitEvent: false });
+
+    // Convert deposit from EGP to USD for display if outside Egypt
+    let depositForDisplay = pricing?.depositPaid ?? 0;
+    if (!this.currencyService.isInEgyptValue && depositForDisplay > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositForDisplay = Math.round(depositForDisplay / rate);
+      }
+    }
+    pricingGroup?.get('depositPaid')?.setValue(depositForDisplay, { emitEvent: false });
 
     if (pricing) {
       this.pricingSummary = {
@@ -775,7 +796,7 @@ export class CreateOrderComponent implements OnInit {
     const discountValue = this.PROMO_CODES[normalizedCode];
     if (!discountValue) {
       this.appliedPromoCode = null;
-      this.promoError = 'Invalid promo code. Try maro1000, maro2000, or maro3000.';
+      this.promoError = 'Invalid promo code. Please check your code and try again.';
       this.promoSuccess = '';
       this.updatePricingSummary();
       return;
@@ -783,7 +804,7 @@ export class CreateOrderComponent implements OnInit {
 
     this.appliedPromoCode = normalizedCode;
     this.promoError = '';
-    this.promoSuccess = `Promo code applied! Discount: ${discountValue.toLocaleString()} EGP`;
+    this.promoSuccess = `Promo code applied! Discount: ${this.currencyService.formatCurrency(discountValue)}`;
     this.updatePricingSummary();
   }
 
@@ -813,26 +834,28 @@ export class CreateOrderComponent implements OnInit {
   }
 
   private buildCollectionSelection(pkg: Package, collection: PackageCollection): SelectedCollectionOption {
+    const priceValue = this.parsePriceValue(collection.price);
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       collectionId: collection._id,
       collectionName: collection.collectionName,
-      priceLabel: collection.price,
-      priceValue: this.parsePriceValue(collection.price)
+      priceLabel: this.currencyService.formatCurrency(priceValue),
+      priceValue: priceValue
     };
   }
 
   private buildExtraSelection(pkg: Package, extra: PackageExtra): SelectedExtraOption {
+    const priceValue = this.parsePriceValue(extra.price);
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       extraId: extra._id,
       extraName: extra.name,
-      priceLabel: extra.price,
-      priceValue: this.parsePriceValue(extra.price)
+      priceLabel: this.currencyService.formatCurrency(priceValue),
+      priceValue: priceValue
     };
   }
 
@@ -889,14 +912,38 @@ export class CreateOrderComponent implements OnInit {
       depositValue = 0;
       depositControl?.setValue(0, { emitEvent: false });
     }
-    if (depositValue > total) {
-      depositValue = total;
-      depositControl?.setValue(depositValue, { emitEvent: false });
+
+    // Convert deposit to EGP for comparison if outside Egypt
+    let depositInEGP = depositValue;
+    if (!this.currencyService.isInEgyptValue) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositInEGP = depositValue * rate;
+      }
+    }
+
+    // Compare against total (which is in EGP)
+    if (depositInEGP > total) {
+      // Set max allowed deposit based on location
+      if (this.currencyService.isInEgyptValue) {
+        // In Egypt: set to total (in EGP)
+        depositControl?.setValue(total, { emitEvent: false });
+        depositInEGP = total; // Use capped value for calculation
+      } else {
+        // Outside Egypt: convert total to USD for display
+        const rate = this.currencyService.currentExchangeRate;
+        if (rate > 0) {
+          const maxDepositUSD = Math.round(total / rate);
+          depositControl?.setValue(maxDepositUSD, { emitEvent: false });
+          depositInEGP = total; // Use capped value for calculation
+        }
+      }
       this.depositError = 'Deposit cannot exceed total amount.';
     } else {
       this.depositError = '';
     }
-    const remaining = total - depositValue;
+
+    const remaining = total - depositInEGP;
 
     this.pricingSummary = {
       subtotal,
@@ -997,10 +1044,62 @@ export class CreateOrderComponent implements OnInit {
     if (!depositControl) {
       return;
     }
-    let value = Number(depositControl.value || 0);
+
+    // Get raw value and sanitize it
+    let rawValue = depositControl.value;
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+      rawValue = 0;
+    }
+
+    // Convert to number, handling string inputs
+    let value = typeof rawValue === 'string'
+      ? parseFloat(rawValue.toString().replace(/[^\d.-]/g, ''))
+      : Number(rawValue);
+
+    // Validate and sanitize
     if (isNaN(value) || value < 0) {
       value = 0;
     }
+
+    // Round to whole number (no decimals for currency)
+    value = Math.round(value);
+
+    // Cap value to maximum before setting (prevent exceeding max)
+    // We need to calculate the max based on current total
+    const subtotal = [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
+      (sum, item) => sum + (item.priceValue || 0),
+      0
+    );
+    let discount = 0;
+    if (this.appliedPromoCode) {
+      discount = this.PROMO_CODES[this.appliedPromoCode] || 0;
+    }
+    if (discount > subtotal) {
+      discount = subtotal;
+    }
+    const total = subtotal - discount;
+
+    // Convert value to EGP for comparison
+    let valueInEGP = value;
+    if (!this.currencyService.isInEgyptValue) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        valueInEGP = value * rate;
+      }
+    }
+
+    // Cap to maximum
+    if (valueInEGP > total && total > 0) {
+      if (this.currencyService.isInEgyptValue) {
+        value = total;
+      } else {
+        const rate = this.currencyService.currentExchangeRate;
+        if (rate > 0) {
+          value = Math.round(total / rate);
+        }
+      }
+    }
+
     depositControl.setValue(value, { emitEvent: false });
     this.updatePricingSummary();
   }
@@ -1033,7 +1132,15 @@ export class CreateOrderComponent implements OnInit {
     }
 
     const pricingGroup = this.getPricingFormGroup();
-    const depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
+    let depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
+
+    // Convert USD to EGP if outside Egypt before saving
+    if (!this.currencyService.isInEgyptValue && depositPaid > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        depositPaid = Math.round(depositPaid * rate);
+      }
+    }
 
     if (depositPaid > 0) {
       pricing.depositPaid = depositPaid;
@@ -1093,7 +1200,7 @@ export class CreateOrderComponent implements OnInit {
       shootersStartTime: formValue.shootersStartTime || undefined,
       shootersEndTime: formValue.shootersEndTime || undefined,
       coupleDescription: formValue.coupleDescription || undefined,
-      moodBoardLinks: formValue.moodBoardLinks 
+      moodBoardLinks: formValue.moodBoardLinks
         ? formValue.moodBoardLinks.split(',').map((link: string) => link.trim()).filter((link: string) => link)
         : undefined,
       favoriteSongs: formValue.favoriteSongs && formValue.favoriteSongs.length > 0
@@ -1198,30 +1305,30 @@ export class CreateOrderComponent implements OnInit {
 
     // Handle includeAccessoriesShots - convert radio value to boolean if needed
     // Save if user selected 'yes' or 'no', but not if 'no-preference' or empty
-    if (filmEditing.includeAccessoriesShots && 
-        filmEditing.includeAccessoriesShots !== '' && 
-        filmEditing.includeAccessoriesShots !== 'no-preference' &&
-        (filmEditing.includeAccessoriesShots === 'yes' || filmEditing.includeAccessoriesShots === 'no')) {
+    if (filmEditing.includeAccessoriesShots &&
+      filmEditing.includeAccessoriesShots !== '' &&
+      filmEditing.includeAccessoriesShots !== 'no-preference' &&
+      (filmEditing.includeAccessoriesShots === 'yes' || filmEditing.includeAccessoriesShots === 'no')) {
       filmEditingObj.includeAccessoriesShots = filmEditing.includeAccessoriesShots === 'yes';
       hasData = true;
     }
-    
+
     if (filmEditing.editSequence && filmEditing.editSequence !== '' && filmEditing.editSequence !== 'no-preference') {
       filmEditingObj.editSequence = filmEditing.editSequence;
       hasData = true;
     }
-    
+
     if (filmEditing.stylePreference && filmEditing.stylePreference.length > 0) {
       filmEditingObj.stylePreference = filmEditing.stylePreference;
       hasData = true;
     }
-    
+
     // Handle highlight preference - convert from object to array format
     // Save all selections including 'equal' to show user made a choice
     if (filmEditing.highlightPreference) {
       const highlightArray: string[] = [];
       const prefs = filmEditing.highlightPreference;
-      
+
       // Convert the object structure to array format expected by backend
       // Include 'equal' selections as well to show the user made a choice
       if (prefs.preparations && prefs.preparations !== '') {
@@ -1245,13 +1352,13 @@ export class CreateOrderComponent implements OnInit {
           highlightArray.push(`Dancing/party: ${prefs.dancingParty}`);
         }
       }
-      
+
       if (highlightArray.length > 0) {
         filmEditingObj.highlightPreference = highlightArray;
         hasData = true;
       }
     }
-    
+
     if (filmEditing.teaserStyleLinks && filmEditing.teaserStyleLinks.length > 0) {
       const filtered = filmEditing.teaserStyleLinks.filter((l: string) => l);
       if (filtered.length > 0) {

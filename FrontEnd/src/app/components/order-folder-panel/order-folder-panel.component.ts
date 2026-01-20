@@ -17,6 +17,7 @@ export class OrderFolderPanelComponent {
 
   @Output() folderSelected = new EventEmitter<string>();
   @Output() folderDeleted = new EventEmitter<string>();
+  @Output() folderDownload = new EventEmitter<string>();
 
   onFolderClick(folder: string, event: Event): void {
     event.stopPropagation();
@@ -26,6 +27,11 @@ export class OrderFolderPanelComponent {
   onDeleteFolder(folder: string, event: Event): void {
     event.stopPropagation();
     this.folderDeleted.emit(folder);
+  }
+
+  onDownloadFolder(folder: string, event: Event): void {
+    event.stopPropagation();
+    this.folderDownload.emit(folder);
   }
 }
 

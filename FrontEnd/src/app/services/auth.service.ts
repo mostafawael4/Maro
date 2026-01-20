@@ -22,6 +22,8 @@ export class AuthService {
 
   private isAuthenticatedSubject = new BehaviorSubject<boolean | null>(null);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  private roleSubject = new BehaviorSubject<UserRole>(null);
+  public role$ = this.roleSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -81,6 +83,10 @@ export class AuthService {
     return this.currentRole;
   }
 
+  get roleSnapshot(): UserRole {
+    return this.roleSubject.value;
+  }
+
   handleSessionExpired(): void {
     this.currentRole = null;
     if (this.isAuthenticatedSubject.value !== false) {
@@ -116,6 +122,7 @@ export class AuthService {
     } else {
       this.currentRole = null;
     }
+    this.roleSubject.next(this.currentRole);
   }
 
   private markAuthenticated(session?: SessionInfo): void {
@@ -123,6 +130,17 @@ export class AuthService {
     if (this.isAuthenticatedSubject.value !== true) {
       this.isAuthenticatedSubject.next(true);
     }
+  }
+
+  changePassword(payload: { username: string; oldPassword: string; newPassword: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/change-password`, payload, { withCredentials: true })
+      .pipe(
+        tap((response: any) => {
+          if (response?.session) {
+            this.setRoleFromSession(response.session);
+          }
+        })
+      );
   }
 }
 

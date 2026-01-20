@@ -1,5 +1,5 @@
 .home-container {
-  background: linear-gradient(180deg, #FFFCF8 0%, #FFF9F2 50%, #FFFFFF 100%); // Light warm sunshine gradient
+  background: #580111; // Dark burgundy background
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Georgia', serif;
@@ -14,7 +14,7 @@
     font-family: 'Playfair Display', serif;
     font-size: 2.5rem;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach for dark background
     margin-bottom: 0.75rem;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -22,7 +22,7 @@
   }
 
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9); // Light text for dark background
     font-size: 1rem;
     font-style: italic;
     letter-spacing: 0.5px;
@@ -40,6 +40,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -89,15 +90,15 @@
   display: inline-block;
   width: 100%;
   background: transparent;
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(30px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.6s ease-out forwards;
-    
+
     // Stagger animation for each item
     @for $i from 1 through 20 {
       &:nth-child(#{$i}) {
@@ -130,6 +131,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -141,50 +143,50 @@
   max-width: 1200px;
   margin: 60px auto 50px;
   padding: 50px 40px;
-  background: linear-gradient(135deg, rgba(255, 252, 248, 0.95) 0%, rgba(255, 249, 242, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%); // Navbar color background
   border-radius: 15px;
   box-shadow: 0 8px 30px rgba(139, 58, 58, 0.08);
   opacity: 0;
   transform: translateY(50px);
   transition: opacity 1s ease-out, transform 1s ease-out;
-  
+
   &.animate-in {
     opacity: 1;
     transform: translateY(0);
   }
-  
+
   .story-container {
     max-width: 1000px;
     margin: 0 auto;
   }
-  
+
   .story-header {
     text-align: center;
     margin-bottom: 35px;
     opacity: 0;
     transform: translateY(30px);
     transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-    
+
     .story-title {
       font-family: 'Playfair Display', serif;
       font-size: 2em;
       font-weight: 700;
-      color: #8B3A3A;
+      color: #ffdab9; // Light peach
       margin-bottom: 15px;
       letter-spacing: 2px;
       text-transform: uppercase;
     }
-    
+
     .story-subtitle {
       font-family: 'Georgia', serif;
       font-size: 1.2em;
       font-weight: 400;
-      color: #333;
+      color: #fdf9f2; // Light cream
       letter-spacing: 1px;
       font-style: italic;
     }
   }
-  
+
   .story-content {
     .story-text {
       text-align: center;
@@ -192,29 +194,29 @@
       opacity: 0;
       transform: translateY(30px);
       transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s;
-      
+
       .story-intro {
         font-family: 'Georgia', serif;
         font-size: 1.1em;
         line-height: 1.8;
-        color: #8B3A3A;
+        color: #ffdab9; // Light peach
         font-weight: 600;
         margin-bottom: 20px;
         letter-spacing: 0.5px;
       }
-      
+
       .story-description {
         font-family: 'Georgia', serif;
         font-size: 1.05em;
         line-height: 1.8;
-        color: #555;
+        color: #e0e0e0; // Light gray
         margin-bottom: 18px;
         letter-spacing: 0.5px;
         text-align: justify;
         text-align-last: center;
       }
     }
-    
+
     .divider {
       text-align: center;
       position: relative;
@@ -222,7 +224,7 @@
       opacity: 0;
       transform: scale(0.9);
       transition: opacity 0.8s ease-out 0.4s, transform 0.8s ease-out 0.4s;
-      
+
       &::before,
       &::after {
         content: '';
@@ -230,29 +232,29 @@
         top: 50%;
         width: 35%;
         height: 1px;
-        background: linear-gradient(90deg, transparent, #8B3A3A, transparent);
+        background: linear-gradient(90deg, transparent, #ffdab9, transparent);
       }
-      
+
       &::before {
         left: 0;
       }
-      
+
       &::after {
         right: 0;
       }
-      
+
       .divider-text {
         font-family: 'Playfair Display', serif;
         font-size: 1.2em;
-        color: #8B3A3A;
+        color: #ffdab9;
         font-style: italic;
-        background: linear-gradient(135deg, rgba(255, 252, 248, 0.95) 0%, rgba(255, 249, 242, 0.95) 100%);
+        background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
         padding: 0 30px;
         position: relative;
         z-index: 1;
       }
     }
-    
+
     .founder-story {
       display: flex;
       align-items: center;
@@ -261,71 +263,71 @@
       opacity: 0;
       transform: translateY(30px);
       transition: opacity 0.8s ease-out 0.6s, transform 0.8s ease-out 0.6s;
-      
+
       .founder-image {
         flex: 0 0 250px;
-        
+
         img {
           width: 100%;
           height: auto;
           border-radius: 15px;
           box-shadow: 0 10px 30px rgba(139, 58, 58, 0.2);
           transition: transform 0.3s ease, box-shadow 0.3s ease;
-          
+
           &:hover {
             transform: scale(1.05);
             box-shadow: 0 15px 40px rgba(139, 58, 58, 0.3);
           }
         }
       }
-      
+
       .founder-text {
         flex: 1;
         text-align: left;
-        
+
         .founder-intro {
           font-family: 'Playfair Display', serif;
           font-size: 1.3em;
-          color: #333;
+          color: #fdf9f2; // Light cream
           margin-bottom: 12px;
           line-height: 1.5;
-          
+
           .highlight-name {
-            color: #8B3A3A;
+            color: #ffdab9;
             font-weight: 600;
             font-size: 1.1em;
           }
         }
-        
+
         .founder-description {
           font-family: 'Georgia', serif;
           font-size: 1.05em;
           line-height: 1.8;
-          color: #555;
+          color: #e0e0e0; // Light gray
           margin-bottom: 12px;
           letter-spacing: 0.3px;
         }
       }
     }
   }
-  
+
   &.animate-in {
     .story-header {
       opacity: 1;
       transform: translateY(0);
     }
-    
+
     .story-content {
       .story-text {
         opacity: 1;
         transform: translateY(0);
       }
-      
+
       .divider {
         opacity: 1;
         transform: scale(1);
       }
-      
+
       .founder-story {
         opacity: 1;
         transform: translateY(0);
@@ -343,23 +345,23 @@
   opacity: 0;
   transform: translateY(50px);
   transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-  
+
   &.animate-in {
     opacity: 1;
     transform: translateY(0);
   }
-  
+
   .about-tagline {
     font-family: 'Playfair Display', serif;
     font-size: 2.2em;
     font-weight: 400;
-    color: #8B3A3A;
+    color: #ffdab9; // Light peach
     margin-bottom: 50px;
     letter-spacing: 2px;
     font-style: italic;
     position: relative;
     display: inline-block;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -368,34 +370,34 @@
       transform: translateX(-50%);
       width: 60px;
       height: 2px;
-      background: linear-gradient(90deg, transparent, #8B3A3A, transparent);
+      background: linear-gradient(90deg, transparent, #ffdab9, transparent);
     }
   }
-  
+
   .about-content {
     max-width: 900px;
     margin: 0 auto;
   }
-  
+
   .about-paragraph {
     font-family: 'Georgia', serif;
     font-size: 1.1em;
     line-height: 1.9;
-    color: #333;
+    color: #fdf9f2; // Light cream
     margin-bottom: 30px;
     letter-spacing: 0.5px;
     font-weight: 400;
     text-align: justify;
     text-align-last: center;
-    
+
     &.highlight {
-      color: #8B3A3A;
+      color: #ffdab9; // Light peach highlight
       font-weight: 500;
       font-size: 1.15em;
       margin-top: 40px;
       position: relative;
       padding: 30px 0;
-      
+
       &::before,
       &::after {
         content: '';
@@ -404,13 +406,13 @@
         transform: translateX(-50%);
         width: 100px;
         height: 1px;
-        background: linear-gradient(90deg, transparent, #8B3A3A, transparent);
+        background: linear-gradient(90deg, transparent, #ffdab9, transparent);
       }
-      
+
       &::before {
         top: 0;
       }
-      
+
       &::after {
         bottom: 0;
       }
@@ -449,66 +451,66 @@
   .who-we-are-section {
     margin: 40px auto 35px;
     padding: 40px 25px;
-    
+
     .story-header {
       margin-bottom: 40px;
-      
+
       .story-title {
         font-size: 1.8em;
         letter-spacing: 1.5px;
       }
-      
+
       .story-subtitle {
         font-size: 1.15em;
         letter-spacing: 0.8px;
       }
     }
-    
+
     .story-content {
       .story-text {
         margin-bottom: 40px;
-        
+
         .story-intro {
           font-size: 1.05em;
         }
-        
+
         .story-description {
           font-size: 1em;
           text-align: center;
         }
       }
-      
+
       .divider {
         margin: 50px 0;
-        
+
         &::before,
         &::after {
           width: 20%;
         }
-        
+
         .divider-text {
           font-size: 1.1em;
           padding: 0 20px;
         }
       }
-      
+
       .founder-story {
         flex-direction: column;
         gap: 35px;
-        
+
         .founder-image {
           flex: 0 0 auto;
           width: 100%;
           max-width: 250px;
         }
-        
+
         .founder-text {
           text-align: center;
-          
+
           .founder-intro {
             font-size: 1.3em;
           }
-          
+
           .founder-description {
             font-size: 1em;
           }
@@ -520,17 +522,17 @@
   .about-section {
     padding: 40px 30px;
     margin: 60px auto 40px;
-    
+
     .about-tagline {
       font-size: 1.8em;
       margin-bottom: 40px;
     }
-    
+
     .about-paragraph {
       font-size: 1em;
       line-height: 1.8;
       margin-bottom: 25px;
-      
+
       &.highlight {
         font-size: 1.05em;
         padding: 25px 0;
@@ -559,60 +561,60 @@
     margin: 30px auto 25px;
     padding: 30px 20px;
     border-radius: 12px;
-    
+
     .story-header {
       margin-bottom: 30px;
-      
+
       .story-title {
         font-size: 1.5em;
         letter-spacing: 1px;
       }
-      
+
       .story-subtitle {
         font-size: 1em;
       }
     }
-    
+
     .story-content {
       .story-text {
         margin-bottom: 30px;
-        
+
         .story-intro {
           font-size: 1em;
         }
-        
+
         .story-description {
           font-size: 0.95em;
           line-height: 1.8;
         }
       }
-      
+
       .divider {
         margin: 40px 0;
-        
+
         &::before,
         &::after {
           display: none;
         }
-        
+
         .divider-text {
           font-size: 1em;
           padding: 0 10px;
         }
       }
-      
+
       .founder-story {
         gap: 25px;
-        
+
         .founder-image {
           max-width: 200px;
         }
-        
+
         .founder-text {
           .founder-intro {
             font-size: 1.15em;
           }
-          
+
           .founder-description {
             font-size: 0.95em;
             line-height: 1.7;
@@ -625,24 +627,24 @@
   .about-section {
     padding: 30px 20px;
     margin: 40px auto 30px;
-    
+
     .about-tagline {
       font-size: 1.5em;
       margin-bottom: 30px;
       letter-spacing: 1px;
     }
-    
+
     .about-paragraph {
       font-size: 0.95em;
       line-height: 1.7;
       margin-bottom: 20px;
       text-align: center;
-      
+
       &.highlight {
         font-size: 1em;
         padding: 20px 0;
         margin-top: 25px;
-        
+
         &::before,
         &::after {
           width: 60px;
@@ -737,5 +739,3 @@
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-
-

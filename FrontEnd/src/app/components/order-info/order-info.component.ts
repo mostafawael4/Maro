@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { OrdersService, Order, OrderPricing } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
+import { CurrencyService } from '../../services/currency.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -23,7 +24,8 @@ export class OrderInfoComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private ordersService: OrdersService,
-    private authService: AuthService
+    private authService: AuthService,
+    public currencyService: CurrencyService
   ) {
     // Get initial auth state immediately (synchronous from localStorage)
     this.isAuthenticated = this.authService.isAuthenticatedValue;
@@ -98,10 +100,7 @@ export class OrderInfoComponent implements OnInit {
   }
 
   formatCurrency(value?: number | null): string {
-    if (value === undefined || value === null) {
-      return '0 EGP';
-    }
-    return `${value.toLocaleString('en-US', { maximumFractionDigits: 0 })} EGP`;
+    return this.currencyService.formatCurrency(value);
   }
 
   hasPricingSelections(pricing?: OrderPricing | null): boolean {

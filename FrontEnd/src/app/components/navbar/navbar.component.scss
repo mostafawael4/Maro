@@ -1,14 +1,14 @@
 // Navbar Cinematic Styling
 .navbar-cinematic {
   transition: all 0.3s ease;
-  
+
   // Enhanced backdrop blur effect
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  
+
   // Light warm shadow with subtle burgundy and sunshine glow
   box-shadow: 0 1px 3px rgba(107, 31, 31, 0.04), 0 1px 8px rgba(255, 223, 186, 0.06);
-  
+
   &.scrolled {
     box-shadow: 0 4px 12px rgba(107, 31, 31, 0.06), 0 2px 15px rgba(255, 223, 186, 0.08);
     background-color: rgba(255, 250, 245, 0.98); // Light warm cream when scrolled
@@ -17,21 +17,21 @@
 
 // Desktop Navigation Links
 .nav-link-desktop {
-  @apply relative  py-2 font-medium transition-all duration-300 ease-in-out;
+  @apply relative py-2 font-medium transition-all duration-300 ease-in-out;
   font-family: 'Georgia', serif; // Elegant serif font
   font-size: 1rem; // Reduced from 1rem (14px instead of 16px)
   letter-spacing: 0.5px;
-  color: #333333; // Dark text for white navbar
+  color: #fdf9f2; // Light cream text for dark navbar
   padding-left: 0.75rem;
-  
+
   &:hover {
-    color: #8B3A3A; // Lighter burgundy on hover (mixed with warmth)
+    color: #ffdab9; // Light peach sunshine on hover
     transform: translateY(-1px);
   }
-  
+
   &.active {
-    color: #8B3A3A; // Lighter burgundy for active
-    
+    color: #ffdab9; // Light peach sunshine for active
+
     &::after {
       content: '';
       position: absolute;
@@ -40,13 +40,13 @@
       transform: translateX(-50%);
       width: 6px;
       height: 6px;
-      background: radial-gradient(circle, #8B3A3A 0%, #C89B7B 100%); // Soft burgundy to sunshine gradient
+      background: radial-gradient(circle, #ffdab9 0%, #fdf9f2 100%); // Light peach to cream gradient
       border-radius: 50%;
       animation: fadeInScale 0.3s ease-in-out;
       box-shadow: 0 0 8px rgba(200, 155, 123, 0.3); // Soft warm glow
     }
   }
-  
+
   // Underline animation on hover - gradient mixing burgundy with sunshine
   &::before {
     content: '';
@@ -55,15 +55,15 @@
     left: 0;
     width: 0;
     height: 2px;
-    background: linear-gradient(90deg, #6B1F1F 0%, #B8826B 50%, #FFDAB9 100%); // Light burgundy to peach sunshine
+    background: linear-gradient(90deg, #ffdab9 0%, #fdf9f2 50%, #ffffff 100%); // Light peach to white gradient
     transition: width 0.3s ease-in-out;
   }
-  
+
   // Show underline on hover, but not when active
   &:hover:not(.active)::before {
     width: 100%;
   }
-  
+
   // Hide underline when active
   &.active::before {
     display: none;
@@ -76,26 +76,26 @@
   font-family: 'Georgia', serif; // Elegant serif font
   font-size: 1rem;
   letter-spacing: 0.5px;
-  color: #333333; // Dark text for white navbar
-  
+  color: #fdf9f2; // Light cream text for dark navbar
+
   &:hover {
-    background: linear-gradient(90deg, rgba(139, 58, 58, 0.08) 0%, rgba(255, 223, 186, 0.08) 100%); // Light burgundy to sunshine
-    color: #8B3A3A; // Lighter burgundy on hover
+    background: linear-gradient(90deg, rgba(255, 218, 185, 0.15) 0%, rgba(253, 249, 242, 0.15) 100%); // Light peach to cream
+    color: #ffdab9; // Light peach on hover
     transform: translateX(4px);
   }
-  
+
   &.active {
-    background: linear-gradient(90deg, rgba(139, 58, 58, 0.12) 0%, rgba(255, 223, 186, 0.12) 100%); // Light burgundy to sunshine
-    color: #8B3A3A; // Lighter burgundy for active
+    background: linear-gradient(90deg, rgba(255, 218, 185, 0.2) 0%, rgba(253, 249, 242, 0.2) 100%); // Light peach to cream
+    color: #ffdab9; // Light peach for active
     @apply border-l-4;
-    border-color: #8B3A3A; // Light burgundy border
-    box-shadow: inset 0 0 15px rgba(255, 223, 186, 0.2); // Soft warm inner glow
-    
+    border-color: #ffdab9; // Light peach border
+    box-shadow: inset 0 0 15px rgba(255, 223, 186, 0.3); // Soft warm inner glow
+
     svg {
-      color: #8B3A3A; // Lighter burgundy for icons
+      color: #ffdab9; // Light peach for icons
     }
   }
-  
+
   svg {
     transition: all 0.2s ease-in-out;
   }
@@ -105,12 +105,12 @@
 .mobile-menu {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: top;
-  
+
   &.open {
     transform: scaleY(1);
     opacity: 1;
   }
-  
+
   &.closed {
     transform: scaleY(0);
     opacity: 0;
@@ -120,7 +120,7 @@
 // Hamburger Menu Animation
 .hamburger {
   transition: all 0.3s ease-in-out;
-  
+
   &.open {
     transform: rotate(90deg);
   }
@@ -129,24 +129,24 @@
 // Logo Animation
 .navbar-logo {
   transition: all 0.3s ease-in-out;
-  
-  
+
+
   &:hover {
     transform: scale(1.05);
   }
 }
 
-// Logo Color Filter (Dark Burgundy)
+// Logo Color Filter (Light Cream/White for dark navbar)
 .navbar-logo-img {
-  // Apply dark burgundy color to logo
-  filter: brightness(0) saturate(100%) invert(10%) sepia(85%) saturate(4200%) hue-rotate(340deg) brightness(75%) contrast(115%);
+  // Apply light cream/white color to logo for dark background
+  filter: brightness(0) invert(1) sepia(10%) saturate(200%) hue-rotate(330deg) brightness(110%);
 }
 
 // CTA Button Enhancement
 .btn-primary {
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -157,7 +157,7 @@
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.5s ease-in-out;
   }
-  
+
   &:hover::before {
     left: 100%;
   }
@@ -194,26 +194,26 @@
     margin: 0.25rem 0;
     border-radius: 0.5rem;
   }
-  
+
   // Mobile menu scrollable container
   .lg\:hidden {
     &[class*="overflow-y-auto"] {
       -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
       scrollbar-width: thin; // Thin scrollbar for Firefox
-      
+
       // Custom scrollbar for webkit browsers (Chrome, Safari, Edge)
       &::-webkit-scrollbar {
         width: 6px;
       }
-      
+
       &::-webkit-scrollbar-track {
         background: rgba(200, 155, 123, 0.1);
       }
-      
+
       &::-webkit-scrollbar-thumb {
         background: rgba(139, 58, 58, 0.3);
         border-radius: 3px;
-        
+
         &:hover {
           background: rgba(139, 58, 58, 0.5);
         }
@@ -228,6 +228,7 @@
     opacity: 0;
     transform: translateX(-50%) scale(0);
   }
+
   100% {
     opacity: 1;
     transform: translateX(-50%) scale(1);
@@ -239,6 +240,7 @@
     transform: translateY(-100%);
     opacity: 0;
   }
+
   100% {
     transform: translateY(0);
     opacity: 1;
@@ -264,7 +266,7 @@ button:focus-visible {
   .navbar-cinematic {
     border-bottom: 2px solid var(--color-accent-900);
   }
-  
+
   .nav-link-desktop,
   .nav-link-mobile {
     font-weight: 600;
@@ -273,6 +275,7 @@ button:focus-visible {
 
 // Reduced motion support
 @media (prefers-reduced-motion: reduce) {
+
   .navbar-cinematic,
   .nav-link-desktop,
   .nav-link-mobile,
@@ -285,7 +288,7 @@ button:focus-visible {
 // Dropdown Menu Styling
 .dropdown-container {
   position: relative;
-  
+
   // Extend hover area to include the dropdown menu gap
   &::after {
     content: '';
@@ -304,7 +307,7 @@ button:focus-visible {
   cursor: pointer;
   display: flex;
   align-items: center;
-  
+
   svg {
     transition: transform 0.3s ease;
   }
@@ -339,17 +342,15 @@ button:focus-visible {
 
 .dropdown-item {
   &:hover {
-    background-color: rgba(200, 155, 123, 0.1);
+    background-color: rgba(255, 218, 185, 0.15); // Light peach for hover on dark background
   }
-  
+
   &.active {
-    background-color: rgba(139, 58, 58, 0.1);
+    background-color: rgba(255, 218, 185, 0.25); // Brighter peach for active item
   }
-  
+
   &::before,
   &::after {
     display: none; // Remove underline animations from dropdown items
   }
 }
-
-

@@ -18,6 +18,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
   isLoading: boolean = false;
   isAuthenticated: boolean = false;
   isClientReady: boolean = false; // Hide content until client-side is ready
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -86,7 +87,6 @@ export class AdminComponent implements OnInit, AfterViewInit {
       next: (response) => {
         if (response.ok) {
           this.isLoading = false;
-          console.log('Logged in successfully');
           // Redirect based on role after successful login
           if (response?.session?.isAdmin) {
             this.router.navigate(['/dashboard']);
@@ -103,6 +103,10 @@ export class AdminComponent implements OnInit, AfterViewInit {
         this.password = '';
       }
     });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 
   onLogout(): void {

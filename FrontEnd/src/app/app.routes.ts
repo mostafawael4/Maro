@@ -14,6 +14,7 @@ import { CreateOrderComponent } from './components/create-order/create-order.com
 import { FeedbacksComponent } from './components/feedbacks/feedbacks.component';
 import { NotFoundComponent } from './components/not-found/not-found.component';
 import { CalendarComponent } from './components/calendar/calendar.component';
+import { ChangePasswordComponent } from './components/change-password/change-password.component';
 import { adminGuard } from './guards/admin.guard';
 import { adminLoginGuard } from './guards/admin-login.guard';
 import { authGuard } from './guards/auth.guard';
@@ -36,5 +37,6 @@ export const routes: Routes = [
     { path: 'admin', component: AdminComponent, canActivate: [adminLoginGuard], data: { title: 'Admin' } },
     { path: 'feedbacks', component: FeedbacksComponent, data: { title: 'Feedbacks' } },
     { path: 'calendar', component: CalendarComponent, canActivate: [authGuard], data: { title: 'Calendar' } },
+    { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard], data: { title: 'Change Password' } },
     { path: '**', component: NotFoundComponent, data: { title: 'Page Not Found' } }, // 404 - must be last
 ];

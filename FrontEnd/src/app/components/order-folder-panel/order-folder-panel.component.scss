@@ -1,7 +1,7 @@
 .folders-section {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 245, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 16px;
-  border: 2px solid rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
   padding: 2rem;
   margin-bottom: 3rem;
@@ -17,14 +17,14 @@
   h2 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
-    color: #8B3A3A;
+    color: #ffdab9;
     margin-bottom: 0.25rem;
     font-style: italic;
   }
 
   p {
     margin: 0;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
     font-style: italic;
   }
 }
@@ -34,7 +34,7 @@
   border-radius: 999px;
   background: rgba(107, 31, 31, 0.1);
   border: 2px solid rgba(107, 31, 31, 0.2);
-  color: #8B3A3A;
+  color: #ffdab9;
   font-weight: 600;
   font-size: 0.85rem;
 }
@@ -54,7 +54,7 @@
   position: relative;
   border: 2px solid rgba(107, 31, 31, 0.15);
   border-radius: 14px;
-  background: white;
+  background: rgba(26, 1, 5, 0.6);
   padding: 1.25rem;
   text-align: left;
   cursor: pointer;
@@ -72,7 +72,7 @@
   }
 
   &.active {
-    border-color: #8B3A3A;
+    border-color: #ffdab9;
     box-shadow: 0 10px 24px rgba(107, 31, 31, 0.2);
     background: linear-gradient(135deg, rgba(107, 31, 31, 0.05), rgba(139, 58, 58, 0.05));
   }
@@ -85,13 +85,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #8B3A3A;
+    color: #ffdab9;
   }
 
   .folder-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #8B3A3A;
+    color: #ffdab9;
     text-transform: capitalize;
   }
 
@@ -99,12 +99,12 @@
     display: flex;
     align-items: baseline;
     gap: 0.25rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
 
     span {
       font-size: 1.2rem;
       font-weight: 600;
-      color: #333;
+      color: #e0e0e0;
     }
 
     small {
@@ -112,6 +112,41 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
+  }
+}
+
+.folder-download-btn {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 }
 
@@ -150,6 +185,7 @@
   }
 }
 
+.folder-card-wrapper:hover .folder-download-btn,
 .folder-card-wrapper:hover .folder-delete-btn {
   opacity: 1;
 }
@@ -163,7 +199,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.9);
 
   &.error {
     border-color: rgba(220, 38, 38, 0.3);
@@ -174,10 +210,10 @@
   &.empty {
     flex-direction: column;
     text-align: center;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
 
     svg {
-      color: #8B3A3A;
+      color: #ffdab9;
     }
   }
 }
@@ -186,7 +222,7 @@
   width: 28px;
   height: 28px;
   border: 3px solid rgba(139, 58, 58, 0.15);
-  border-top: 3px solid #8B3A3A;
+  border-top: 3px solid #ffdab9;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -200,8 +236,8 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
-

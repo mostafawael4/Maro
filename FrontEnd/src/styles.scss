@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+/* Import fonts with proper numeric features for clean, simple number display */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
@@ -16,7 +17,8 @@
   --color-primary-200: #f9ccc6;
   --color-primary-300: #f5a99e;
   --color-primary-400: #f08676;
-  --color-primary-500: #e2725b; /* Main terracotta */
+  --color-primary-500: #e2725b;
+  /* Main terracotta */
   --color-primary-600: #d65a43;
   --color-primary-700: #b84a36;
   --color-primary-800: #9a3d2d;
@@ -28,7 +30,8 @@
   --color-secondary-100: #e9ebe4;
   --color-secondary-200: #d4d7c7;
   --color-secondary-300: #b8bca4;
-  --color-secondary-400: #9c9f84; /* Main sage green */
+  --color-secondary-400: #9c9f84;
+  /* Main sage green */
   --color-secondary-500: #83866d;
   --color-secondary-600: #6b6e5a;
   --color-secondary-700: #56584a;
@@ -46,7 +49,8 @@
   --color-accent-600: #515151;
   --color-accent-700: #434343;
   --color-accent-800: #383838;
-  --color-accent-900: #333333; /* Main charcoal */
+  --color-accent-900: #333333;
+  /* Main charcoal */
   --color-accent-950: #1a1a1a;
 
   /* Neutral Colors - Cream/Beige Tones */
@@ -54,8 +58,10 @@
   --color-neutral-100: #fdf9f2;
   --color-neutral-200: #faf2e3;
   --color-neutral-300: #f5e6c7;
-  --color-neutral-400: #f5f5dc; /* Main cream */
-  --color-neutral-500: #d8c3a5; /* Soft beige */
+  --color-neutral-400: #f5f5dc;
+  /* Main cream */
+  --color-neutral-500: #d8c3a5;
+  /* Soft beige */
   --color-neutral-600: #c4a882;
   --color-neutral-700: #a68f68;
   --color-neutral-800: #8a7555;
@@ -92,9 +98,19 @@
 /* Base styles for cinematic theme */
 body {
   font-family: var(--font-body);
-  background-color: var(--color-neutral-400); /* Cream background */
-  color: var(--color-accent-900); /* Charcoal text */
+  background-color: var(--color-neutral-400);
+  /* Cream background */
+  color: var(--color-accent-900);
+  /* Charcoal text */
   line-height: 1.6;
+
+  /* Ensure numbers use simple, normal font styling */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* Force simple, normal number rendering across all elements */
+* {
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 h1,
@@ -107,8 +123,89 @@ h6,
 .section-title,
 .component-header,
 .header-title {
-  font-family: var(--font-heading) !important;
   letter-spacing: 0.02em;
+}
+
+/* ========================================
+   NUMBER STYLING - Simple & Clean Numbers
+   ========================================
+   Ensures all numbers use a simple, normal font style
+   across the entire application for better readability
+   and professional appearance.
+   ======================================== */
+
+/* Target all elements that commonly contain numbers */
+*[class*="number"],
+*[class*="count"],
+*[class*="badge"],
+*[class*="meta"],
+.meta-value,
+.folder-count-badge,
+.folder-meta span,
+input[type="number"],
+input[type="tel"],
+.price,
+.amount,
+.quantity,
+.total,
+.date,
+.time,
+.id,
+.order-id,
+.phone,
+span:has(> [class*="number"]) {
+  font-family: var(--font-body) !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
+  font-feature-settings: "tnum" 1, "lnum" 1 !important;
+  font-weight: 500;
+}
+
+/* Ensure headings with numbers also use simple number style */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-variant-numeric: lining-nums !important;
+
+  /* Numbers within headings should use Inter font for clarity */
+  span {
+    font-family: var(--font-body) !important;
+  }
+}
+
+/* Additional specific number styling for common UI elements */
+table,
+.table,
+.data-table {
+  font-variant-numeric: lining-nums tabular-nums !important;
+}
+
+/* Ensure buttons and badges with numbers use simple font */
+button,
+.btn,
+.button,
+a {
+  font-variant-numeric: lining-nums !important;
+}
+
+/* Form inputs and text areas with numbers */
+input,
+textarea,
+select {
+  font-variant-numeric: lining-nums tabular-nums !important;
+  font-family: var(--font-body);
+}
+
+/* Pagination, counters, and status indicators */
+.pagination,
+.counter,
+.indicator,
+.status,
+.stat {
+  font-family: var(--font-body) !important;
+  font-variant-numeric: lining-nums tabular-nums !important;
 }
 
 /* Cinematic typography classes */
