@@ -943,6 +943,16 @@
       font-weight: 600;
     }
   }
+
+  .progress-chunk-info {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(107, 31, 31, 0.1);
+    text-align: center;
+    font-size: 0.9rem;
+    color: #8B3A3A;
+    font-weight: 600;
+  }
 }
 
 // Upload Result Modal

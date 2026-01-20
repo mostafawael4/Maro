@@ -180,10 +180,142 @@ export class OrdersService {
       formData.append('media', file); // Changed from 'images' to 'media' to match backend
     });
     formData.append('foldername', folderName);
-    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, { 
+    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, {
       withCredentials: true,
       reportProgress: true,
       observe: 'events'
+    });
+  }
+
+  /**
+   * Upload order images in chunks to reduce memory usage and improve performance
+   * Files are grouped by total size rather than count for optimal performance
+   * @param orderId - The order ID
+   * @param files - Array of files to upload
+   * @param folderName - The folder name
+   * @param maxChunkSize - Maximum size per chunk in bytes (default: 100MB)
+   * @returns Observable that emits progress events for each chunk
+   */
+  uploadOrderImagesInChunks(orderId: string, files: File[], folderName: string, maxChunkSize: number = 100 * 1024 * 1024): Observable<any> {
+    return new Observable(observer => {
+      // Group files into chunks based on size
+      const chunks: File[][] = [];
+      let currentChunk: File[] = [];
+      let currentChunkSize = 0;
+
+      for (const file of files) {
+        // If adding this file would exceed the max chunk size and we already have files in the chunk
+        if (currentChunkSize + file.size > maxChunkSize && currentChunk.length > 0) {
+          chunks.push(currentChunk);
+          currentChunk = [file];
+          currentChunkSize = file.size;
+        } else {
+          currentChunk.push(file);
+          currentChunkSize += file.size;
+        }
+      }
+
+      // Add the last chunk if it has files
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      const totalFiles = files.length;
+      const totalChunks = chunks.length;
+      let processedFiles = 0;
+
+      // Aggregate results from all chunks
+      const aggregatedResults = {
+        added: [] as any[],
+        duplicates: [] as any[],
+        failed: [] as any[]
+      };
+
+      const uploadChunk = (chunkIndex: number) => {
+        const chunkFiles = chunks[chunkIndex];
+        const currentChunk = chunkIndex + 1;
+        const chunkSizeBytes = chunkFiles.reduce((sum, f) => sum + f.size, 0);
+
+        // Emit chunk start event
+        observer.next({
+          type: 'chunk-start',
+          chunkIndex: currentChunk,
+          totalChunks,
+          chunkFiles: chunkFiles.length,
+          chunkSize: chunkSizeBytes,
+          totalFiles,
+          processedFiles
+        });
+
+        // Upload the chunk
+        this.uploadOrderImages(orderId, chunkFiles, folderName).subscribe({
+          next: (event: any) => {
+            // Forward progress events with chunk information
+            if (event.type === HttpEventType.UploadProgress) {
+              const chunkProgress = event.loaded / (event.total || 1);
+              const overallProgress = (processedFiles + (chunkFiles.length * chunkProgress)) / totalFiles;
+
+              observer.next({
+                type: HttpEventType.UploadProgress,
+                loaded: Math.round(processedFiles + (chunkFiles.length * chunkProgress)),
+                total: totalFiles,
+                chunkIndex: currentChunk,
+                totalChunks,
+                chunkProgress: Math.round(chunkProgress * 100),
+                overallProgress: Math.round(overallProgress * 100)
+              });
+            } else if (event.type === HttpEventType.Response) {
+              // Chunk upload complete
+              const response = event.body;
+              processedFiles += chunkFiles.length;
+
+              // Aggregate results
+              if (response.added) aggregatedResults.added.push(...response.added);
+              if (response.duplicates) aggregatedResults.duplicates.push(...response.duplicates);
+              if (response.failed) aggregatedResults.failed.push(...response.failed);
+
+              observer.next({
+                type: 'chunk-complete',
+                chunkIndex: currentChunk,
+                totalChunks,
+                processedFiles,
+                totalFiles,
+                chunkResponse: response
+              });
+
+              // Upload next chunk or complete
+              if (chunkIndex + 1 < totalChunks) {
+                uploadChunk(chunkIndex + 1);
+              } else {
+                // All chunks complete
+                observer.next({
+                  type: HttpEventType.Response,
+                  body: {
+                    ok: true,
+                    added: aggregatedResults.added,
+                    duplicates: aggregatedResults.duplicates,
+                    failed: aggregatedResults.failed,
+                    message: `${aggregatedResults.added.length} file(s) uploaded, ${aggregatedResults.duplicates.length} duplicate(s) skipped, ${aggregatedResults.failed.length} failed.`
+                  }
+                });
+                observer.complete();
+              }
+            }
+          },
+          error: (err) => {
+            observer.next({
+              type: 'chunk-error',
+              chunkIndex: currentChunk,
+              totalChunks,
+              error: err
+            });
+            observer.error(err);
+          }
+        });
+      };
+
+      // Start uploading from first chunk
+      uploadChunk(0);
     });
   }
 
@@ -216,7 +348,7 @@ export class OrdersService {
 
   submitFeedback(orderId: string, feedback: string): Observable<any> {
     // The endpoint is /feedbacks/orders/:orderId/feedback based on backend routes
-    return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`, 
+    return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`,
       { feedback },
       { withCredentials: true }
     );
