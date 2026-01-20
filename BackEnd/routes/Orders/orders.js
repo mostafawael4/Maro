@@ -212,7 +212,7 @@ const uploadMemory = multer({
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
   },
-}).single("file");
+}).array("media");
 
 router.post(
   "/:orderId/upload",

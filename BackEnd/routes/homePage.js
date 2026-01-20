@@ -8,7 +8,6 @@ import uploadService from "../services/upload.service.js";
 import allowedExtensions from "../config/allowed_extensions.js";
 import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
-import { deleteFileByPath } from "../utils/fileProccess.js";
 
 // Upload image to home page
 
@@ -34,7 +33,7 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     const results = [];
     for (const file of files) {
       logger.info(`Processing file for homePage upload: ${file.originalname}`);
-      const fileUrl = uploadService.saveFile(
+      const fileUrl = await uploadService.saveFile(
         undefined,
         file.buffer,
         file.originalname,
@@ -116,15 +115,13 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "HomePage image not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_HOMEPAGE;
-    const filePath = path.resolve(uploadsDir, imageToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted homePage file from disk: ${imageToDelete.filename}`);
+      await uploadService.deleteFile(undefined, imageToDelete.filename, { isHomePage: true });
+      logger.info(`Deleted homePage file from B2: ${imageToDelete.filename}`);
     } catch (fileErr) {
-      logger.error(`Failed to delete homePage file from disk (${imageToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete homePage file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete homePage file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete homePage file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record

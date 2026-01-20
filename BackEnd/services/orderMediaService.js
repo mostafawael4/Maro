@@ -1,7 +1,10 @@
 import Order from '../models/order.js';
-import uploadService from './upload.service.js'; // Adjust path as needed
+import b2 from './b2.service.js';
+import Credentials from '../config/Credentials.js';
+import fs from 'fs';
+import path from 'path';
 import allowedExtensions from "../config/allowed_extensions.js";
-import { extractOrderVideoThumbnail } from './videoThumbnail.service.js';
+import { extractThumbnail } from './videoThumbnail.service.js';
 import logger from '../utils/logger.js';
 
 export  async function uploadMediaFiles(orderId, files, foldername) {
@@ -34,42 +37,74 @@ export  async function uploadMediaFiles(orderId, files, foldername) {
     }
   });
 
-  // Save each file using the uploadService
   const fileObjs = await Promise.all(filesToUpload.map(async (f) => {
-    // Already awaited - uploadService.saveFile() is async
-    // On Firebase: Returns full B2 URL (e.g., "https://fxxx.s3.us-west-000.backblazeb2.com/orders/123/file.jpg")
-    // On local dev: Returns relative path (e.g., "/uploads/orders/123/file.jpg")
-    const url = await uploadService.saveFile(orderId, f.buffer, f.originalname, {
-      isGallery: false,
-      isFilm: false,
-    });
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const key = `orders/${orderId}/${uniqueSuffix}-${f.originalname}`;
     
-    // Extract filename from URL (works for both B2 URLs and relative paths)
-    // B2 URL: "https://fxxx.s3.us-west-000.backblazeb2.com/orders/123/order-123456.jpg" -> "order-123456.jpg"
-    // Relative path: "/uploads/orders/123/order-123456.jpg" -> "order-123456.jpg"
-    const filename = url.split('/').pop();
-    
+    // Read file from disk (multer diskStorage)
+    let buffer;
+    if (f.buffer) {
+        buffer = f.buffer;
+    } else if (f.path) {
+        buffer = fs.readFileSync(f.path);
+    } else {
+        throw new Error("No file content found (buffer or path)");
+    }
+
+    // Upload to B2
+    await b2.upload(key, buffer);
+    // Construct B2 URL (Assuming S3 compatible URL pattern for Backblaze)
+    // Adjust region as needed (e.g. us-west-003)
+    const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+    const filename = key.split('/').pop();
+
     const fileObj = {
       foldername: foldername || null,
-      filename, // Filename extracted from URL
+      filename, 
       originalName: f.originalname,
-      url, // Full URL (B2 URL on Firebase, relative path on local)
+      url, 
       uploadedAt: new Date(),
     };
 
     // Video thumbnail extraction
-    const isVideo = allowedExtensions.videos.includes(f.mimetype);
-    if (isVideo) {
+    if (allowedExtensions.videos.includes(f.mimetype)) {
       try {
-        // extractOrderVideoThumbnail uses filename to construct the path
-        // On Firebase: Uses filename to construct B2 path "orders/{orderId}/{filename}"
-        // On local dev: Uses filename to find file in local filesystem
-        const thumbnailResult = await extractOrderVideoThumbnail(orderId, fileObj.filename, 1);
-        fileObj.thumbnail = thumbnailResult.thumbnailUrl;
-        fileObj.thumbnailFilename = thumbnailResult.thumbnailFilename;
+        let videoPath = f.path;
+        let tempVideoPath = null;
+        
+        // If we don't have a path (memory storage), write to temp file for ffmpeg
+        if (!videoPath) {
+            tempVideoPath = path.resolve('tmp', filename);
+            fs.writeFileSync(tempVideoPath, buffer);
+            videoPath = tempVideoPath;
+        }
+
+        const thumbName = `thumb-${Date.now()}-${f.originalname}.jpg`;
+        const thumbPath = path.resolve('tmp', thumbName);
+        
+        // Extract thumbnail using the generic service
+        await extractThumbnail(videoPath, thumbPath, 1);
+        
+        // Upload thumbnail
+        const thumbBuffer = fs.readFileSync(thumbPath);
+        const thumbKey = `orders/${orderId}/${thumbName}`;
+        await b2.upload(thumbKey, thumbBuffer);
+        
+        fileObj.thumbnail = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+        fileObj.thumbnailFilename = thumbName;
+
+        // Cleanup thumbnail
+        if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+        if (tempVideoPath && fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
+
       } catch (err) {
         logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${err.message}`);
       }
+    }
+
+    // Cleanup uploaded file if it was on disk
+    if (f.path && fs.existsSync(f.path)) {
+        fs.unlinkSync(f.path);
     }
 
     return fileObj;

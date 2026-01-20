@@ -9,7 +9,6 @@ import allowedExtensions from "../config/allowed_extensions.js";
 import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
 import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
-import { deleteFileByPath } from "../utils/fileProccess.js";
 import { extractThumbnailForFilmsService } from '../services/videoService.js';
 
 // Upload video with description
@@ -36,7 +35,7 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 
     logger.info(`Processing file for film upload: ${file.originalname}`);
 
-    const fileUrl = uploadService.saveFile(
+    const fileUrl = await uploadService.saveFile(
       undefined,
       file.buffer,
       file.originalname,
@@ -111,15 +110,13 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "Film not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_FILMS;
-    const filePath = path.resolve(uploadsDir, filmToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted film file from disk: ${filmToDelete.filename}`);
+      await uploadService.deleteFile(undefined, filmToDelete.filename, { isFilm: true });
+      logger.info(`Deleted film file from B2: ${filmToDelete.filename}`);
     } catch (fileErr) {
-      logger.error(`Failed to delete film file from disk (${filmToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete film file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete film file from B2 (${filmToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete film file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
