@@ -15,17 +15,21 @@ class B2Service {
     async authorize() {
         if (this.authPromise) return this.authPromise;
         
+        if (!Credentials.B2_APPLICATION_KEY_ID || !Credentials.B2_APPLICATION_KEY) {
+            logger.error("B2_APPLICATION_KEY_ID or B2_APPLICATION_KEY is missing in environment variables.");
+            return Promise.reject(new Error("Missing B2 Credentials"));
+        }
+
         this.authPromise = (async () => {
             try {
-                // Check if already authorized effectively? 
-                // The library doesn't expose a simple "isAuthorized" check that is reliable without overhead.
-                // We'll trust the caller to rely on the promise.
-                console.log('Authorizing B2...', Credentials.B2_APPLICATION_KEY_ID);
+                logger.info(`B2: Authorizing with Key ID: ${Credentials.B2_APPLICATION_KEY_ID.substring(0, 8)}...`);
                 const response = await this.b2.authorize();
                 this.downloadUrl = response.data.downloadUrl;
                 // Clear pool on re-auth as old tokens might be invalid
                 this.uploadUrlPool = [];
+                logger.info(`B2: Authorized successfully. Download URL: ${this.downloadUrl}`);
             } catch (err) {
+                logger.error(`B2: Authorization failed: ${err.message}`);
                 this.authPromise = null; // Reset on failure so we can retry
                 throw err;
             }
@@ -35,9 +39,10 @@ class B2Service {
     }
 
     async getPresignedUrl(key) {
-        await this.authorize();
         try {
-             // 24 hours duration
+            await this.authorize();
+            if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
+
              const response = await this.b2.getDownloadAuthorization({
                 bucketId: Credentials.B2_BUCKET_ID,
                 fileNamePrefix: key,
@@ -46,15 +51,17 @@ class B2Service {
             const authorizationToken = response.data.authorizationToken;
             return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}?Authorization=${authorizationToken}`;
         } catch (err) {
-             logger.error(`B2 Presign Error: ${err.message}`);
-             // Fallback
+             logger.error(`B2: Presign Error for ${key}: ${err.message}`);
+             // Fallback to raw URL so at least something is returned, though it may be blocked by B2 privacy
              return `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
         }
     }
 
     async getFolderToken(prefix) {
-        await this.authorize();
         try {
+            await this.authorize();
+            if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
+
              const response = await this.b2.getDownloadAuthorization({
                 bucketId: Credentials.B2_BUCKET_ID,
                 fileNamePrefix: prefix,
@@ -66,7 +73,7 @@ class B2Service {
                 bucketName: Credentials.B2_BUCKET_NAME
             };
         } catch (err) {
-             logger.error(`B2 Token Error: ${err.message}`);
+             logger.error(`B2: Folder Token Error for ${prefix}: ${err.message}`);
              return null;
         }
     }
