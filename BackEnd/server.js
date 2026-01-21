@@ -23,6 +23,8 @@ import roleInjector from "./middleware/roleInjector.js";
     await connectDB(Credentials.MONGO_URI);
 
     const app = express();
+    app.set("trust proxy", 1); // trust first proxy
+
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
@@ -56,10 +58,12 @@ import roleInjector from "./middleware/roleInjector.js";
         secret: Credentials.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
+        proxy: true, // required for secure cookies behind a proxy
         cookie: {
           maxAge: 1000 * 60 * 60 * 8, // 8 hours
           secure: Credentials.NODE_ENV === "production", // only true online
           sameSite: Credentials.NODE_ENV === "production" ? "none" : "lax",
+          httpOnly: true,
         },
         store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
       })
