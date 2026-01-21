@@ -1,7 +1,7 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OrderImage } from '../../services/orders.service';
+import { OrderImage, OrdersService } from '../../services/orders.service';
 
 @Component({
   selector: 'app-folder-media-view',
@@ -20,6 +20,7 @@ export class FolderMediaViewComponent {
   @Input() isAuthenticated: boolean = false;
   @Input() baseUrl: string = '';
   @Input() canSelectBackground: boolean = false;
+  @Input() orderId: string | null = null;
 
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<number>();
@@ -32,6 +33,7 @@ export class FolderMediaViewComponent {
   searchTerm: string = '';
   selectionMode: boolean = false;
   selectedItems: Set<string> = new Set();
+  downloadingItems: Set<string> = new Set();
   sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-desc';
   readonly sortOptions = [
     { value: 'name-asc' as const, label: 'Name (A → Z)' },
@@ -40,6 +42,8 @@ export class FolderMediaViewComponent {
     { value: 'date-asc' as const, label: 'Date (Oldest first)' },
   ];
   showSortOptions = false;
+
+  constructor(private ordersService: OrdersService) {}
 
   get hasMedia(): boolean {
     return !!this.media && this.media.length > 0;
@@ -78,12 +82,42 @@ export class FolderMediaViewComponent {
     this.openMedia.emit(actualIndex >= 0 ? actualIndex : index);
   }
 
-  onDownload(media: OrderImage, event: Event): void {
+  async onDownload(media: OrderImage, event: Event): Promise<void> {
     event.stopPropagation();
     if (this.selectionMode) {
       this.toggleSelection(media);
-    } else {
-      this.downloadMedia.emit(media);
+      return;
+    }
+
+    if (this.downloadingItems.has(media.filename)) return;
+
+    this.downloadingItems.add(media.filename);
+    try {
+      const downloadUrl = this.getDownloadUrl(media);
+      
+      // Fetch as blob to handle progress and UI state
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      
+      // Create temporary download link
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = media.originalName || media.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download error:', err);
+      // Fallback to direct download if fetch fails (rare since it's same origin/proxied)
+      const link = document.createElement('a');
+      link.href = this.getDownloadUrl(media);
+      link.download = media.originalName || media.filename;
+      link.click();
+    } finally {
+      this.downloadingItems.delete(media.filename);
     }
   }
 
@@ -106,6 +140,10 @@ export class FolderMediaViewComponent {
   isSelected(media: OrderImage): boolean {
     const key = media.filename || media._id || '';
     return this.selectedItems.has(key);
+  }
+
+  isDownloading(media: OrderImage): boolean {
+    return this.downloadingItems.has(media.filename);
   }
 
   getSelectedCount(): number {
@@ -152,6 +190,11 @@ export class FolderMediaViewComponent {
 
   getImageUrl(image: OrderImage): string {
     return `${image.url}`;
+  }
+
+  getDownloadUrl(media: OrderImage): string {
+    if (!this.orderId) return this.getImageUrl(media);
+    return this.ordersService.getDownloadUrl(this.orderId, media.filename);
   }
 
   getVideoThumbnailUrl(image: OrderImage): string {
@@ -207,6 +250,21 @@ export class FolderMediaViewComponent {
   selectSortOption(event: Event, option: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'): void {
     event.stopPropagation();
     this.onSortOptionChange(option);
+  }
+
+  getFileNameFromUrl(url: string): string {
+    try {
+      // remove query params
+      const cleanUrl = url.split("?")[0];
+
+      // get last path segment
+      const rawName = cleanUrl.substring(cleanUrl.lastIndexOf("/") + 1);
+
+      // decode %20 etc.
+      return decodeURIComponent(rawName);
+    } catch {
+      return "download";
+    }
   }
 
   @HostListener('document:click')

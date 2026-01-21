@@ -411,5 +411,9 @@ export class OrdersService {
       { withCredentials: true }
     );
   }
+
+  getDownloadUrl(orderId: string, filename: string): string {
+    return `${this.apiUrl}/${orderId}/download/${filename}`;
+  }
 }
 

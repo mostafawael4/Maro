@@ -14,6 +14,7 @@ export class OrderFolderPanelComponent {
   @Input() error: string = '';
   @Input() selectedFolder: string | null = null;
   @Input() isAuthenticated: boolean = false;
+  @Input() zippingFolder: boolean = false;
 
   @Output() folderSelected = new EventEmitter<string>();
   @Output() folderDeleted = new EventEmitter<string>();

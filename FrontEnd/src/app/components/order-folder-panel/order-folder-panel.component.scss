@@ -148,6 +148,13 @@
   &:active {
     transform: scale(0.95);
   }
+
+  &:disabled {
+    cursor: default;
+    background: #444;
+    opacity: 0.8 !important;
+    transform: none !important;
+  }
 }
 
 .folder-delete-btn {
@@ -182,6 +189,13 @@
 
   &:active {
     transform: scale(0.95);
+  }
+
+  &:disabled {
+    cursor: default;
+    background: #444;
+    opacity: 0.8 !important;
+    transform: none !important;
   }
 }
 
@@ -229,6 +243,16 @@
   &.small {
     width: 24px;
     height: 24px;
+  }
+}
+
+.spinner-svg {
+  animation: rotate-spinner 2s linear infinite;
+}
+
+@keyframes rotate-spinner {
+  100% {
+    transform: rotate(360deg);
   }
 }
 

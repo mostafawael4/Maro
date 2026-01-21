@@ -528,6 +528,30 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
+// GET /orders/:orderId/download/:filename - public (with obfuscated orderId) or authenticated download
+router.get("/:orderId/download/:filename", async (req, res) => {
+  try {
+    const { orderId, filename } = req.params;
+    
+    // Construct the B2 key
+    const key = `orders/${orderId}/${filename}`;
+    
+    logger.info(`Download requested for: ${key}`);
+    
+    // Get file from B2
+    const fileBuffer = await b2.downloadFileByName(key);
+    
+    // Set appropriate headers
+    res.type(filename);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    return res.send(Buffer.from(fileBuffer));
+  } catch (err) {
+    logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
+    return res.status(500).json({ ok: false, message: "Download failed" });
+  }
+});
+
 import orderFolderRoutes from './orderFolders.js';
 router.use("/folders", orderFolderRoutes);
 

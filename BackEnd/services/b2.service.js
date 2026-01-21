@@ -153,6 +153,21 @@ class B2Service {
         }
     }
 
+    async downloadFileByName(fileName) {
+        await this.authorize();
+        try {
+            const response = await this.b2.downloadFileByName({
+                bucketName: Credentials.B2_BUCKET_NAME,
+                fileName: fileName,
+                responseType: 'arraybuffer'
+            });
+            return response.data;
+        } catch (err) {
+            logger.error(`B2 Download Error for ${fileName}: ${err.message}`);
+            throw err;
+        }
+    }
+
     async deleteFile(fileName) {
         await this.authorize();
         try {
