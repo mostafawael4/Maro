@@ -86,6 +86,7 @@ import roleInjector from "./middleware/roleInjector.js";
 
     app.listen(Credentials.PORT, () => {
       console.log(`Server listening on http://localhost:${Credentials.PORT}`);
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.0.0`);
     });
   } catch (err) {
     console.error("Startup error:", err);
