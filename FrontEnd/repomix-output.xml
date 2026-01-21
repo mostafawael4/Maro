@@ -1,0 +1,1506 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+auth.service.ts
+calendar.service.ts
+contact.service.ts
+currency.service.ts
+films.service.ts
+gallery.service.ts
+homepage.service.ts
+orders.service.ts
+packages.service.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="auth.service.ts">
+import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+
+type UserRole = 'admin' | 'editor' | null;
+
+interface SessionInfo {
+  isAdmin?: boolean;
+  isEditor?: boolean;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private apiUrl = `${environment.apiUrl}/admin`;
+  private isBrowser: boolean;
+  private currentRole: UserRole = null;
+
+  private isAuthenticatedSubject = new BehaviorSubject<boolean | null>(null);
+  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  private roleSubject = new BehaviorSubject<UserRole>(null);
+  public role$ = this.roleSubject.asObservable();
+
+  constructor(
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+    if (this.isBrowser) {
+      Promise.resolve().then(() => this.checkAuth());
+    } else {
+      this.isAuthenticatedSubject.next(null);
+    }
+  }
+
+  get isAuthenticatedValue(): boolean {
+    return this.isAuthenticatedSubject.value === true;
+  }
+
+  get authStateSnapshot(): boolean | null {
+    return this.isAuthenticatedSubject.value;
+  }
+
+  get isBrowserEnv(): boolean {
+    return this.isBrowser;
+  }
+
+  login(username: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/login`, { username, password }, { withCredentials: true })
+      .pipe(
+        tap((response: any) => {
+          if (response?.ok) {
+            this.markAuthenticated(response.session);
+          } else {
+            this.handleSessionExpired();
+          }
+        })
+      );
+  }
+
+  logout(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true })
+      .pipe(
+        tap(() => {
+          this.handleSessionExpired();
+        })
+      );
+  }
+
+  isAdmin(): boolean {
+    return this.currentRole === 'admin';
+  }
+
+  isEditor(): boolean {
+    return this.currentRole === 'editor';
+  }
+
+  getUserRole(): UserRole {
+    return this.currentRole;
+  }
+
+  get roleSnapshot(): UserRole {
+    return this.roleSubject.value;
+  }
+
+  handleSessionExpired(): void {
+    this.currentRole = null;
+    if (this.isAuthenticatedSubject.value !== false) {
+      this.isAuthenticatedSubject.next(false);
+    }
+  }
+
+  checkAuth(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    this.http.get(`${this.apiUrl}/me`, { withCredentials: true })
+      .subscribe({
+        next: (response: any) => {
+          if (response?.ok) {
+            this.markAuthenticated(response.session);
+          } else {
+            this.handleSessionExpired();
+          }
+        },
+        error: () => {
+          this.handleSessionExpired();
+        }
+      });
+  }
+
+  private setRoleFromSession(session?: SessionInfo): void {
+    if (session?.isAdmin) {
+      this.currentRole = 'admin';
+    } else if (session?.isEditor) {
+      this.currentRole = 'editor';
+    } else {
+      this.currentRole = null;
+    }
+    this.roleSubject.next(this.currentRole);
+  }
+
+  private markAuthenticated(session?: SessionInfo): void {
+    this.setRoleFromSession(session);
+    if (this.isAuthenticatedSubject.value !== true) {
+      this.isAuthenticatedSubject.next(true);
+    }
+  }
+
+  changePassword(payload: { username: string; oldPassword: string; newPassword: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/change-password`, payload, { withCredentials: true })
+      .pipe(
+        tap((response: any) => {
+          if (response?.session) {
+            this.setRoleFromSession(response.session);
+          }
+        })
+      );
+  }
+}
+</file>
+
+<file path="calendar.service.ts">
+import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { OrdersService, Order, OrderFormFilmEditing } from './orders.service';
+
+export interface WeddingCalendarEvent {
+  id: string;
+  date: string; // ISO date string (yyyy-mm-dd)
+  groomName: string;
+  brideName?: string;
+  title: string;
+  location?: string;
+  color?: string;
+  notes?: string;
+  favoriteSongs?: string[];
+  stylePreferences?: string[];
+  highlightPreferences?: string[];
+  moodboardLinks?: string[];
+  socialIdeas?: string[];
+  editingSequence?: string;
+  includeAccessoriesShots?: boolean;
+  editingNotes?: string;
+  specialRequests?: string;
+  timelineNote?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CalendarService {
+  constructor(private ordersService: OrdersService) {}
+
+  /**
+   * Fetch events from the backend orders API and map into calendar-friendly entries.
+   */
+  getEvents(): Observable<WeddingCalendarEvent[]> {
+    return this.ordersService.getOrders().pipe(
+      map(response => this.transformOrdersToEvents(response.orders ?? []))
+    );
+  }
+
+  private transformOrdersToEvents(orders: Order[]): WeddingCalendarEvent[] {
+    return orders
+      .map(order => {
+        const dateSource =
+          order.orderForm?.eventDate ||
+          this.extractFirstDate(order.orderForm?.timelineOfDay) ||
+          order.createdAt;
+        const isoDate = this.toIsoDate(new Date(dateSource));
+        const { groomName, brideName } = this.extractCoupleNames(order);
+        const title =
+          this.extractTitle(order) ||
+          `Wedding booking – ${groomName || order.clientName || 'Client'}`;
+        const location = order.orderForm?.eventVenue || order.notes;
+
+        const favoriteSongs = order.orderForm?.favoriteSongs?.filter(Boolean);
+        const stylePreferences = order.orderForm?.filmEditing?.stylePreference?.filter(Boolean);
+        const highlightPreferences = order.orderForm?.filmEditing?.highlightPreference?.filter(Boolean);
+        const moodboardLinks = order.orderForm?.moodBoardLinks?.filter(Boolean);
+        const socialIdeas = [
+          ...(order.orderForm?.socialMediaInspiration ?? []),
+          ...(order.orderForm?.tiktokIdeas ?? [])
+        ].filter(Boolean);
+
+        return {
+          id: order._id,
+          date: isoDate,
+          groomName: groomName || order.clientName || 'Groom',
+          brideName,
+          title,
+          location,
+          color: this.getStatusColor(order.status),
+          notes: order.orderForm?.specialMoments || order.notes,
+          favoriteSongs,
+          stylePreferences,
+          highlightPreferences,
+          moodboardLinks,
+          socialIdeas,
+          editingSequence: order.orderForm?.filmEditing?.editSequence,
+          includeAccessoriesShots: order.orderForm?.filmEditing?.includeAccessoriesShots,
+          editingNotes: this.buildEditingNotes(order.orderForm?.filmEditing),
+          specialRequests: this.buildSpecialRequests(order),
+          timelineNote: this.buildTimelineNote(order)
+        } satisfies WeddingCalendarEvent;
+      })
+      .filter(event => !Number.isNaN(new Date(event.date).getTime()));
+  }
+
+  private extractTitle(order: Order): string | undefined {
+    const eventTypeField = order.orderForm?.eventType as unknown;
+    if (Array.isArray(eventTypeField) && eventTypeField.length) {
+      return eventTypeField.join(' • ');
+    }
+    if (typeof eventTypeField === 'string' && eventTypeField.trim().length) {
+      return eventTypeField.trim();
+    }
+    return undefined;
+  }
+
+  private extractCoupleNames(order: Order): { groomName?: string; brideName?: string } {
+    const rawNames =
+      order.orderForm?.brideAndGroomNames ||
+      order.orderForm?.coupleDescription ||
+      order.clientName ||
+      '';
+
+    const cleaned = rawNames.replace(/\s+/g, ' ').trim();
+    if (!cleaned) {
+      return { groomName: order.clientName };
+    }
+
+    const parts = cleaned
+      .split(/&|and|\/|\+|,|x/i)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      return { groomName: parts[0], brideName: parts[1] };
+    }
+
+    return { groomName: cleaned };
+  }
+
+  private extractFirstDate(text?: string): string | undefined {
+    if (!text) return undefined;
+    const match = text.match(/\d{4}-\d{2}-\d{2}/);
+    return match?.[0];
+  }
+
+  private getStatusColor(status?: Order['status']): string {
+    switch (status) {
+      case 'pending':
+        return '#f97316';
+      case 'in-progress':
+        return '#2563eb';
+      case 'done':
+        return '#16a34a';
+      default:
+        return '#c084fc';
+    }
+  }
+
+  private toIsoDate(date: Date): string {
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  private buildSpecialRequests(order: Order): string | undefined {
+    const parts: string[] = [];
+    if (order.orderForm?.specialMoments) {
+      parts.push(`Must capture: ${order.orderForm.specialMoments}`);
+    }
+    if (order.orderForm?.excludeShots) {
+      parts.push(`Avoid: ${order.orderForm.excludeShots}`);
+    }
+    if (order.orderForm?.coupleDescription) {
+      parts.push(order.orderForm.coupleDescription);
+    }
+    return parts.length ? parts.join(' • ') : undefined;
+  }
+
+  private buildTimelineNote(order: Order): string | undefined {
+    const segments: string[] = [];
+    if (order.orderForm?.shootersStartTime) {
+      segments.push(`Shooters start: ${order.orderForm.shootersStartTime}`);
+    }
+    if (order.orderForm?.shootersEndTime) {
+      segments.push(`Shooters end: ${order.orderForm.shootersEndTime}`);
+    }
+    if (order.orderForm?.timelineOfDay) {
+      segments.push(`Timeline: ${order.orderForm.timelineOfDay}`);
+    }
+    return segments.length ? segments.join(' | ') : undefined;
+  }
+
+  private formatLabel(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    return value
+      .split(/[\s-_]/)
+      .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ');
+  }
+
+  private buildEditingNotes(filmEditing?: OrderFormFilmEditing): string | undefined {
+    if (!filmEditing) return undefined;
+    const segments: string[] = [];
+    const sequence = this.formatLabel(filmEditing.editSequence);
+    if (sequence) {
+      segments.push(`Sequence: ${sequence}`);
+    }
+    if (filmEditing.includeAccessoriesShots) {
+      segments.push('Include accessories shots');
+    }
+    return segments.length ? segments.join(' • ') : undefined;
+  }
+}
+</file>
+
+<file path="contact.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface ContactFormData {
+  clientName: string;
+  email: string;
+  phoneNumber: string;
+  message: string;
+}
+
+export interface ContactResponse {
+  ok: boolean;
+  message: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ContactService {
+  private apiUrl = `${environment.apiUrl}/contact`;
+
+  constructor(private http: HttpClient) { }
+
+  submitContactForm(data: ContactFormData): Observable<ContactResponse> {
+    return this.http.post<ContactResponse>(this.apiUrl, data);
+  }
+}
+</file>
+
+<file path="currency.service.ts">
+import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CurrencyService {
+  private isBrowser: boolean;
+  private isInEgyptSubject = new BehaviorSubject<boolean | null>(null);
+  public isInEgypt$ = this.isInEgyptSubject.asObservable();
+  private readonly STORAGE_KEY = 'maro_currency_location';
+  private readonly EXCHANGE_RATE_STORAGE_KEY = 'maro_exchange_rate';
+  private readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly EXCHANGE_RATE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes - short cache for real-time rates
+  private exchangeRate: number = 50; // Temporary initial value, will be replaced by API
+  private exchangeRateSubject = new BehaviorSubject<number>(50);
+  public exchangeRate$ = this.exchangeRateSubject.asObservable();
+
+  constructor(
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+    if (this.isBrowser) {
+      this.detectLocation();
+      this.fetchExchangeRate();
+    } else {
+      // Default to Egypt for SSR
+      this.isInEgyptSubject.next(true);
+    }
+  }
+
+  get isInEgyptValue(): boolean {
+    return this.isInEgyptSubject.value ?? true; // Default to Egypt if not detected yet
+  }
+
+  get currentExchangeRate(): number {
+    return this.exchangeRateSubject.value;
+  }
+
+  private detectLocation(): void {
+    // Check cache first
+    const cached = this.getCachedLocation();
+    if (cached !== null) {
+      this.isInEgyptSubject.next(cached);
+      return;
+    }
+
+    // Use free IP geolocation API
+    this.http.get<any>('https://ipapi.co/json/')
+      .pipe(
+        catchError(() => {
+          // Fallback to another service if first fails
+          return this.http.get<any>('https://ip-api.com/json/');
+        }),
+        catchError(() => {
+          // If both fail, default to Egypt
+          this.setCachedLocation(true);
+          return of({ country_code: 'EG' });
+        }),
+        map((response: any) => {
+          // Check if country is Egypt
+          const countryCode = response.country_code || response.countryCode || 'EG';
+          const isEgypt = countryCode.toUpperCase() === 'EG';
+          this.setCachedLocation(isEgypt);
+          return isEgypt;
+        })
+      )
+      .subscribe({
+        next: (isEgypt: boolean) => {
+          this.isInEgyptSubject.next(isEgypt);
+        },
+        error: () => {
+          // Default to Egypt on error
+          this.isInEgyptSubject.next(true);
+        }
+      });
+  }
+
+  private getCachedLocation(): boolean | null {
+    if (!this.isBrowser) return null;
+    try {
+      const cached = localStorage.getItem(this.STORAGE_KEY);
+      if (!cached) return null;
+      const { isEgypt, timestamp } = JSON.parse(cached);
+      const now = Date.now();
+      if (now - timestamp < this.CACHE_DURATION) {
+        return isEgypt;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private setCachedLocation(isEgypt: boolean): void {
+    if (!this.isBrowser) return;
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+        isEgypt,
+        timestamp: Date.now()
+      }));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+
+  private fetchExchangeRate(): void {
+    if (!this.isBrowser) return;
+
+    // Check for very recent cache (less than 5 minutes) to avoid too many API calls
+    const cached = this.getCachedExchangeRate();
+    if (cached !== null) {
+      this.exchangeRate = cached;
+      this.exchangeRateSubject.next(cached);
+      // Still fetch fresh in background
+    }
+
+    // Fetch REAL-TIME exchange rate from API - NO FIXED PRICES, NO FALLBACKS
+    this.http.get<any>('https://api.exchangerate-api.com/v4/latest/USD')
+      .pipe(
+        map((response: any) => {
+          // Extract EGP rate from API response: { rates: { EGP: 47.36 } }
+          if (response.rates && response.rates.EGP) {
+            const egpRate = parseFloat(response.rates.EGP);
+            if (!isNaN(egpRate) && egpRate > 0 && egpRate <= 1000) {
+              return egpRate;
+            }
+          }
+          throw new Error('Invalid rate from API');
+        }),
+        catchError((error) => {
+          console.error('❌ Failed to fetch exchange rate from API:', error);
+          // Don't use any fixed rate - return null
+          return of(null);
+        })
+      )
+      .subscribe({
+        next: (rate: number | null) => {
+          if (rate !== null) {
+            this.exchangeRate = rate;
+            this.exchangeRateSubject.next(rate);
+            this.setCachedExchangeRate(rate);
+            
+          } else {
+            console.error('❌ Could not get exchange rate from API. Prices may not convert correctly.');
+          }
+        },
+        error: (error) => {
+          console.error('❌ Exchange rate API error:', error);
+        }
+      });
+  }
+
+  private getCachedExchangeRate(): number | null {
+    if (!this.isBrowser) return null;
+    try {
+      const cached = localStorage.getItem(this.EXCHANGE_RATE_STORAGE_KEY);
+      if (!cached) return null;
+      const { rate, timestamp } = JSON.parse(cached);
+      const now = Date.now();
+      if (now - timestamp < this.EXCHANGE_RATE_CACHE_DURATION) {
+        // Validate rate is reasonable (should be around 47-48 currently)
+        if (rate >= 40 && rate <= 60) {
+          return rate;
+        } else {
+          console.warn('⚠️ Cached rate seems invalid:', rate, '- clearing cache');
+          this.clearExchangeRateCache();
+          return null;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private getCachedExchangeRateData(): { rate: number; timestamp: number } | null {
+    if (!this.isBrowser) return null;
+    try {
+      const cached = localStorage.getItem(this.EXCHANGE_RATE_STORAGE_KEY);
+      if (!cached) return null;
+      return JSON.parse(cached);
+    } catch {
+      return null;
+    }
+  }
+
+  private clearExchangeRateCache(): void {
+    if (!this.isBrowser) return;
+    try {
+      localStorage.removeItem(this.EXCHANGE_RATE_STORAGE_KEY);
+      
+    } catch {
+      // Ignore errors
+    }
+  }
+
+  // Public method to force refresh exchange rate (clears cache and fetches fresh)
+  public forceRefreshExchangeRate(): void {
+    if (!this.isBrowser) return;
+    
+    this.clearExchangeRateCache();
+    this.fetchExchangeRate();
+  }
+
+  private setCachedExchangeRate(rate: number): void {
+    if (!this.isBrowser) return;
+    try {
+      localStorage.setItem(this.EXCHANGE_RATE_STORAGE_KEY, JSON.stringify({
+        rate,
+        timestamp: Date.now()
+      }));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+
+  formatCurrency(value: number | string | null | undefined): string {
+    if (value === null || value === undefined) {
+      return this.isInEgyptValue ? '0 LE' : '$0';
+    }
+
+    const numValue = typeof value === 'string' ? this.parsePriceValue(value) : value;
+    
+    if (isNaN(numValue) || numValue === 0) {
+      return this.isInEgyptValue ? '0 LE' : '$0';
+    }
+
+    if (this.isInEgyptValue) {
+      // Display in LE (Egyptian Pounds)
+      return `${numValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} LE`;
+    } else {
+      // Convert LE to USD using current exchange rate
+      // exchangeRate is EGP per 1 USD, so divide LE by rate to get USD
+      const usdValue = numValue / this.exchangeRate;
+      // Round to nearest whole number for USD
+      const roundedUsd = Math.round(usdValue);
+      
+      
+
+      return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    }
+  }
+
+  formatPriceString(priceString: string | null | undefined): string {
+    if (!priceString) {
+      return this.isInEgyptValue ? '0 LE' : '$0';
+    }
+
+    // Extract numeric value from price string
+    const numValue = this.parsePriceValue(priceString);
+    
+    if (isNaN(numValue) || numValue === 0) {
+      return this.isInEgyptValue ? '0 LE' : '$0';
+    }
+
+    if (this.isInEgyptValue) {
+      // Display in LE (Egyptian Pounds)
+      return `${numValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} LE`;
+    } else {
+      // Convert LE to USD using current exchange rate
+      // exchangeRate is EGP per 1 USD, so divide LE by rate to get USD
+      const usdValue = numValue / this.exchangeRate;
+      // Round to nearest whole number for USD
+      const roundedUsd = Math.round(usdValue);
+      
+      
+      
+      return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    }
+  }
+
+  getCurrencySymbol(): string {
+    return this.isInEgyptValue ? 'LE' : '$';
+  }
+
+  getCurrencySuffix(): string {
+    return this.isInEgyptValue ? 'LE' : '$';
+  }
+
+  private parsePriceValue(price: string | number): number {
+    if (typeof price === 'number') {
+      return price;
+    }
+    if (!price) {
+      return 0;
+    }
+    // Remove all non-numeric characters except decimal point and minus sign
+    const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ''));
+    return isNaN(numeric) ? 0 : numeric;
+  }
+}
+</file>
+
+<file path="films.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface Film {
+  _id: string;
+  filename: string;
+  url: string;
+  description: string;
+  thumbnail: string | null;
+  thumbnailFilename: string | null;
+  uploadedAt: Date | string;
+  __v?: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class FilmsService {
+  private apiUrl = `${environment.apiUrl}/films`;
+
+  constructor(private http: HttpClient) { }
+
+  // Get all films
+  getAllFilms(): Observable<Film[]> {
+    return this.http.get<Film[]>(this.apiUrl);
+  } 
+
+  // Upload a film (requires admin authentication)
+  uploadFilm(file: File, description: string): Observable<any> {
+    const formData = new FormData();
+    formData.append('videos', file);
+    formData.append('description', description);
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  // Extract thumbnail for a film (requires admin authentication)
+  extractFilmThumbnail(filmId: string, timeInSeconds: number): Observable<{ ok: boolean; thumbnail: string; thumbnailFilename: string }> {
+    return this.http.post<{ ok: boolean; thumbnail: string; thumbnailFilename: string }>(
+      `${this.apiUrl}/${filmId}/thumbnail`,
+      { timeInSeconds },
+      { withCredentials: true }
+    );
+  }
+
+  // Delete a film (requires admin authentication)
+  // Backend accepts either 'id' or 'fileName' in the request body
+  deleteFilm(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/delete`, {
+      body: { id },
+      withCredentials: true
+    });
+  }
+}
+</file>
+
+<file path="gallery.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { HttpEventType } from '@angular/common/http';
+
+export interface GalleryImage {
+  _id: string;
+  filename: string;
+  url: string;
+  uploadedAt: Date;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class GalleryService {
+  private apiUrl = `${environment.apiUrl}/gallery`;
+
+  constructor(private http: HttpClient) { }
+
+  // Get all gallery images
+  getAllImages(): Observable<GalleryImage[]> {
+    return this.http.get<GalleryImage[]>(this.apiUrl);
+  }
+
+  // Upload images to gallery (requires admin authentication)
+  uploadImages(files: File[]): Observable<any> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  // Delete an image from gallery (requires admin authentication)
+  deleteImage(fileName: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/delete`, {
+      body: { fileName },
+      withCredentials: true
+    });
+  }
+}
+</file>
+
+<file path="homepage.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { HttpEventType } from '@angular/common/http';
+
+export interface HomePageImage {
+  _id: string;
+  filename: string;
+  url: string;
+  uploadedAt: Date | string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HomePageService {
+  private apiUrl = `${environment.apiUrl}/homepage`;
+
+  constructor(private http: HttpClient) { }
+
+  // Get all homepage images
+  getAllImages(): Observable<HomePageImage[]> {
+    return this.http.get<HomePageImage[]>(this.apiUrl);
+  }
+
+  // Upload images to homepage (requires admin authentication)
+  uploadImages(files: File[]): Observable<any> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    return this.http.post(`${this.apiUrl}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  // Delete an image from homepage (requires admin authentication)
+  deleteImage(fileName: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/delete`, {
+      body: { fileName },
+      withCredentials: true
+    });
+  }
+}
+</file>
+
+<file path="orders.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpEventType } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface OrderImage {
+  filename: string;
+  originalName?: string; // Original filename before upload
+  url: string;
+  uploadedAt: string;
+  _id?: string;
+  thumbnail?: string;
+  thumbnailFilename?: string;
+  foldername?: string | null;
+}
+
+export interface OrderFormVendors {
+  photographers?: string[];
+  cinematographers?: string[];
+  makeupArtist?: string;
+  hairStylist?: string;
+  dressDesigner?: string;
+  eventPlanner?: string;
+  dj?: string;
+  lighting?: string;
+  entertainment?: string;
+  others?: string;
+}
+
+export interface OrderFormFilmEditing {
+  includeAccessoriesShots?: boolean;
+  editSequence?: 'chronological' | 'random' | 'no-preference';
+  stylePreference?: string[];
+  highlightPreference?: string[];
+  teaserStyleLinks?: string[];
+}
+
+export interface SelectedPackageOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+}
+
+export interface SelectedCollectionOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  collectionId: string;
+  collectionName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface SelectedExtraOption {
+  packageId: string;
+  packageName: string;
+  packageDisplayName: string;
+  extraId: string;
+  extraName: string;
+  priceLabel: string;
+  priceValue: number;
+}
+
+export interface OrderPricing {
+  packages?: SelectedPackageOption[];
+  collections?: SelectedCollectionOption[];
+  extras?: SelectedExtraOption[];
+  promoCode?: string;
+  subtotal?: number;
+  discount?: number;
+  total?: number;
+  depositPaid?: number;
+  remainingBalance?: number;
+}
+
+export interface OrderForm {
+  _id?: string;
+  brideAndGroomNames?: string;
+  eventDate?: string;
+  eventType?: string[];
+  eventVenue?: string;
+  timelineOfDay?: string;
+  shootersStartTime?: string;
+  shootersEndTime?: string;
+  coupleDescription?: string;
+  moodBoardLinks?: string[];
+  favoriteSongs?: string[];
+  specialMoments?: string;
+  excludeShots?: string;
+  vendors?: OrderFormVendors;
+  filmEditing?: OrderFormFilmEditing;
+  socialMediaInspiration?: string[];
+  tiktokIdeas?: string[];
+  pricing?: OrderPricing;
+}
+
+export interface Feedback {
+  _id?: string;
+  feedback: string;
+  createdAt?: string;
+}
+
+export interface Order {
+  _id: string;
+  email: string;
+  clientName?: string;
+  notes?: string;
+  status: 'pending' | 'in-progress' | 'done';
+  orderBackground?: {
+    image?: string; // Background image URL for order
+    filename?: string; // Background image filename
+    selectedAt?: string | Date; // When background was selected
+  };
+  media?: OrderImage[]; // Made optional to handle cases where backend might not send it
+  orderForm?: OrderForm;
+  feedbacks?: Feedback[];
+  createdAt: string;
+  updatedAt: string;
+  __v?: number;
+}
+
+export interface OrdersResponse {
+  ok: boolean;
+  orders: Order[];
+}
+
+export interface SingleOrderResponse {
+  ok: boolean;
+  order: Order;
+}
+
+export interface OrderFoldersResponse {
+  ok: boolean;
+  count: number;
+  folders: string[];
+}
+
+export interface FolderMediaResponse {
+  ok: boolean;
+  foldername: string;
+  count: number;
+  media: OrderImage[];
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class OrdersService {
+  private apiUrl = `${environment.apiUrl}/orders`;
+
+  constructor(private http: HttpClient) { }
+
+  getOrders(): Observable<OrdersResponse> {
+    return this.http.get<OrdersResponse>(this.apiUrl, { withCredentials: true });
+  }
+
+  getOrderById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`, { withCredentials: true });
+  }
+
+  getOrderFolders(orderId: string): Observable<OrderFoldersResponse> {
+    return this.http.get<OrderFoldersResponse>(`${this.apiUrl}/folders/${orderId}`, { withCredentials: true });
+  }
+
+  getFolderMedia(orderId: string, folderName: string): Observable<FolderMediaResponse> {
+    return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+  }
+
+  deleteOrderFolder(orderId: string, folderName: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+  }
+
+  sendOrderCompletionEmail(orderId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/emails/${orderId}`, {}, { withCredentials: true });
+  }
+
+  uploadOrderImages(orderId: string, files: File[], folderName: string): Observable<any> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('media', file); // Changed from 'images' to 'media' to match backend
+    });
+    formData.append('foldername', folderName);
+    return this.http.post<any>(`${this.apiUrl}/${orderId}/upload`, formData, {
+      withCredentials: true,
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  /**
+   * Upload order images in chunks to reduce memory usage and improve performance
+   * Files are grouped by total size rather than count for optimal performance
+   * @param orderId - The order ID
+   * @param files - Array of files to upload
+   * @param folderName - The folder name
+   * @param maxChunkSize - Maximum size per chunk in bytes (default: 100MB)
+   * @returns Observable that emits progress events for each chunk
+   */
+  uploadOrderImagesInChunks(orderId: string, files: File[], folderName: string, maxChunkSize: number = 100 * 1024 * 1024): Observable<any> {
+    return new Observable(observer => {
+      // Group files into chunks based on size
+      const chunks: File[][] = [];
+      let currentChunk: File[] = [];
+      let currentChunkSize = 0;
+
+      for (const file of files) {
+        // If adding this file would exceed the max chunk size and we already have files in the chunk
+        if (currentChunkSize + file.size > maxChunkSize && currentChunk.length > 0) {
+          chunks.push(currentChunk);
+          currentChunk = [file];
+          currentChunkSize = file.size;
+        } else {
+          currentChunk.push(file);
+          currentChunkSize += file.size;
+        }
+      }
+
+      // Add the last chunk if it has files
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      const totalFiles = files.length;
+      const totalChunks = chunks.length;
+      let processedFiles = 0;
+
+      // Aggregate results from all chunks
+      const aggregatedResults = {
+        added: [] as any[],
+        duplicates: [] as any[],
+        failed: [] as any[]
+      };
+
+      const uploadChunk = (chunkIndex: number) => {
+        const chunkFiles = chunks[chunkIndex];
+        const currentChunk = chunkIndex + 1;
+        const chunkSizeBytes = chunkFiles.reduce((sum, f) => sum + f.size, 0);
+
+        // Emit chunk start event
+        observer.next({
+          type: 'chunk-start',
+          chunkIndex: currentChunk,
+          totalChunks,
+          chunkFiles: chunkFiles.length,
+          chunkSize: chunkSizeBytes,
+          totalFiles,
+          processedFiles
+        });
+
+        // Upload the chunk
+        this.uploadOrderImages(orderId, chunkFiles, folderName).subscribe({
+          next: (event: any) => {
+            // Forward progress events with chunk information
+            if (event.type === HttpEventType.UploadProgress) {
+              const chunkProgress = event.loaded / (event.total || 1);
+              const overallProgress = (processedFiles + (chunkFiles.length * chunkProgress)) / totalFiles;
+
+              observer.next({
+                type: HttpEventType.UploadProgress,
+                loaded: Math.round(processedFiles + (chunkFiles.length * chunkProgress)),
+                total: totalFiles,
+                chunkIndex: currentChunk,
+                totalChunks,
+                chunkProgress: Math.round(chunkProgress * 100),
+                overallProgress: Math.round(overallProgress * 100)
+              });
+            } else if (event.type === HttpEventType.Response) {
+              // Chunk upload complete
+              const response = event.body;
+              processedFiles += chunkFiles.length;
+
+              // Aggregate results
+              if (response.added) aggregatedResults.added.push(...response.added);
+              if (response.duplicates) aggregatedResults.duplicates.push(...response.duplicates);
+              if (response.failed) aggregatedResults.failed.push(...response.failed);
+
+              observer.next({
+                type: 'chunk-complete',
+                chunkIndex: currentChunk,
+                totalChunks,
+                processedFiles,
+                totalFiles,
+                chunkResponse: response
+              });
+
+              // Upload next chunk or complete
+              if (chunkIndex + 1 < totalChunks) {
+                uploadChunk(chunkIndex + 1);
+              } else {
+                // All chunks complete
+                observer.next({
+                  type: HttpEventType.Response,
+                  body: {
+                    ok: true,
+                    added: aggregatedResults.added,
+                    duplicates: aggregatedResults.duplicates,
+                    failed: aggregatedResults.failed,
+                    message: `${aggregatedResults.added.length} file(s) uploaded, ${aggregatedResults.duplicates.length} duplicate(s) skipped, ${aggregatedResults.failed.length} failed.`
+                  }
+                });
+                observer.complete();
+              }
+            }
+          },
+          error: (err) => {
+            observer.next({
+              type: 'chunk-error',
+              chunkIndex: currentChunk,
+              totalChunks,
+              error: err
+            });
+            observer.error(err);
+          }
+        });
+      };
+
+      // Start uploading from first chunk
+      uploadChunk(0);
+    });
+  }
+
+  getOrdersByEmail(email: string): Observable<OrdersResponse> {
+    return this.http.get<OrdersResponse>(`${this.apiUrl}/view/orders-by-email?email=${email}`);
+  }
+
+  updateOrderStatus(orderId: string, status: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${orderId}/status`, { status }, { withCredentials: true });
+  }
+
+  createOrder(orderData: { email: string; clientName?: string; notes?: string; orderForm?: OrderForm }): Observable<any> {
+    return this.http.post<any>(this.apiUrl, orderData);
+  }
+
+  deleteOrder(orderId: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${orderId}`, { withCredentials: true });
+  }
+
+  deleteOrderMedia(orderId: string, filenames: string[]): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${orderId}/deletemedia`, {
+      body: { filenames },
+      withCredentials: true
+    });
+  }
+
+  updateOrder(orderId: string, updateFields: Partial<Order>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${orderId}`, updateFields);
+  }
+
+  submitFeedback(orderId: string, feedback: string): Observable<any> {
+    // The endpoint is /feedbacks/orders/:orderId/feedback based on backend routes
+    return this.http.post<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedback`,
+      { feedback },
+      { withCredentials: true }
+    );
+  }
+
+  getOrderFeedbacks(orderId: string): Observable<any> {
+    // The endpoint is /feedbacks/orders/:orderId/feedbacks based on backend routes
+    return this.http.get<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/feedbacks`, {
+      withCredentials: true
+    });
+  }
+
+  createGeneralFeedback(feedback: string): Observable<Feedback> {
+    return this.http.post<Feedback>(`${environment.apiUrl}/feedbacks`, { feedback });
+  }
+
+  getAllFeedbacks(feedbackCounts?: number): Observable<any> {
+    // The endpoint is /feedbacks/all based on backend routes
+    let url = `${environment.apiUrl}/feedbacks/all`;
+    if (feedbackCounts) {
+      url += `?feedbackCounts=${feedbackCounts}`;
+    }
+    return this.http.get<any>(url, {
+      withCredentials: true
+    });
+  }
+
+  deleteFeedback(orderId: string, feedbackId: string): Observable<any> {
+    // The endpoint is /feedbacks/orders/:orderId/:feedbackId based on backend routes
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/orders/${orderId}/${feedbackId}`, {
+      withCredentials: true
+    });
+  }
+
+  deleteGeneralFeedback(feedbackId: string): Observable<any> {
+    return this.http.delete<any>(`${environment.apiUrl}/feedbacks/${feedbackId}`, {
+      withCredentials: true
+    });
+  }
+
+  getVideoDuration(orderId: string, filename: string): Observable<{ ok: boolean; duration: number }> {
+    return this.http.get<{ ok: boolean; duration: number }>(
+      `${this.apiUrl}/${orderId}/video/${filename}/duration`,
+      { withCredentials: true }
+    );
+  }
+
+  extractVideoThumbnail(orderId: string, filename: string, timeInSeconds: number): Observable<{ ok: boolean; thumbnail: string; thumbnailFilename: string }> {
+    return this.http.post<{ ok: boolean; thumbnail: string; thumbnailFilename: string }>(
+      `${this.apiUrl}/${orderId}/video/${filename}/thumbnail`,
+      { timeInSeconds },
+      { withCredentials: true }
+    );
+  }
+
+  updateOrderBackgroundImage(orderId: string, filename: string): Observable<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }> {
+    return this.http.put<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }>(
+      `${this.apiUrl}/${orderId}/background-image`,
+      { filename },
+      { withCredentials: true }
+    );
+  }
+
+  getDownloadUrl(orderId: string, filename: string): string {
+    return `${this.apiUrl}/${orderId}/download/${filename}`;
+  }
+
+  /**
+   * 1. Get upload tokens and check for duplicates from Backend
+   * 2. Upload bytes directly to B2 (fastest)
+   * 3. Inform Backend to sync metadata and generate thumbnails
+   */
+  uploadOrderMediaDirectly(orderId: string, files: File[], folderName: string): Observable<any> {
+    return new Observable(observer => {
+      const fileInfos = files.map(f => ({ originalname: f.name, mimetype: f.type }));
+      
+      this.http.post<any>(`${this.apiUrl}/${orderId}/prepare-direct-upload`, { 
+        files: fileInfos, 
+        foldername: folderName 
+      }, { withCredentials: true }).subscribe({
+        next: async (resp) => {
+          if (!resp.ok) {
+            observer.error(resp.message);
+            return;
+          }
+
+          const { uploadSlots, duplicates } = resp;
+          const successfulUploads: any[] = [];
+          let totalProgress = 0;
+          const progressPerFile = 100 / (files.length || 1);
+
+          // If everything is a duplicate, we can finish early
+          if (uploadSlots.length === 0 && duplicates.length > 0) {
+            observer.next({ type: 'complete', added: [], duplicates });
+            observer.complete();
+            return;
+          }
+
+          for (let i = 0; i < uploadSlots.length; i++) {
+            const slot = uploadSlots[i];
+            const file = files.find(f => f.name === slot.originalName);
+            if (!file) continue;
+
+            let retryCount = 0;
+            const maxRetries = 2; // Total 3 attempts
+            let success = false;
+
+            while (retryCount <= maxRetries && !success) {
+              try {
+                await this.uploadToB2(slot.uploadUrl, slot.authorizationToken, slot.key, file, (progress) => {
+                  const currentFileProgress = (progress / 100) * progressPerFile;
+                  observer.next({ 
+                    type: 'progress', 
+                    percent: Math.round(totalProgress + currentFileProgress),
+                    currentFile: file.name
+                  });
+                });
+                
+                success = true;
+                successfulUploads.push({
+                  filename: slot.filename,
+                  originalName: slot.originalName,
+                  mimetype: slot.mimetype
+                });
+              } catch (err) {
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                  console.warn(`Upload failed for ${file.name}, retrying (${retryCount}/${maxRetries})...`, err);
+                  // Optional: add a small delay before retry
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                } else {
+                  console.error(`Direct upload failed for ${file.name} after ${maxRetries + 1} attempts:`, err);
+                }
+              }
+            }
+            
+            if (!success) {
+              failedUploads.push({
+                  originalName: file.name,
+                  reason: 'Max retries exceeded'
+              });
+            }
+
+            totalProgress += progressPerFile;
+          }
+
+          // Step 3: Confirm with Backend (only successful ones)
+          if (successfulUploads.length > 0) {
+            this.http.post<any>(`${this.apiUrl}/${orderId}/confirm-direct-upload`, {
+              uploadedFiles: successfulUploads,
+              foldername: folderName
+            }, { withCredentials: true }).subscribe({
+              next: (confirmResp) => {
+                observer.next({ type: 'complete', ...confirmResp, duplicates, failed: failedUploads });
+                observer.complete();
+              },
+              error: (err) => observer.error('Failed to confirm upload with server')
+            });
+          } else {
+            observer.next({ type: 'complete', added: [], duplicates, failed: failedUploads });
+            observer.complete();
+          }
+        },
+        error: (err) => observer.error('Failed to prepare upload slots')
+      });
+    });
+  }
+
+  private async uploadToB2(uploadUrl: string, token: string, fileName: string, file: File, onProgress: (p: number) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', uploadUrl);
+      
+      xhr.setRequestHeader('Authorization', token);
+      xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
+      xhr.setRequestHeader('Content-Type', file.type || 'b2/x-auto');
+      xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify'); 
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = (event.loaded / event.total) * 100;
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(`B2 Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('B2 XHR Network Error'));
+      xhr.send(file);
+    });
+  }
+}
+</file>
+
+<file path="packages.service.ts">
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+// Interface for Package Collection
+export interface PackageCollection {
+  _id: string;
+  collectionName: string;
+  price: string;
+  duration?: string; // Used by Cinematography & Photography only
+  description?: string;
+  features: string[]; // Always present (can be empty [])
+}
+
+// Interface for Package Extra
+export interface PackageExtra {
+  _id: string;
+  name: string;
+  price: string;
+}
+
+// Interface for Package
+export interface Package {
+  _id: string;
+  packageName: string;
+  displayName: string;
+  collections: PackageCollection[];
+  extras: PackageExtra[];
+  __v?: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class PackagesService {
+  private apiUrl = `${environment.apiUrl}/packages`;
+
+  constructor(private http: HttpClient) { }
+
+  // Get all packages
+  getAllPackages(): Observable<Package[]> {
+    return this.http.get<Package[]>(this.apiUrl);
+  }
+
+  // Get a specific package by packageName (cinematography, photography, fullRecording)
+  getPackageByName(packageName: string): Observable<Package> {
+    return this.http.get<Package>(`${this.apiUrl}/${packageName}`);
+  }
+
+  // Save/Update a package (requires authentication)
+  savePackage(packageData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/save`, packageData, { withCredentials: true });
+  }
+}
+</file>
+
+</files>

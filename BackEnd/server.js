@@ -72,6 +72,18 @@ import roleInjector from "./middleware/roleInjector.js";
     // Role injector - attaches session role info to API JSON responses
     app.use(roleInjector);
 
+    app.use((req, res, next) => {
+      const start = process.hrtime(); // high-res timer
+
+      res.on("finish", () => {
+        const diff = process.hrtime(start);
+        const ms = diff[0] * 1e3 + diff[1] / 1e6;
+        console.log(`${req.method} ${req.originalUrl} took ${ms.toFixed(2)}ms`);
+      });
+
+      next();
+    });
+
     // routes
     app.use("/", allRoutes);
 

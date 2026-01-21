@@ -40,11 +40,14 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
+.dockerignore
 .env.example
 .gitignore
-config/allowed_extensions.json
+config/allowed_extensions.js
 config/Credentials.js
 config/db.js
+docker-compose.yml
+Dockerfile
 middleware/auth.js
 middleware/roleInjector.js
 middleware/upload.js
@@ -71,7 +74,9 @@ routes/Orders/orderFolders.js
 routes/Orders/orders.js
 routes/packages.js
 routes/routes.js
+scripts/setup-b2-cors.js
 server.js
+services/b2.service.js
 services/emailService.js
 services/order.service.js
 services/orderMediaService.js
@@ -81,10 +86,22 @@ services/videoService.js
 services/videoThumbnail.service.js
 utils/fileProccess.js
 utils/logger.js
+utils/signingUtils.js
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path=".dockerignore">
+node_modules
+npm-debug.log
+logs
+tmp
+.git
+.gitignore
+.DS_Store
+.env
+</file>
 
 <file path=".env.example">
 // Current Env
@@ -133,10 +150,12 @@ node_modules
 package-lock.json
 uploads
 logs
+uploads
+tmp
 </file>
 
-<file path="config/allowed_extensions.json">
-{
+<file path="config/allowed_extensions.js">
+export default {
   "images":[
     "image/jpeg",
     "image/png",
@@ -153,11 +172,15 @@ logs
 </file>
 
 <file path="config/Credentials.js">
+import dotenv from "dotenv";
+dotenv.config(); 
+
+
 const NODE_ENV = process.env.NODE_ENV;
 
 const PORT = process.env.PORT || 4000;
-const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 4000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 4000;
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || '';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
 
 const DB_USER = process.env.DB_USER || '';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
@@ -188,7 +211,12 @@ const SMTP_PASS = process.env.SMTP_PASS
 const FROM_EMAIL = process.env.FROM_EMAIL
 const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
 
-module.exports = {
+const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
+const B2_BUCKET_ID = process.env.B2_BUCKET_ID
+const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME
+
+export default {
   NODE_ENV,
   PORT,
   SERVER_ORIGIN,
@@ -210,12 +238,16 @@ module.exports = {
   SMTP_USER,
   SMTP_PASS,
   FROM_EMAIL,
-  CONTACT_RECEIVER
+  CONTACT_RECEIVER,
+  B2_APPLICATION_KEY_ID,
+  B2_APPLICATION_KEY,
+  B2_BUCKET_ID,
+  B2_BUCKET_NAME
 };
 </file>
 
 <file path="config/db.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 async function connectDB(uri) {
   mongoose.set('strictQuery', false);
@@ -226,32 +258,58 @@ async function connectDB(uri) {
   console.log('MongoDB connected');
 }
 
-module.exports = connectDB;
+export default connectDB;
+</file>
+
+<file path="docker-compose.yml">
+services:
+  backend:
+    build: .
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+</file>
+
+<file path="Dockerfile">
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+# Copying source code
+COPY . .
+
+EXPOSE 4000
+
+CMD ["npm", "start"]
 </file>
 
 <file path="middleware/auth.js">
-const requireAdminAuth = (req, res, next) => {
+export const requireAdminAuth = (req, res, next) => {
   if (req.session && req.session.isAdmin) return next();
   return res.status(401).json({ ok: false, message: 'Unauthorized' });
 };
 
-const requireEditorAuth = (req, res, next) => {
+export const requireEditorAuth = (req, res, next) => {
   if (req.session && req.session.isEditor) return next();
   return res.status(401).json({ ok: false, message: 'Unauthorized' });
 };
 
-const requireAdminOrEditorAuth = (req, res, next) => {
+export const requireAdminOrEditorAuth = (req, res, next) => {
   if (req.session && (req.session.isAdmin || req.session.isEditor)) return next();
   return res.status(401).json({ ok: false, message: 'Unauthorized' });
 };
-
-
-module.exports = { requireAdminAuth, requireEditorAuth, requireAdminOrEditorAuth };
 </file>
 
 <file path="middleware/roleInjector.js">
 // Injects req.session.isAdmin/isEditor into every JSON response (if session exists)
-module.exports = function roleInjector(req, res, next) {
+export default function roleInjector(req, res, next) {
   const oldJson = res.json;
   res.json = function (body) {
     if (req.session) {
@@ -274,7 +332,8 @@ module.exports = function roleInjector(req, res, next) {
 import { MulterError } from "multer";
 
 // Custom error handling middleware for Multer errors
-const handleMulterErrors = (error, req, res, next) => {
+export const handleMulterErrors = (error, req, res, next) => {
+  console.log(req.body)
   if (error instanceof MulterError) {
     switch (error.code) {
       case "LIMIT_FILE_SIZE":
@@ -295,14 +354,10 @@ const handleMulterErrors = (error, req, res, next) => {
   }
   next(error); // Pass any other errors to the next middleware function
 };
-
-export default {
-  handleMulterErrors,
-};
 </file>
 
 <file path="models/admin.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const AdminSchema = new mongoose.Schema({
   username: { type: String, default: 'admin', unique: true },
@@ -310,22 +365,22 @@ const AdminSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Admin', AdminSchema);
+export default mongoose.model('Admin', AdminSchema);
 </file>
 
 <file path="models/Feedbacks.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const feedbackSchema = new mongoose.Schema({
   feedback: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Feedbacks', feedbackSchema);
+export default mongoose.model('Feedbacks', feedbackSchema);
 </file>
 
 <file path="models/Film.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const filmSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -336,11 +391,11 @@ const filmSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Film', filmSchema);
+export default mongoose.model('Film', filmSchema);
 </file>
 
 <file path="models/Gallery.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const gallerySchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -348,11 +403,11 @@ const gallerySchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Gallery', gallerySchema);
+export default mongoose.model('Gallery', gallerySchema);
 </file>
 
 <file path="models/HomePage.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const homePageSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -360,13 +415,13 @@ const homePageSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('HomePage', homePageSchema);
+export default mongoose.model('HomePage', homePageSchema);
 </file>
 
 <file path="models/order.js">
-const mongoose = require('mongoose');
-const OrderFormSchema = require('./orderForm')
-const FeedbackSchema = require('./orderFeedback')
+import mongoose from 'mongoose';
+import OrderFormSchema from './orderForm.js'
+import FeedbackSchema from './orderFeedback.js'
 
 const OrderSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
@@ -399,22 +454,22 @@ OrderSchema.pre('save', function(next){
   next();
 });
 
-module.exports = mongoose.model('Order', OrderSchema);
+export default mongoose.model('Order', OrderSchema);
 </file>
 
 <file path="models/orderFeedback.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const FeedbackSchema = new mongoose.Schema({
   feedback: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
-module.exports = FeedbackSchema;
+export default FeedbackSchema;
 </file>
 
 <file path="models/orderForm.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const pricingPackageSchema = new Schema({
@@ -490,11 +545,11 @@ const OrderFormSchema = new Schema({
   },
 });
 
-module.exports = OrderFormSchema;
+export default OrderFormSchema;
 </file>
 
 <file path="models/Package.js">
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const extraSchema = new mongoose.Schema({
   name: String,
@@ -516,7 +571,7 @@ const packageSchema = new mongoose.Schema({
   extras: [extraSchema],                            // Optional extras
 });
 
-module.exports = mongoose.model('Packages', packageSchema);
+export default mongoose.model('Packages', packageSchema);
 </file>
 
 <file path="package.json">
@@ -525,12 +580,17 @@ module.exports = mongoose.model('Packages', packageSchema);
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env ./server.js",
-    "watch": "node --env-file=.env --inspect  --watch-path=./  ./server.js",
+    "start": "node ./server.js",
+    "watch": "node --inspect  --watch-path=./  ./server.js",
     "dev": "nodemon server.js"
   },
+  "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.972.0",
+    "@aws-sdk/lib-storage": "^3.972.0",
+    "@aws-sdk/s3-request-presigner": "^3.972.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "backblaze-b2": "^1.7.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "connect-mongo": "^5.0.0",
@@ -541,7 +601,7 @@ module.exports = mongoose.model('Packages', packageSchema);
     "fluent-ffmpeg": "^2.1.3",
     "mongoose": "^7.0.0",
     "morgan": "^1.10.1",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.0",
     "nodemailer": "^7.0.10",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
@@ -553,13 +613,13 @@ module.exports = mongoose.model('Packages', packageSchema);
 </file>
 
 <file path="routes/admin.js">
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const Admin = require('../models/admin');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import bcrypt from 'bcryptjs';
+import Admin from '../models/admin.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import Credentials from '../config/Credentials.js';
 
 // POST /admin/setup
 // Creates admin and editor users if neither exist.
@@ -688,10 +748,18 @@ router.post('/logout', requireAdminOrEditorAuth, (req, res) => {
   req.session.destroy(err => {
     if (err) {
       logger.error(`Logout failed for ${userType} (${userType === 'admin' ? 'adminId' : 'username'}=${userIdOrUsername}): ${err}`);
-      return res.status(500).json({ ok:false, message: 'Logout failed' });
+      return res.status(500).json({ ok: false, message: 'Logout failed' });
     }
     logger.info(`${userType.charAt(0).toUpperCase() + userType.slice(1)} logged out (${userType === 'admin' ? 'adminId' : 'username'}=${userIdOrUsername})`);
-    res.clearCookie('connect.sid');
+
+    // Clear cookie with the same settings as when it was created
+    res.clearCookie('connect.sid', {
+      path: '/',
+      secure: Credentials.NODE_ENV === 'production',
+      sameSite: Credentials.NODE_ENV === 'production' ? 'none' : 'lax',
+      httpOnly: true
+    });
+
     return res.json({ ok: true, message: 'Logged out' });
   });
 });
@@ -749,15 +817,15 @@ router.post('/change-password', requireAdminOrEditorAuth, async (req, res) => {
 
 
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/contactUs.js">
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { sendMail } = require("../services/emailService.js");
-const Credentials  = require('../config/Credentials.js');
-const logger = require("../utils/logger.js");
+import {sendMail} from "../services/emailService.js";
+import Credentials  from '../config/Credentials.js';
+import logger from "../utils/logger.js";
 
 router.post("/", async (req, res) => {
   // Log incoming POST request to the contact form route
@@ -818,15 +886,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/feedback.js">
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const Feedbacks = require('../models/Feedbacks');
-const Order = require('../models/order');
+import Feedbacks from '../models/Feedbacks.js';
+import Order from '../models/order.js';
 
 // Create a new feedback
 router.post('/', async (req, res) => {
@@ -886,27 +954,49 @@ router.get('/all', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/films.js">
-const express = require("express");
-const multer = require("multer");
-const Film = require("../models/Film");
+import express from "express";
+import multer from "multer";
+import Film from "../models/Film.js";
 const router = express.Router();
-const Credential = require("../config/Credentials")
-const path  = require("path");
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../middleware/auth.js");
-const { deleteFileByPath } = require("../utils/fileProccess");
-const { extractThumbnailForFilmsService } = require('../services/videoService');
+import Credential from "../config/Credentials.js"
+import path  from "path";
+import fs from "fs";
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
+import { extractThumbnailForFilmsService } from '../services/videoService.js';
+import b2 from "../services/b2.service.js";
+
+const signFilm = (film, tokenData) => {
+    if (!film || !tokenData) return film;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${filename}?Authorization=${authorizationToken}`;
+    const newFilm = (typeof film.toObject === 'function') ? film.toObject() : { ...film };
+    if (newFilm.filename) newFilm.url = sign(newFilm.filename);
+    if (newFilm.thumbnailFilename) newFilm.thumbnail = sign(newFilm.thumbnailFilename);
+    return newFilm;
+};
 
 // Upload video with description
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = Credential.UPLOAD_DIR_FILMS || './uploads/films';
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'tmp-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadDisk = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
   fileFilter: (req, file, cb) => {
@@ -915,7 +1005,8 @@ const uploadMemory = multer({
     else cb(new Error("Only video files are allowed!"));
   },
 }).single("videos");
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
+
+router.post("/upload", uploadDisk, handleMulterErrors, async (req, res) => {
   logger.info("Received film upload request.");
   try {
     const file = req.file;
@@ -928,24 +1019,36 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 
     logger.info(`Processing file for film upload: ${file.originalname}`);
 
-    const fileUrl = uploadService.saveFile(
+    // Pass the temporary file path instead of the buffer
+    const fileUrl = await uploadService.saveFile(
       undefined,
-      file.buffer,
+      file.path,
       file.originalname,
-      { isFilm: true }
+      { isFilm: true, mimetype: file.mimetype }
     );
     logger.info(`Saved film file: ${fileUrl}`);
 
-    // Optionally generate/save unique filename with timestamp if desired
     const newFilm = await Film.create({
       filename: fileUrl.split("/").pop(),
       url: fileUrl,
       description,
     });
-
     logger.info(`Film record created: ${newFilm.filename}`);
 
-    res.status(201).json(newFilm);
+      // Trigger thumbnail extraction in background
+      extractThumbnailForFilmsService(newFilm._id.toString(), newFilm.filename, 1)
+        .then(async (thumbResult) => {
+           newFilm.thumbnail = thumbResult.thumbnailUrl;
+           newFilm.thumbnailFilename = thumbResult.thumbnailFilename;
+           await newFilm.save();
+           logger.info(`Background thumbnail generated for film: ${newFilm.filename}`);
+        })
+        .catch(err => logger.error(`Background thumbnail failed for film ${newFilm.filename}: ${err.message}`));
+
+      const tokenData = await b2.getFolderToken("films/");
+      const signedFilm = signFilm(newFilm, tokenData);
+  
+      res.status(201).json(signedFilm);
   } catch (err) {
     logger.error("Film upload error:", err);
     res.status(500).json({ error: "Failed to upload video" });
@@ -957,8 +1060,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all films.");
   try {
     const films = await Film.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("films/");
+    const signedFilms = films.map(f => signFilm(f, tokenData));
+
     logger.info(`Fetched ${films.length} films.`);
-    res.json(films);
+    res.json(signedFilms);
   } catch (err) {
     logger.error("Error fetching films:", err);
     res.status(500).json({ error: "Failed to fetch films" });
@@ -1003,15 +1110,24 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "Film not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_FILMS;
-    const filePath = path.resolve(uploadsDir, filmToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted film file from disk: ${filmToDelete.filename}`);
+      // Delete main film file
+      await uploadService.deleteFile(undefined, filmToDelete.filename, { isFilm: true });
+      logger.info(`Deleted film file from B2: ${filmToDelete.filename}`);
+      
+      // Delete thumbnail if it exists
+      if (filmToDelete.thumbnailFilename) {
+          try {
+              await uploadService.deleteFile(undefined, filmToDelete.thumbnailFilename, { isFilm: true });
+              logger.info(`Deleted associated film thumbnail from B2: ${filmToDelete.thumbnailFilename}`);
+          } catch (thumbErr) {
+              logger.error(`Failed to delete film thumbnail ${filmToDelete.thumbnailFilename} from B2: ${thumbErr.message}`);
+          }
+      }
     } catch (fileErr) {
-      logger.error(`Failed to delete film file from disk (${filmToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete film file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete film file from B2 (${filmToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete film file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
@@ -1031,6 +1147,7 @@ router.delete("/delete", async (req, res) => {
     res.status(500).json({ error: "Failed to delete film" });
   }
 });
+
 // POST /films/:id/thumbnail - admin only: extract thumbnail for a film video
 router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
   try {
@@ -1052,16 +1169,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 
     // Delete old thumbnail if exists
     if (film.thumbnailFilename) {
-      const fs = require("fs");
-      const path = require("path");
-      const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS || "./uploads/films";
-      const oldThumbPath = path.resolve(UPLOAD_DIR_FILMS, film.thumbnailFilename);
-      if (fs.existsSync(oldThumbPath)) {
-        try {
-          fs.unlinkSync(oldThumbPath);
-        } catch (err) {
-          logger.warn(`Failed to delete old film thumbnail: ${oldThumbPath}`);
-        }
+      const oldFilename = film.thumbnailFilename;
+      try {
+        await uploadService.deleteFile(undefined, oldFilename, { isFilm: true });
+        logger.info(`Deleted old film thumbnail ${oldFilename} from B2`);
+      } catch (err) {
+        logger.warn(`Failed to delete old film thumbnail ${oldFilename} from B2: ${err.message}`);
       }
     }
 
@@ -1071,9 +1184,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
     await film.save();
 
     logger.info(`Thumbnail extracted and set for film ${film.filename} (${film._id})`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`films/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({
       ok: true,
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {
@@ -1087,26 +1203,47 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 });
 
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/gallery.js">
-const express = require("express");
-const multer = require("multer");
-const Gallery = require("../models/Gallery");
+import express from "express";
+import multer from "multer";
+import Gallery from "../models/Gallery.js";
 const router = express.Router();
-const path  = require("path");
-const Credential = require("../config/Credentials")
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { deleteFileByPath } = require("../utils/fileProccess");
+import path  from "path";
+import fs from "fs";
+import Credential from "../config/Credentials.js"
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import b2 from "../services/b2.service.js";
+
+const signGalleryImage = (image, tokenData) => {
+    if (!image || !tokenData) return image;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/gallery/${filename}?Authorization=${authorizationToken}`;
+    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+    if (newImage.filename) newImage.url = sign(newImage.filename);
+    return newImage;
+};
 
 // Upload image to gallery
 
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = Credential.UPLOAD_DIR_GALLERY || './uploads/gallery';
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'tmp-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadDisk = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
   fileFilter: (req, file, cb) => {
@@ -1116,7 +1253,7 @@ const uploadMemory = multer({
   },
 }).array("images", 50);
 
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
+router.post("/upload", uploadDisk, handleMulterErrors, async (req, res) => {
   logger.info("Received gallery upload request.");
   try {
     const files = req.files || [];
@@ -1127,17 +1264,18 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     const results = [];
     for (const file of files) {
       logger.info(`Processing file for gallery upload: ${file.originalname}`);
-      const fileUrl = uploadService.saveFile(
+      // Await the async saveFile with file path and mimetype
+      const fileUrl = await uploadService.saveFile(
         undefined,
-        file.buffer,
+        file.path,
         file.originalname,
-        { isGallery: true }
+        { isGallery: true, mimetype: file.mimetype }
       );
       logger.info(`Saved gallery file: ${fileUrl}`);
 
       // Optionally save to Gallery collection:
       const newImage = await Gallery.create({
-        filename: fileUrl.split("/").pop(),
+        filename: fileUrl.split("/").pop(), // Extract filename from URL
         url: fileUrl,
         uploadedAt: new Date(),
       });
@@ -1147,10 +1285,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     logger.info(
       `Gallery upload successful. Total images uploaded: ${results.length}`
     );
+
+    const tokenData = await b2.getFolderToken("gallery/");
+    const signedResults = results.map(img => signGalleryImage(img, tokenData));
+
     res
       .status(201)
       .json(
-        Array.isArray(results) && results.length === 1 ? results[0] : results
+        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
       );
   } catch (err) {
     logger.error("Gallery upload error:", err);
@@ -1162,9 +1304,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 router.get("/", async (req, res) => {
   logger.info("Fetching all gallery images.");
   try {
-    const images = await Gallery.find().sort({ uploadedAt: -1 });
+    const images = await Gallery.find().sort({ uploadedAt: -1 }).lean();
+    
+    // Get token for gallery prefix
+    const tokenData = await b2.getFolderToken("gallery/");
+    const signedImages = images.map(img => signGalleryImage(img, tokenData));
+
     logger.info(`Fetched ${images.length} gallery images.`);
-    res.json(images);
+    res.json(signedImages);
   } catch (err) {
     logger.error("Error fetching all gallery images:", err);
     res.status(500).json({ error: "Failed to fetch gallery images" });
@@ -1209,15 +1356,13 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "Gallery image not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_GALLERY;
-    const filePath = path.resolve(uploadsDir, imageToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted gallery file from disk: ${imageToDelete.filename}`);
+      await uploadService.deleteFile(undefined, imageToDelete.filename, { isGallery: true });
+      logger.info(`Deleted gallery file from B2: ${imageToDelete.filename}`);
     } catch (fileErr) {
-      logger.error(`Failed to delete gallery file from disk (${imageToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete gallery file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete gallery file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete gallery file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
@@ -1238,26 +1383,48 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-module.exports = router;
+
+export default router;
 </file>
 
 <file path="routes/homePage.js">
-const express = require("express");
-const multer = require("multer");
-const HomePage = require("../models/HomePage");
+import express from "express";
+import multer from "multer";
+import HomePage from "../models/HomePage.js";
 const router = express.Router();
-const path = require("path");
-const Credential = require("../config/Credentials");
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { deleteFileByPath } = require("../utils/fileProccess");
+import path  from "path";
+import fs from "fs";
+import Credential from "../config/Credentials.js";
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import b2 from "../services/b2.service.js";
+
+const signHomePageImage = (image, tokenData) => {
+    if (!image || !tokenData) return image;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
+    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+    if (newImage.filename) newImage.url = sign(newImage.filename);
+    return newImage;
+};
 
 // Upload image to home page
 
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = Credential.UPLOAD_DIR_HOMEPAGE || './uploads/homepage';
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'tmp-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadDisk = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
   fileFilter: (req, file, cb) => {
@@ -1267,7 +1434,7 @@ const uploadMemory = multer({
   },
 }).array("images", 30);
 
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
+router.post("/upload", uploadDisk, handleMulterErrors, async (req, res) => {
   logger.info("Received homePage upload request.");
   try {
     const files = req.files || [];
@@ -1278,11 +1445,12 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     const results = [];
     for (const file of files) {
       logger.info(`Processing file for homePage upload: ${file.originalname}`);
-      const fileUrl = uploadService.saveFile(
+      // Pass the temporary file path instead of the buffer
+      const fileUrl = await uploadService.saveFile(
         undefined,
-        file.buffer,
+        file.path,
         file.originalname,
-        { isHomePage: true }
+        { isHomePage: true, mimetype: file.mimetype }
       );
       logger.info(`Saved homePage file: ${fileUrl}`);
 
@@ -1298,10 +1466,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     logger.info(
       `HomePage upload successful. Total images uploaded: ${results.length}`
     );
+
+    const tokenData = await b2.getFolderToken("homepage/");
+    const signedResults = results.map(img => signHomePageImage(img, tokenData));
+
     res
       .status(201)
       .json(
-        Array.isArray(results) && results.length === 1 ? results[0] : results
+        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
       );
   } catch (err) {
     logger.error("HomePage upload error:", err);
@@ -1314,8 +1486,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all homePage images.");
   try {
     const images = await HomePage.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("homepage/");
+    const signedImages = images.map(img => signHomePageImage(img, tokenData));
+
     logger.info(`Fetched ${images.length} homePage images.`);
-    res.json(images);
+    res.json(signedImages);
   } catch (err) {
     logger.error("Error fetching all homePage images:", err);
     res.status(500).json({ error: "Failed to fetch homePage images" });
@@ -1360,15 +1536,13 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "HomePage image not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_HOMEPAGE;
-    const filePath = path.resolve(uploadsDir, imageToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted homePage file from disk: ${imageToDelete.filename}`);
+      await uploadService.deleteFile(undefined, imageToDelete.filename, { isHomePage: true });
+      logger.info(`Deleted homePage file from B2: ${imageToDelete.filename}`);
     } catch (fileErr) {
-      logger.error(`Failed to delete homePage file from disk (${imageToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete homePage file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete homePage file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete homePage file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
@@ -1389,7 +1563,8 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-module.exports = router;
+
+export default router;
 </file>
 
 <file path="routes/logs.js">
@@ -1443,11 +1618,11 @@ module.exports = router;
 </file>
 
 <file path="routes/orderFeedbacks.js">
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../models/order");
-const { requireAdminAuth } = require("../middleware/auth");
-const logger = require("../utils/logger");
+import Order from "../models/order.js";
+import { requireAdminAuth } from "../middleware/auth.js";
+import logger from "../utils/logger.js";
 
 // POST /orders/:orderId/feedback - Add feedback for an order by its id (public)
 router.post("/:orderId/feedback", async (req, res) => {
@@ -1599,17 +1774,17 @@ router.delete("/:orderId", requireAdminAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/Orders/emails.js">
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { sendMail } = require("../../services/emailService.js");
-const logger = require("../../utils/logger.js");
-const { requireAdminAuth } = require("../../middleware/auth.js");
-const Order = require("../../models/order.js");
-const Credentials  = require('../../config/Credentials.js');
+import { sendMail } from "../../services/emailService.js";
+import logger from "../../utils/logger.js";
+import { requireAdminAuth } from "../../middleware/auth.js";
+import Order from "../../models/order.js";
+import Credentials  from '../../config/Credentials.js';
 
 router.post("/:orderId", requireAdminAuth, async (req, res) =>{
     try {
@@ -1675,21 +1850,22 @@ router.post("/:orderId", requireAdminAuth, async (req, res) =>{
     }
 })
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/Orders/orderFolders.js">
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../../models/order.js");
-const { requireAdminAuth } = require("../../middleware/auth.js");
-const uploadService = require("../../services/upload.service.js");
-const multer = require("multer");
-const allowedExtensions = require("../../config/allowed_extensions.json");
-const logger = require("../../utils/logger.js");
-const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials  = require('../../config/Credentials.js');
+import Order from "../../models/order.js";
+import { requireAdminAuth } from "../../middleware/auth.js";
+import uploadService from "../../services/upload.service.js";
+import multer from "multer";
+import allowedExtensions from "../../config/allowed_extensions.js";
+import logger from "../../utils/logger.js";
+import { handleMulterErrors } from "../../middleware/upload.js";
+import { deleteOrderFileByFileName } from "../../services/order.service.js";
+import Credentials  from '../../config/Credentials.js';
+import { signOrderFiles } from "../../utils/signingUtils.js";
 
 
 // GET /:orderId - return order's folders count and names (admin only)
@@ -1746,11 +1922,13 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
       ? order.media.filter(item => item.foldername === foldername)
       : [];
 
+    const signedMedia = await signOrderFiles(orderId, filteredMedia);
+
     return res.json({
       ok: true,
       foldername,
-      count: filteredMedia.length,
-      media: filteredMedia
+      count: signedMedia.length,
+      media: signedMedia
     });
 
   } catch (err) {
@@ -1811,23 +1989,32 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
 
 
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/Orders/orders.js">
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../../models/order.js");
-const { normalizePricingSelections } = require('../../services/pricingService');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
-const { uploadMediaFiles } = require('../../services/orderMediaService');
-const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
-const multer = require("multer");
-const allowedExtensions = require("../../config/allowed_extensions.json");
-const logger = require("../../utils/logger.js");
-const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials = require('../../config/Credentials.js')
+import Order from "../../models/order.js";
+import { normalizePricingSelections } from '../../services/pricingService.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../../middleware/auth.js";
+import { uploadMediaFiles, prepareDirectUploads, confirmDirectUploads } from '../../services/orderMediaService.js';
+import { getVideoDurationService, extractThumbnailService } from '../../services/videoService.js';
+import multer from "multer";
+import allowedExtensions from "../../config/allowed_extensions.js";
+import logger from "../../utils/logger.js";
+import { handleMulterErrors } from "../../middleware/upload.js";
+import * as orderService from "../../services/order.service.js";
+import Credentials from '../../config/Credentials.js'
+import b2 from "../../services/b2.service.js"
+import fs from "fs";
+import path from "path";
+import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
+import uploadService from "../../services/upload.service.js";
+
+// Helper to sign a list of file objects for a specific order
+// (Removed local implementation to use utility)
+
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -1870,6 +2057,11 @@ router.post("/", async (req, res) => {
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
+    
+    // Optimize: fetch one token for the whole bucket to sign the list
+    const sharedToken = await b2.getFolderToken("");
+    const signedList = await Promise.all(list.map(o => signOrderMedia(o, sharedToken)));
+
     logger.info(
       `Listed all orders by ${
         req.session && req.session.adminId
@@ -1877,7 +2069,7 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
           : "unknown admin"
       }`
     );
-    return res.json({ ok: true, orders: list });
+    return res.json({ ok: true, orders: signedList });
   } catch (err) {
     logger.error(`GET /orders failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -1892,8 +2084,9 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
       logger.warn(`Order not found: ${req.params.orderId}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order fetched: ${req.params.orderId}`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(
       `GET /orders/${req.params.orderId} failed: ${err.stack || err}`
@@ -1975,9 +2168,11 @@ router.put("/:orderId", async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    
+    const signedOrder = await signOrderMedia(updatedOrder);
 
     logger.info(`Order ${orderId} updated by admin.`);
-    return res.json({ ok: true, order: updatedOrder });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`PUT /orders/:orderId failed: ${err.stack || err.message || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -2010,7 +2205,15 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
 });
 
 // POST /orders/:orderId/upload - admin only upload images/videos to this order
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './tmp/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+}); // Use memory storage to access buffer
 const uploadMemory = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
@@ -2019,7 +2222,7 @@ const uploadMemory = multer({
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Only image and video files are allowed!"));
   },
-}).array("media", 50);
+}).array("media");
 
 router.post(
   "/:orderId/upload",
@@ -2047,9 +2250,12 @@ router.post(
           .join(", ")}]`
       );
 
+      const signedAdded = await signOrderFiles(orderId, result.added);
+      
       return res.json({
         ok: true,
         ...result,
+        added: signedAdded
       });
     } catch (err) {
       logger.error(
@@ -2059,6 +2265,7 @@ router.post(
     }
   }
 );
+
 
 // GET /order/view?email=...  (public) - returns order images if email found
 router.get("/view/by-email", async (req, res) => {
@@ -2075,8 +2282,9 @@ router.get("/view/by-email", async (req, res) => {
       logger.warn(`Order view attempted for non-existent email: ${email}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -2095,8 +2303,9 @@ router.get("/view/orders-by-email",
       if (!orders || orders.length === 0) {
         return res.status(404).json({ ok: false, message: "No orders found for email" });
       }
+      const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
       logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders });
+      return res.json({ ok: true, orders: signedOrders });
     } catch (err) {
       logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
       return res.status(500).json({ ok: false, message: "Server error" });
@@ -2115,7 +2324,7 @@ router.delete("/:orderId", requireAdminAuth,
       
       // Use deleteOrderFiles service to remove folder
       try {
-        await deleteOrderfolder(orderId);
+        await orderService.deleteOrderfolder(orderId);
       } catch (deleteErr) {
         logger.error(`Error deleting order files for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
         return res.status(500).json({ ok: false, message: "Failed to delete order files", error: deleteErr.message || deleteErr });
@@ -2152,7 +2361,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       // use getOrderFilesPaths to get all files for the order
       let filePaths;
       try {
-        filePaths = await getOrderFilesPaths(orderId);
+        filePaths = await orderService.getOrderFilesPaths(orderId);
       } catch (error) {
         logger.error(`Error getting order file paths for orderId ${orderId}: ${error.stack || error.message || error}`);
         return res.status(500).json({ ok: false, message: "Failed to fetch order file paths", error: error.message || error });
@@ -2169,7 +2378,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       const failedDeletions = [];
       for (const filename of filenames) {
         try {
-          await deleteOrderFileByFileName(orderId, filename);
+          await orderService.deleteOrderFileByFileName(orderId, filename);
         } catch (deleteErr) {
           logger.error(`Error deleting file ${filename} for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
           failedDeletions.push({ filename, error: deleteErr.message || deleteErr });
@@ -2225,17 +2434,13 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     if (mediaIndex !== -1) {
       // Delete old thumbnail if exists
       if (order.media[mediaIndex].thumbnailFilename) {
-        const path = require("path");
-        const fs = require("fs");
-        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
-        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
-        if (fs.existsSync(oldThumbPath)) {
+          const oldFilename = order.media[mediaIndex].thumbnailFilename;
           try {
-            fs.unlinkSync(oldThumbPath);
+              await uploadService.deleteFile(orderId, oldFilename);
+              logger.info(`Deleted old thumbnail ${oldFilename} from B2 for order ${orderId}`);
           } catch (err) {
-            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+              logger.warn(`Failed to delete old thumbnail ${oldFilename} from B2: ${err.message}`);
           }
-        }
       }
 
       order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
@@ -2244,9 +2449,12 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     }
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`orders/${orderId}/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({ 
       ok: true, 
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {
@@ -2287,10 +2495,15 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     order.orderBackground.filename = filename;
     await order.save();
 
+    const signedBackground = await b2.getPresignedUrl(`orders/${orderId}/${filename}`);
+
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({ 
       ok: true, 
-      orderBackground: order.orderBackground
+      orderBackground: {
+          ...order.orderBackground,
+          image: signedBackground
+      }
     });
   } catch (err) {
     logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
@@ -2298,21 +2511,42 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
-const orderFolderRoutes = require('./orderFolders');
+// GET /orders/:orderId/download/:filename - public (with obfuscated orderId) or authenticated download
+router.get("/:orderId/download/:filename", async (req, res) => {
+  try {
+    const { orderId, filename } = req.params;
+    
+    // Construct the B2 key
+    const key = `orders/${orderId}/${filename}`;
+    
+    logger.info(`Download requested for: ${key}`);
+    
+    // Generate a pre-signed URL for direct download from B2
+    const signedUrl = await b2.getPresignedUrl(key);
+    
+    logger.info(`Redirecting download to B2: ${key}`);
+    return res.redirect(signedUrl);
+  } catch (err) {
+    logger.error(`Download redirect failed for ${req.params.filename}: ${err.message}`);
+    return res.status(500).json({ ok: false, message: "Download failed" });
+  }
+});
+
+import orderFolderRoutes from './orderFolders.js';
 router.use("/folders", orderFolderRoutes);
 
-const emails = require('./emails');
+import emails from './emails.js';
 router.use("/emails", emails);
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/packages.js">
-const express = require('express');
-const Packages = require('../models/Package');
-const { requireAdminAuth } = require("../middleware/auth");
+import express from 'express';
+import Packages from '../models/Package.js';
+import { requireAdminAuth } from "../middleware/auth.js";
 const router = express.Router();
-const logger = require("../utils/logger");
+import logger from "../utils/logger.js";
 
 /**
  * ✅ Add or update a package category
@@ -2388,28 +2622,28 @@ router.get('/:packageName', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
 </file>
 
 <file path="routes/routes.js">
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const adminRoutes = require('./admin');
-const orderRoutes = require('./Orders/orders');
-const logsRoutes = require('./logs');
-const galleryRoutes = require('./gallery');
-const filmsRoutes = require('./films');
-const homepage = require("./homePage")
-const packagesRoutes = require('./packages');
-const orderFeedbacksRoutes = require('./orderFeedbacks');
-const feedback = require('./feedback')
-const contactUS =  require("./contactUs");
+import adminRoutes from './admin.js';
+import orderRoutes from './Orders/orders.js';
+// const logsRoutes = require('./logs');
+import galleryRoutes from './gallery.js';
+import filmsRoutes from './films.js';
+import homepage from "./homePage.js"
+import packagesRoutes from './packages.js';
+import orderFeedbacksRoutes from './orderFeedbacks.js';
+import feedback from './feedback.js'
+import contactUS from "./contactUs.js";
 
 // Mount all sub-routes under /
 router.use('/admin', adminRoutes);
 router.use('/orders', orderRoutes);
-router.use('/logs', logsRoutes);
+// router.use('/logs', logsRoutes);
 router.use('/gallery', galleryRoutes);
 router.use('/films', filmsRoutes);
 router.use('/homepage', homepage);
@@ -2418,31 +2652,93 @@ router.use('/feedbacks/orders', orderFeedbacksRoutes);
 router.use('/feedbacks', feedback);
 router.use("/contact", contactUS);
 
-module.exports = router;
+export default router;
+</file>
+
+<file path="scripts/setup-b2-cors.js">
+import { S3Client, PutBucketCorsCommand, GetBucketCorsCommand } from "@aws-sdk/client-s3";
+import Credentials from "../config/Credentials.js";
+
+async function setupB2Cors() {
+  const s3Client = new S3Client({
+    endpoint: `https://s3.us-east-005.backblazeb2.com`, // Adjust to your region if different
+    region: "us-east-005",
+    credentials: {
+      accessKeyId: Credentials.B2_APPLICATION_KEY_ID,
+      secretAccessKey: Credentials.B2_APPLICATION_KEY,
+    },
+  });
+
+  try {
+    console.log(`Updating CORS rules via S3 API for bucket: ${Credentials.B2_BUCKET_NAME}`);
+
+    const command = new PutBucketCorsCommand({
+      Bucket: Credentials.B2_BUCKET_NAME,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedHeaders: ["*"],
+            AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
+            AllowedOrigins: ["*"],
+            ExposeHeaders: ["ETag", "x-amz-request-id", "x-amz-id-2"],
+            MaxAgeSeconds: 3600,
+          },
+        ],
+      },
+    });
+
+    await s3Client.send(command);
+    console.log("✅ CORS rules updated successfully via S3 API!");
+
+    // Verification
+    console.log("Verifying CORS rules...");
+    const getCommand = new GetBucketCorsCommand({
+      Bucket: Credentials.B2_BUCKET_NAME,
+    });
+    const response = await s3Client.send(getCommand);
+    console.log("✅ Verified CORS Rules on B2:");
+    console.log(JSON.stringify(response.CORSRules, null, 2));
+
+  } catch (error) {
+    console.error("❌ Failed to update CORS rules:");
+    console.error(error.message);
+    if (error.name === "NoSuchCORSConfiguration") {
+        console.log("No CORS configuration exists yet, which is normal before the first setup.");
+    }
+  }
+}
+
+setupB2Cors();
 </file>
 
 <file path="server.js">
-const express = require("express");
-const cors = require("cors");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const bodyParser = require("body-parser");
-const path = require("path");
-const fs = require("fs");
-const logger = require("./utils/logger");
-const morgan = require("morgan");
+import express from "express";
+import cors from "cors";
+import session from "express-session";
+import MongoStore from "connect-mongo";
+import bodyParser from "body-parser";
+import path from "path";
+import fs from "fs";
+import morgan from "morgan";
 
-const connectDB = require("./config/db");
+import connectDB from "./config/db.js";
 
-const Credentials = require("./config/Credentials.js");
+import Credentials from "./config/Credentials.js";
 
-const allRoutes = require("./routes/routes");
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import allRoutes from "./routes/routes.js";
+import roleInjector from "./middleware/roleInjector.js";
 
 (async () => {
   try {
     await connectDB(Credentials.MONGO_URI);
 
     const app = express();
+    app.set("trust proxy", 1); // trust first proxy
+
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
@@ -2476,17 +2772,31 @@ const allRoutes = require("./routes/routes");
         secret: Credentials.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
+        proxy: true, // required for secure cookies behind a proxy
         cookie: {
           maxAge: 1000 * 60 * 60 * 8, // 8 hours
           secure: Credentials.NODE_ENV === "production", // only true online
           sameSite: Credentials.NODE_ENV === "production" ? "none" : "lax",
+          httpOnly: true,
         },
         store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
       })
     );
 
     // Role injector - attaches session role info to API JSON responses
-    app.use(require("./middleware/roleInjector"));
+    app.use(roleInjector);
+
+    app.use((req, res, next) => {
+      const start = process.hrtime(); // high-res timer
+
+      res.on("finish", () => {
+        const diff = process.hrtime(start);
+        const ms = diff[0] * 1e3 + diff[1] / 1e6;
+        console.log(`${req.method} ${req.originalUrl} took ${ms.toFixed(2)}ms`);
+      });
+
+      next();
+    });
 
     // routes
     app.use("/", allRoutes);
@@ -2501,7 +2811,8 @@ const allRoutes = require("./routes/routes");
     );
 
     app.listen(Credentials.PORT, () => {
-      logger.info(`Server listening on http://localhost:${Credentials.PORT}`);
+      console.log(`Server listening on http://localhost:${Credentials.PORT}`);
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.3.0`);
     });
   } catch (err) {
     console.error("Startup error:", err);
@@ -2510,10 +2821,288 @@ const allRoutes = require("./routes/routes");
 })();
 </file>
 
+<file path="services/b2.service.js">
+import B2 from "backblaze-b2";
+
+import Credentials from '../config/Credentials.js';
+import logger from '../utils/logger.js';
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
+
+class B2Service {
+    constructor() {
+        this.b2 = new B2({ applicationKeyId: Credentials.B2_APPLICATION_KEY_ID, applicationKey: Credentials.B2_APPLICATION_KEY });
+        this.authPromise = null;
+        this.uploadUrlPool = [];
+        
+        // Initialize S3 Client for B2
+        this.s3 = new S3Client({
+            endpoint: `https://s3.us-east-005.backblazeb2.com`,
+            region: "us-east-005",
+            credentials: {
+                accessKeyId: Credentials.B2_APPLICATION_KEY_ID,
+                secretAccessKey: Credentials.B2_APPLICATION_KEY,
+            },
+        });
+    }
+    
+    async authorize() {
+        if (this.authPromise) return this.authPromise;
+        
+        if (!Credentials.B2_APPLICATION_KEY_ID || !Credentials.B2_APPLICATION_KEY) {
+            logger.error("B2_APPLICATION_KEY_ID or B2_APPLICATION_KEY is missing in environment variables.");
+            return Promise.reject(new Error("Missing B2 Credentials"));
+        }
+
+        this.authPromise = (async () => {
+            try {
+                logger.info(`B2: Authorizing with Key ID: ${Credentials.B2_APPLICATION_KEY_ID.substring(0, 8)}...`);
+                const response = await this.b2.authorize();
+                this.downloadUrl = response.data.downloadUrl;
+                // Clear pool on re-auth as old tokens might be invalid
+                this.uploadUrlPool = [];
+                logger.info(`B2: Authorized successfully. Download URL: ${this.downloadUrl}`);
+            } catch (err) {
+                logger.error(`B2: Authorization failed: ${err.message}`);
+                this.authPromise = null; // Reset on failure so we can retry
+                throw err;
+            }
+        })();
+        
+        return this.authPromise;
+    }
+
+    async getPresignedUrl(key) {
+        try {
+            await this.authorize();
+            if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
+
+             const response = await this.b2.getDownloadAuthorization({
+                bucketId: Credentials.B2_BUCKET_ID,
+                fileNamePrefix: key,
+                validDurationInSeconds: 86400,
+            });
+            const authorizationToken = response.data.authorizationToken;
+            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}?Authorization=${authorizationToken}`;
+        } catch (err) {
+             logger.error(`B2: Presign Error for ${key}: ${err.message}`);
+             // Fallback to raw URL so at least something is returned, though it may be blocked by B2 privacy
+             return `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+        }
+    }
+
+    async getFolderToken(prefix) {
+        try {
+            await this.authorize();
+            if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
+
+             const response = await this.b2.getDownloadAuthorization({
+                bucketId: Credentials.B2_BUCKET_ID,
+                fileNamePrefix: prefix,
+                validDurationInSeconds: 86400,
+            });
+            return {
+                baseDownloadUrl: this.downloadUrl,
+                authorizationToken: response.data.authorizationToken,
+                bucketName: Credentials.B2_BUCKET_NAME
+            };
+        } catch (err) {
+             logger.error(`B2: Folder Token Error for ${prefix}: ${err.message}`);
+             return null;
+        }
+    }
+
+    async getUploadUrl() {
+        await this.authorize();
+        
+        if (this.uploadUrlPool.length > 0) {
+            return this.uploadUrlPool.pop();
+        }
+
+        const response = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
+        return {
+            uploadUrl: response.data.uploadUrl,
+            authorizationToken: response.data.authorizationToken
+        };
+    }
+
+    async getS3UploadUrl(key, mimetype) {
+        try {
+            const command = new PutObjectCommand({
+                Bucket: Credentials.B2_BUCKET_NAME,
+                Key: key,
+                ContentType: mimetype,
+            });
+            // Signed URL is valid for 1 hour
+            const url = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+            return url;
+        } catch (err) {
+            logger.error(`B2 S3 Presign Error: ${err.message}`);
+            throw err;
+        }
+    }
+  
+    async upload(fileName, buffer) {
+        let urlData = null;
+        try {
+            urlData = await this.getUploadUrl();
+            
+            const result = await this.b2.uploadFile({
+                uploadUrl: urlData.uploadUrl,
+                uploadAuthToken: urlData.authorizationToken,
+                fileName,
+                data: buffer
+            });
+
+            // If successful, return the URL to the pool
+            this.uploadUrlPool.push(urlData);
+            return result.data;
+        } catch (err) {
+            // If upload fails, we do NOT return the URL to the pool as it might be bad/expired.
+            
+            // Simple retry for 401 (Unauthorized) or specific B2 errors if needed
+            if (err.response && err.response.status === 401) {
+                logger.warn(`B2 Upload 401, retrying with fresh URL: ${fileName}`);
+                // Try one more time with a fresh URL
+                const freshUrlData = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
+                
+                const retryResult = await this.b2.uploadFile({
+                    uploadUrl: freshUrlData.data.uploadUrl,
+                    uploadAuthToken: freshUrlData.data.authorizationToken,
+                    fileName,
+                    data: buffer
+                });
+                
+                // If retry works, pool this new valid URL
+                this.uploadUrlPool.push({
+                    uploadUrl: freshUrlData.data.uploadUrl,
+                    authorizationToken: freshUrlData.data.authorizationToken
+                });
+                return retryResult.data;
+            }
+            
+            throw err;
+        }
+    }
+
+    /**
+     * Uploads a stream to B2 using the S3-compatible API.
+     * Automatically handles multipart uploads for large streams.
+     */
+    async uploadStream(key, stream, mimetype) {
+        try {
+            const parallelUploads3 = new Upload({
+                client: this.s3,
+                params: {
+                    Bucket: Credentials.B2_BUCKET_NAME,
+                    Key: key,
+                    Body: stream,
+                    ContentType: mimetype || 'application/octet-stream',
+                },
+                queueSize: 4,
+                partSize: 5 * 1024 * 1024,
+                leavePartsOnError: false,
+            });
+
+            const result = await parallelUploads3.done();
+            logger.info(`B2 Stream Upload Successful: ${key}`);
+            return result;
+        } catch (err) {
+            logger.error(`B2 Stream Upload Error for ${key}: ${err.message}`);
+            throw err;
+        }
+    }
+
+    async listFileNames(prefix) {
+        await this.authorize();
+        try {
+            const response = await this.b2.listFileNames({
+                bucketId: Credentials.B2_BUCKET_ID,
+                prefix: prefix,
+                maxFileCount: 1000,
+            });
+            return response.data.files;
+        } catch (err) {
+            logger.error(`B2 List Error: ${err.message}`);
+            throw err;
+        }
+    }
+
+    async downloadFileByName(fileName) {
+        await this.authorize();
+        try {
+            const response = await this.b2.downloadFileByName({
+                bucketName: Credentials.B2_BUCKET_NAME,
+                fileName: fileName,
+                responseType: 'arraybuffer'
+            });
+            return response.data;
+        } catch (err) {
+            logger.error(`B2 Download Error for ${fileName}: ${err.message}`);
+            throw err;
+        }
+    }
+
+    async downloadFileRange(fileName, startByte, endByte) {
+        await this.authorize();
+        try {
+            const response = await this.b2.downloadFileByName({
+                bucketName: Credentials.B2_BUCKET_NAME,
+                fileName: fileName,
+                responseType: 'arraybuffer',
+                axiosConfig: {
+                    headers: {
+                        'Range': `bytes=${startByte}-${endByte}`
+                    }
+                }
+            });
+            return response.data;
+        } catch (err) {
+             logger.error(`B2 Range Download Error for ${fileName}: ${err.message}`);
+             throw err;
+        }
+    }
+
+    async deleteFile(fileName) {
+        await this.authorize();
+        try {
+            // To delete, we need fileId. List versions to find it.
+            const versions = await this.b2.listFileVersions({
+                bucketId: Credentials.B2_BUCKET_ID,
+                startFileName: fileName,
+                prefix: fileName 
+            });
+
+            const files = versions.data.files.filter(f => f.fileName === fileName);
+            
+            if (files.length === 0) {
+                logger.warn(`File not found in B2 for deletion: ${fileName}`);
+                return false;
+            }
+
+            for (const file of files) {
+                await this.b2.deleteFileVersion({
+                    fileId: file.fileId,
+                    fileName: file.fileName
+                });
+                logger.info(`Deleted B2 file version: ${file.fileName} (${file.fileId})`);
+            }
+            return true;
+        } catch (err) {
+            logger.error(`B2 Delete Error: ${err.message}`);
+            throw err;
+        }
+    }
+}
+  
+export default new B2Service();
+</file>
+
 <file path="services/emailService.js">
-const nodemailer = require('nodemailer');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import nodemailer from 'nodemailer';
+import logger from '../utils/logger.js';
+import Credentials  from '../config/Credentials.js';
 
 const transporter = nodemailer.createTransport({
   host: Credentials.SMTP_HOST,
@@ -2534,7 +3123,7 @@ transporter.verify((error, success) => {
   }
 });
 
-async function sendMail({ to, subject, text, html }) {
+export async function sendMail({ to, subject, text, html }) {
   logger.info(
     `Attempting to send email`,
     {
@@ -2565,15 +3154,14 @@ async function sendMail({ to, subject, text, html }) {
     throw err;
   }
 }
-
-module.exports = { sendMail };
 </file>
 
 <file path="services/order.service.js">
-const path = require("path");
-const logger = require("../utils/logger");
-const Order = require('../models/order');
-const { deleteFileByPath, deleteFolderByPath } = require("../utils/fileProccess");
+import path from "path";
+import logger from "../utils/logger.js";
+import Order from '../models/order.js';
+import uploadService from "./upload.service.js"; // Import upload service
+
 const UPLOAD_DIR_ORDERS = process.env.UPLOAD_DIR_ORDERS || "./uploads/orders";
 
 /**
@@ -2594,20 +3182,40 @@ const getOrderFilesPaths = async (orderId) => {
 };
 
 /**
- * Attempts to delete order folder.
+ * Attempts to delete order folder (all files for an order).
  * Returns an object with arrays of successfully deleted files and failed deletions.
  * @param {string} orderId
  * @returns 
  */
 const deleteOrderfolder = async (orderId) => {
-  const folderPath = path.resolve(UPLOAD_DIR_ORDERS, orderId);
   try {
-    await deleteFolderByPath(folderPath);
-    logger.info(`Successfully deleted order folder: ${folderPath}`);
+    // List all files for the order from B2 (or rely on what we have, but listing ensures we get everything under the prefix)
+    const files = await uploadService.listOrderFiles(orderId);
+    
+    if (!files || files.length === 0) {
+        logger.info(`No files found for order folder: ${orderId}`);
+        return;
+    }
+
+    const failed = [];
+    for (const filename of files) {
+        try {
+            await uploadService.deleteFile(orderId, filename);
+        } catch (err) {
+            failed.push({ filename, error: err.message });
+        }
+    }
+
+    if (failed.length > 0) {
+        logger.warn(`Failed to delete some files in order folder ${orderId}: ${JSON.stringify(failed)}`);
+        return { filesDeletedSuccessfully: [], filesFailedToDeleted: failed };
+    }
+
+    logger.info(`Successfully deleted all files for order: ${orderId}`);
     return ;
   } catch (err) {
-    logger.error(`Failed to delete order folder: ${folderPath} - ${err.message}`);
-    return { filesDeletedSuccessfully: [], filesFailedToDeleted: [{ filePath: folderPath, error: err.message }] };
+    logger.error(`Failed to delete order folder: ${orderId} - ${err.message}`);
+    return { filesDeletedSuccessfully: [], filesFailedToDeleted: [{ filePath: orderId, error: err.message }] };
   }
 };
 
@@ -2620,11 +3228,28 @@ const deleteOrderfolder = async (orderId) => {
 const deleteOrderFileByFileName = async (orderId, filename) => {
   if (!orderId) throw new Error("Order ID is required");
   if (!filename) throw new Error("Filename is required");
-  const deletingPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
+  
   try {
-    // Delete file from the server first
-    await deleteFileByPath(deletingPath);
-    logger.info(`Deleted file: ${deletingPath} (orderId: ${orderId}, filename: ${filename})`);
+    // Find the order to get media details
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("Order not found");
+
+    const mediaItem = order.media.find(m => m.filename === filename);
+    
+    // If media item has a thumbnail, delete it first
+    if (mediaItem && mediaItem.thumbnailFilename) {
+        try {
+            await uploadService.deleteFile(orderId, mediaItem.thumbnailFilename);
+            logger.info(`Deleted associated thumbnail: ${mediaItem.thumbnailFilename} (orderId: ${orderId})`);
+        } catch (thumbErr) {
+            logger.error(`Failed to delete associated thumbnail ${mediaItem.thumbnailFilename}: ${thumbErr.message}`);
+            // We continue even if thumbnail delete fails, to ensure main file is attempted
+        }
+    }
+
+    // Delete main file from B2
+    await uploadService.deleteFile(orderId, filename);
+    logger.info(`Deleted file: ${filename} (orderId: ${orderId})`);
 
     // Then remove the file from the order's media array in the database
     const updateResult = await Order.updateOne(
@@ -2637,13 +3262,13 @@ const deleteOrderFileByFileName = async (orderId, filename) => {
       logger.info(`Removed file '${filename}' from order (${orderId}) media array`);
     }
   } catch (error) {
-    logger.error(`Failed to delete file or update media array: ${deletingPath} (orderId: ${orderId}, filename: ${filename}) - ${error.message}`);
+    logger.error(`Failed to delete file or update media array: ${filename} (orderId: ${orderId}) - ${error.message}`);
     throw new Error(`Failed to delete file ${filename} for order ${orderId}: ${error.message}`);
   }
 };
 
 
-module.exports = {
+export {
   getOrderFilesPaths,
   deleteOrderfolder,
   deleteOrderFileByFileName
@@ -2651,13 +3276,16 @@ module.exports = {
 </file>
 
 <file path="services/orderMediaService.js">
-const Order = require('../models/order');
-const uploadService = require('./upload.service'); // Adjust path as needed
-const allowedExtensions = require('../config/allowed_extensions.json');
-const { extractOrderVideoThumbnail } = require('./videoThumbnail.service');
-const logger = require('../utils/logger');
+import Order from '../models/order.js';
+import b2 from './b2.service.js';
+import Credentials from '../config/Credentials.js';
+import fs from 'fs';
+import path from 'path';
+import allowedExtensions from "../config/allowed_extensions.js";
+import { extractThumbnail } from './videoThumbnail.service.js';
+import logger from '../utils/logger.js';
 
-async function uploadMediaFiles(orderId, files, foldername) {
+export  async function uploadMediaFiles(orderId, files, foldername) {
   const order = await Order.findById(orderId);
   if (!order) {
     throw new Error('Order not found');
@@ -2687,34 +3315,91 @@ async function uploadMediaFiles(orderId, files, foldername) {
     }
   });
 
-  // Save each file using the uploadService
-  const fileObjs = await Promise.all(filesToUpload.map(async (f) => {
-    const url = await uploadService.saveFile(orderId, f.buffer, f.originalname, {
-      isGallery: false,
-      isFilm: false,
-    });
-    const fileObj = {
-      foldername: foldername || null,
-      filename: url.split('/').pop(),
-      originalName: f.originalname,
-      url,
-      uploadedAt: new Date(),
-    };
+  // Concurrency Limit
+  const CONCURRENCY_LIMIT = 5;
+  const chunks = [];
+  for (let i = 0; i < filesToUpload.length; i += CONCURRENCY_LIMIT) {
+      chunks.push(filesToUpload.slice(i, i + CONCURRENCY_LIMIT));
+  }
 
-    // Video thumbnail extraction
-    const isVideo = allowedExtensions.videos.includes(f.mimetype);
-    if (isVideo) {
-      try {
-        const thumbnailResult = await extractOrderVideoThumbnail(orderId, fileObj.filename, 1);
-        fileObj.thumbnail = thumbnailResult.thumbnailUrl;
-        fileObj.thumbnailFilename = thumbnailResult.thumbnailFilename;
-      } catch (err) {
-        logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${err.message}`);
-      }
-    }
+  const fileObjs = [];
+  for (const chunk of chunks) {
+      const chunkResults = await Promise.all(chunk.map(async (f) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const b2FileName = `${uniqueSuffix}-${f.originalname}`;
+        const key = `orders/${orderId}/${b2FileName}`;
+        
+        if (f.path) {
+          const stream = fs.createReadStream(f.path);
+          await b2.uploadStream(key, stream, f.mimetype);
+        } else if (f.buffer) {
+          await b2.upload(key, f.buffer);
+        } else {
+          throw new Error("No file content found (buffer or path)");
+        }
+        // Construct B2 URL (Assuming S3 compatible URL pattern for Backblaze)
+        // Adjust region as needed (e.g. us-west-003)
+        const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+        const filename = key.split('/').pop();
 
-    return fileObj;
-  }));
+        const fileObj = {
+          foldername: foldername || null,
+          filename, 
+          originalName: f.originalname,
+          url, 
+          uploadedAt: new Date(),
+        };
+
+        // Video thumbnail extraction
+        if (allowedExtensions.videos.includes(f.mimetype)) {
+          try {
+            let videoPath = f.path;
+            let tempVideoPath = null;
+            
+            // If we don't have a path, skip thumbnail or handle error (since we don't use memory now)
+            if (!videoPath) {
+                if (f.buffer) {
+                    tempVideoPath = path.resolve('tmp', b2FileName);
+                    fs.writeFileSync(tempVideoPath, f.buffer);
+                    videoPath = tempVideoPath;
+                } else {
+                    logger.warn(`Cannot extract thumbnail: No path or buffer for ${f.originalname}`);
+                    return; // Skip thumbnail
+                }
+            }
+
+            const thumbName = `thumb-${Date.now()}-${f.originalname}.jpg`;
+            const thumbPath = path.resolve('tmp', thumbName);
+            
+            // Extract thumbnail using the generic service
+            await extractThumbnail(videoPath, thumbPath, 1);
+            
+            // Upload thumbnail
+            const thumbBuffer = fs.readFileSync(thumbPath);
+            const thumbKey = `orders/${orderId}/${thumbName}`;
+            await b2.upload(thumbKey, thumbBuffer);
+            
+            fileObj.thumbnail = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+            fileObj.thumbnailFilename = thumbName;
+
+            // Cleanup thumbnail
+            if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+            if (tempVideoPath && fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
+
+          } catch (err) {
+            logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${err.message}`);
+          }
+        }
+
+        // Cleanup uploaded file if it was on disk
+        if (f.path && fs.existsSync(f.path)) {
+            fs.unlinkSync(f.path);
+        }
+
+        return fileObj;
+      }));
+      fileObjs.push(...chunkResults);
+  }
 
   order.media.push(...fileObjs);
   await order.save();
@@ -2726,33 +3411,139 @@ async function uploadMediaFiles(orderId, files, foldername) {
   };
 }
 
-module.exports = {
-  uploadMediaFiles,
-  // Add more media-related methods here as needed (e.g., delete media, etc.)
-};
+export async function prepareDirectUploads(orderId, files, foldername) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  const existingMedia = order.media || [];
+  const duplicates = [];
+  const uploadSlots = [];
+
+  for (const f of files) {
+    const isDuplicate = existingMedia.some(
+      (existing) =>
+        existing.originalName === f.originalname &&
+        (existing.foldername || null) === (foldername || null)
+    );
+
+    if (isDuplicate) {
+      duplicates.push({ originalName: f.originalname, foldername: foldername || null });
+    } else {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const b2FileName = `${uniqueSuffix}-${f.originalname}`;
+      const key = `orders/${orderId}/${b2FileName}`;
+      
+      const s3UploadUrl = await b2.getS3UploadUrl(key, f.mimetype);
+      
+      uploadSlots.push({
+        originalName: f.originalname,
+        filename: b2FileName,
+        key: key,
+        mimetype: f.mimetype,
+        uploadUrl: s3UploadUrl,
+        isS3: true
+      });
+    }
+  }
+
+  return { uploadSlots, duplicates };
+}
+
+export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  const fileObjs = [];
+
+  for (const f of uploadedFiles) {
+    const key = `orders/${orderId}/${f.filename}`;
+    const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+
+    const fileObj = {
+      foldername: foldername || null,
+      filename: f.filename,
+      originalName: f.originalName,
+      url: url,
+      uploadedAt: new Date(),
+    };
+
+    // Trigger background processing for thumbnails if it's a video
+    if (allowedExtensions.videos.includes(f.mimetype)) {
+      // Run async without await to return response immediately
+      processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
+    }
+
+    fileObjs.push(fileObj);
+  }
+
+  order.media.push(...fileObjs);
+  await order.save();
+
+  return { added: fileObjs };
+}
+
+async function processVideoThumbnailBackground(orderId, filename, originalName, mimetype) {
+  try {
+    const key = `orders/${orderId}/${filename}`;
+    // Download small portion of video (first 5MB) to extract thumbnail
+    const videoBuffer = await b2.downloadFileRange(key, 0, 5 * 1024 * 1024);
+    const tempVideoPath = path.resolve('tmp', `thumb-gen-${filename}`);
+    fs.writeFileSync(tempVideoPath, Buffer.from(videoBuffer));
+
+    const thumbName = `thumb-${Date.now()}-${originalName}.jpg`;
+    const thumbPath = path.resolve('tmp', thumbName);
+    
+    await extractThumbnail(tempVideoPath, thumbPath, 1);
+    
+    const thumbBuffer = fs.readFileSync(thumbPath);
+    const thumbKey = `orders/${orderId}/${thumbName}`;
+    await b2.upload(thumbKey, thumbBuffer);
+    
+    const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+
+    // Update DB
+    await Order.updateOne(
+      { _id: orderId, "media.filename": filename },
+      { 
+        $set: { 
+          "media.$.thumbnail": thumbnailUrl,
+          "media.$.thumbnailFilename": thumbName 
+        } 
+      }
+    );
+
+    // Cleanup
+    if (fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
+    if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+
+    logger.info(`Background thumbnail generated for ${filename}`);
+  } catch (err) {
+    logger.error(`Background thumbnail generation failed for ${filename}: ${err.message}`);
+  }
+}
 </file>
 
 <file path="services/pricingService.js">
-const Packages = require("../models/Package.js");
+import Packages from "../models/Package.js";
 
 
 const parsePriceValue = (price) => {
-    if (typeof price === "number" && Number.isFinite(price)) {
-      return price;
-    }
-    if (!price) {
-      return 0;
-    }
-    const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ""));
-    return Number.isFinite(numeric) ? numeric : 0;
+  if (typeof price === "number" && Number.isFinite(price)) {
+    return price;
+  }
+  if (!price) {
+    return 0;
+  }
+  const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
 };
 
 const PROMO_CODES = {
-    maro1000: 1000,
-    maro2000: 2000,
-    maro3000: 3000,
+  sunset: 1000,
+  harmony: 2000,
+  celebration: 3000,
 };
-const fetchPackagesMaps = async () =>  {
+const fetchPackagesMaps = async () => {
   const packagesFromDb = await Packages.find({}).lean();
   const packageMapById = new Map();
   const packageMapByName = new Map();
@@ -2767,7 +3558,7 @@ const fetchPackagesMaps = async () =>  {
   return { packageMapById, packageMapByName };
 }
 
-const resolvePackage = (selection, packageMapById, packageMapByName) =>  {
+const resolvePackage = (selection, packageMapById, packageMapByName) => {
   if (!selection) return null;
   if (selection.packageId && packageMapById.has(selection.packageId.toString())) {
     return packageMapById.get(selection.packageId.toString());
@@ -2778,7 +3569,7 @@ const resolvePackage = (selection, packageMapById, packageMapByName) =>  {
   return null;
 }
 
-const appendPackage = (pkg, packagesMap) =>  {
+const appendPackage = (pkg, packagesMap) => {
   const key = pkg._id?.toString();
   if (!key || packagesMap.has(key)) return;
   packagesMap.set(key, {
@@ -2788,7 +3579,7 @@ const appendPackage = (pkg, packagesMap) =>  {
   });
 }
 
-const processCollections = (collectionSelections, resolve, append, subtotal) =>  {
+const processCollections = (collectionSelections, resolve, append, subtotal) => {
   const collections = [];
   let collectionsSubtotal = 0;
   if (Array.isArray(collectionSelections)) {
@@ -2817,7 +3608,7 @@ const processCollections = (collectionSelections, resolve, append, subtotal) => 
   return { collections, collectionsSubtotal };
 }
 
-const processExtras = (extraSelections, resolve, append, subtotal) =>  {
+const processExtras = (extraSelections, resolve, append, subtotal) => {
   const extras = [];
   let extrasSubtotal = 0;
   if (Array.isArray(extraSelections)) {
@@ -2846,7 +3637,7 @@ const processExtras = (extraSelections, resolve, append, subtotal) =>  {
   return { extras, extrasSubtotal };
 }
 
-const processPackages = (packageSelections, resolve, append) =>  {
+const processPackages = (packageSelections, resolve, append) => {
   if (Array.isArray(packageSelections)) {
     packageSelections.forEach((selection) => {
       const pkg = resolve(selection);
@@ -2855,7 +3646,7 @@ const processPackages = (packageSelections, resolve, append) =>  {
   }
 }
 
-const handlePromoCode = (code, subtotal) =>  {
+const handlePromoCode = (code, subtotal) => {
   let promoCode, discount = 0;
   if (code) {
     const normalizedCode = code.toString().trim().toLowerCase();
@@ -2868,7 +3659,7 @@ const handlePromoCode = (code, subtotal) =>  {
   return { promoCode, discount };
 }
 
-const computeTotals = (pricingInput, subtotal, discount) =>  {
+const computeTotals = (pricingInput, subtotal, discount) => {
   const rawDeposit = parsePriceValue(pricingInput.depositPaid);
   let depositPaid = rawDeposit > 0 ? rawDeposit : 0;
   let total = subtotal - discount;
@@ -2886,7 +3677,7 @@ const computeTotals = (pricingInput, subtotal, discount) =>  {
   return { total, depositPaid, remainingBalance };
 }
 
-const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput) =>  {
+const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput) => {
   return (
     subtotal > 0 ||
     discount > 0 ||
@@ -2896,7 +3687,7 @@ const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput)
   );
 }
 
-const normalizePricingSelections = async(pricingInput = {}) =>  {
+const normalizePricingSelections = async (pricingInput = {}) => {
   if (!pricingInput || typeof pricingInput !== "object") return undefined;
   const { packageMapById, packageMapByName } = await fetchPackagesMaps();
   if (!packageMapById.size && !packageMapByName.size) return undefined;
@@ -2957,205 +3748,182 @@ const normalizePricingSelections = async(pricingInput = {}) =>  {
   return normalized;
 }
 
-module.exports = {
-  normalizePricingSelections,
-  // and, if desired, export helpers for testing:
-  // fetchPackagesMaps, resolvePackage, appendPackage, processPackages, processCollections, processExtras, handlePromoCode, computeTotals, hasPricingNumbers
-};
+export { normalizePricingSelections };
 </file>
 
 <file path="services/upload.service.js">
-const fs = require("fs");
-const path = require("path");
-const Credential = require("../config/Credentials");
-const logger = require("../utils/logger");
-const UPLOAD_DIR_ORDERS = Credential.UPLOAD_DIR_ORDERS;
-const UPLOAD_DIR_GALLERY = Credential.UPLOAD_DIR_GALLERY;
-const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS;
-const UPLOAD_DIR_HOMEPAGE = Credential.UPLOAD_DIR_HOMEPAGE;
+import b2Service from "./b2.service.js";
+import logger from "../utils/logger.js";
+import Credentials from "../config/Credentials.js";
+import fs from "fs";
+import path from "path";
 
 /**
- * Ensures a given upload directory exists and returns its path.
- * Supported types: 'orders', 'gallery', 'films', 'homepage'
- * If 'orders', must provide orderId as second argument.
- *
- * @param {'orders'|'gallery'|'films'|'homepage'} type
- * @param {string} [orderId] - Required if type is 'orders'
- * @returns {string} absolute path to the upload directory
- */
-const ensureUploadDir = (type, orderId) => {
-  let baseDir;
-  let dirPath;
-  switch (type) {
-    case 'orders':
-      if (!orderId) {
-        logger.error("orderId is required for 'orders' type");
-        throw new Error("orderId is required for 'orders' type");
-      }
-      baseDir = UPLOAD_DIR_ORDERS;
-      dirPath = path.resolve(baseDir, orderId);
-      logger.info(`Ensuring upload directory for order: ${dirPath}`);
-      break;
-    case 'gallery':
-      baseDir = UPLOAD_DIR_GALLERY;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring gallery upload directory: ${dirPath}`);
-      break;
-    case 'films':
-      baseDir = UPLOAD_DIR_FILMS;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring films upload directory: ${dirPath}`);
-      break;
-    case 'homepage':
-      baseDir = UPLOAD_DIR_HOMEPAGE;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring homepage upload directory: ${dirPath}`);
-      break;
-    default:
-      logger.error("Unknown upload type: " + type);
-      throw new Error("Unknown upload type: " + type);
-  }
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-    logger.info(`Created upload directory at: ${dirPath}`);
-  } else {
-    logger.info(`Upload directory already exists: ${dirPath}`);
-  }
-  return dirPath;
-}
-
-/**
- * Save an uploaded file buffer to disk inside the correct directory (order or gallery)
- * @param {string|undefined} orderId If present, saves to orders directory, otherwise to gallery
- * @param {Buffer} buffer File contents
+ * Save an uploaded file buffer to B2
+ * @param {string|undefined} orderId If present, saves to orders directory, otherwise to gallery/films/homepage
+ * @param {Buffer|string} buffer File contents or path to temporary file
  * @param {string} originalname Original file name
  * @param {Object} options Options object, { isGallery: boolean, isFilm: boolean, isHomePage: boolean } (optional)
- * @returns {string} relative URL path of stored file
+ * @returns {Promise<string>} B2 URL of stored file
  */
-const saveFile = (orderId, buffer, originalname, options = {}) => {
+const saveFile = async (orderId, buffer, originalname, options = {}) => {
   const isGallery = options.isGallery || false;
   const isFilm = options.isFilm || false;
   const isHomePage = options.isHomePage || false;
-  let dirPath = '';
-  let urlPath = '';
+
+  let keyPrefix = '';
+  // Prefixes for filenames to avoid collisions/identify types easily
+  let filenamePrefix = ''; 
+
+  if (isGallery) {
+    keyPrefix = 'gallery';
+    filenamePrefix = 'gallery-';
+  } else if (isFilm) {
+    keyPrefix = 'films';
+    filenamePrefix = 'film-';
+  } else if (isHomePage) {
+    keyPrefix = 'homepage';
+    filenamePrefix = 'homepage-';
+  } else {
+    if (!orderId) {
+      logger.error("orderId required if not saving as gallery, film, or homepage file");
+      throw new Error("orderId required if not saving as gallery file");
+    }
+    keyPrefix = `orders/${orderId}`;
+    filenamePrefix = 'order-';
+  }
+
   const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
   const ext = path.extname(originalname);
-  let filename = uniqueSuffix + ext;
-  let prefixedFilename;
+  const filename = `${filenamePrefix}${uniqueSuffix}${ext}`;
+  const key = `${keyPrefix}/${filename}`;
 
   try {
-    if (isGallery) {
-      dirPath = ensureUploadDir('gallery');;
-      prefixedFilename = `gallery-${filename}`;
-      urlPath = `/${UPLOAD_DIR_GALLERY.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to gallery: ${prefixedFilename}`);
-    } else if (isFilm) {
-      dirPath = ensureUploadDir('films');
-      prefixedFilename = `film-${filename}`;
-      urlPath = `/${UPLOAD_DIR_FILMS.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to films: ${prefixedFilename}`);
-    } else if (isHomePage) {
-      dirPath = ensureUploadDir("homepage");
-      prefixedFilename = `homepage-${filename}`;
-      urlPath = `/${UPLOAD_DIR_HOMEPAGE.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to homepage: ${prefixedFilename}`);
-    } else {
-      if (!orderId) {
-        logger.error("orderId required if not saving as gallery, film, or homepage file");
-        throw new Error("orderId required if not saving as gallery file");
+    let uploadResult;
+    
+    if (typeof buffer === 'string') {
+      // It's a file path, create a stream
+      if (fs.existsSync(buffer)) {
+        const fileStream = fs.createReadStream(buffer);
+        // Pass mimetype from options if available
+        uploadResult = await b2Service.uploadStream(key, fileStream, options.mimetype);
+        
+        // Cleanup temp file after stream is used
+        fileStream.on('close', () => {
+          try {
+            fs.unlinkSync(buffer);
+          } catch (e) {
+            // Might already be deleted or locked, ignore
+          }
+        });
+      } else {
+        throw new Error(`File path does not exist: ${buffer}`);
       }
-      dirPath = ensureUploadDir('orders', orderId);
-      prefixedFilename = `order-${filename}`;
-      urlPath = `/${UPLOAD_DIR_ORDERS.replace(/^[.\\/]+/, "")}/${orderId}/${prefixedFilename}`;
-      logger.info(`Saving file to order (${orderId}): ${prefixedFilename}`);
+    } else if (buffer && typeof buffer.pipe === 'function') {
+      // It's already a stream
+      uploadResult = await b2Service.uploadStream(key, buffer, options.mimetype);
+    } else {
+      // Fallback for buffers
+      await b2Service.upload(key, buffer);
     }
-    filename = prefixedFilename;
-    const destPath = path.join(dirPath, filename);
-    fs.writeFileSync(destPath, buffer);
-    logger.info(`File successfully written: ${destPath}`);
-    return urlPath;
+
+    logger.info(`Saved file to B2: ${key}`);
+    
+    // Construct URL - Assuming typical S3-compatible URL for B2
+    const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+    return url;
   } catch (err) {
-    logger.error(`Failed to save file: ${originalname}, error: ${err instanceof Error ? err.stack : err}`);
+    logger.error(`Failed to save file to B2: ${originalname}, error: ${err instanceof Error ? err.stack : err}`);
     throw err;
   }
 }
 
 /**
  * List all uploaded files for an order or for the gallery
- * @param {string|undefined} orderId If present, lists order files; otherwise gallery files
- * @param {Object} options Options object, { isGallery: boolean } (optional)
- * @returns {Array<string>} array of file names
+ * Note: This now lists from B2 which might be slower. 
+ * @param {string|undefined} orderId 
+ * @param {Object} options 
+ * @returns {Promise<Array<string>>} array of file names (keys or basenames?)
  */
-const listOrderFiles = (orderId, options = {}) => {
+const listOrderFiles = async (orderId, options = {}) => {
   const isGallery = options.isGallery || false;
-  let dir;
+  let prefix;
   if (isGallery) {
-    dir = path.resolve(UPLOAD_DIR_GALLERY);
-    logger.info(`Listing files in gallery directory: ${dir}`);
+    prefix = 'gallery/';
   } else {
-    if (!orderId) {
-      logger.error("orderId required if not listing gallery files");
-      throw new Error("orderId required if not listing gallery files");
-    }
-    dir = path.resolve(UPLOAD_DIR_ORDERS, orderId);
-    logger.info(`Listing files in order directory (${orderId}): ${dir}`);
+    if (!orderId) throw new Error("orderId required if not listing gallery files");
+    prefix = `orders/${orderId}/`;
   }
-  if (!fs.existsSync(dir)) {
-    logger.warn(`Directory does not exist: ${dir}`);
+
+  try {
+    const files = await b2Service.listFileNames(prefix);
+    // Return just filenames (basename) to maintain some compatibility or full keys?
+    // Original listOrderFiles returned fs.readdirSync (basenames).
+    return files.map(f => f.fileName.split('/').pop());
+  } catch (err) {
+    logger.error(`Failed to list files: ${err.message}`);
     return [];
   }
-  const files = fs.readdirSync(dir);
-  logger.info(`Found ${files.length} file(s) in directory: ${dir}`);
-  return files;
 }
 
 /**
- * Deletes a file from an order's directory or from the gallery
- * @param {string|undefined} orderId If present, deletes from order upload dir, else from gallery
- * @param {string} filename Filename to delete
- * @param {Object} options Options object, { isGallery: boolean } (optional)
- * @returns {boolean} true if deleted, false if not found
+ * Deletes a file from B2
+ * @param {string|undefined} orderId 
+ * @param {string} filename 
+ * @param {Object} options 
+ * @returns {Promise<boolean>}
  */
-const deleteOrderFile = (orderId, filename, options = {}) => {
+const deleteFile = async (orderId, filename, options = {}) => {
   const isGallery = options.isGallery || false;
-  let filePath;
+  const isFilm = options.isFilm || false;
+  const isHomePage = options.isHomePage || false;
+
+  let key = '';
+
   if (isGallery) {
-    filePath = path.resolve(UPLOAD_DIR_GALLERY, filename);
-    logger.info(`Deleting gallery file: ${filePath}`);
+    key = `gallery/${filename}`;
+  } else if (isFilm) {
+    key = `films/${filename}`;
+  } else if (isHomePage) {
+    key = `homepage/${filename}`;
   } else {
-    if (!orderId) {
-      logger.error("orderId is required to delete non-gallery files");
-      throw new Error("orderId is required to delete non-gallery files");
+    if (!orderId) throw new Error("orderId required to delete non-global files");
+    key = `orders/${orderId}/${filename}`;
+  }
+
+  try {
+    const deleted = await b2Service.deleteFile(key);
+    if (deleted) {
+        logger.info(`Deleted file from B2: ${key}`);
+    } else {
+        logger.warn(`File not found in B2 to delete: ${key}`);
     }
-    filePath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
-    logger.info(`Deleting order file: ${filePath}`);
+    return deleted;
+  } catch (err) {
+    logger.error(`Failed to delete file from B2: ${key}, error: ${err.message}`);
+    throw err;
   }
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-    logger.info(`Deleted file: ${filePath}`);
-    return true;
-  } else {
-    logger.warn(`File does not exist, cannot delete: ${filePath}`);
-  }
-  return false;
 }
 
-module.exports = {
-  ensureUploadDir,
+// Aliases for compatibility/clarity
+const deleteOrderFile = deleteFile;
+
+export default {
   saveFile,
   listOrderFiles,
-  deleteOrderFile,
+  deleteFile,
+  deleteOrderFile
 };
 </file>
 
 <file path="services/videoService.js">
-const Credentials = require('../config/Credentials');
-const { extractOrderVideoThumbnail, getVideoDuration } = require('./videoThumbnail.service');
-const Order = require('../models/order'); // Adjust as needed
-const path = require('path');
-const fs = require('fs');
+import Credentials from '../config/Credentials.js';
+import { extractOrderVideoThumbnail, getVideoDuration } from './videoThumbnail.service.js';
+import Order from '../models/order.js'; // Adjust as needed
+import path from 'path';
+import fs from 'fs';
 
-async function getVideoDurationService(orderId, filename) {
+export async function getVideoDurationService(orderId, filename) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -3165,12 +3933,17 @@ async function getVideoDurationService(orderId, filename) {
   const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
   const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
 
-  if (!fs.existsSync(videoPath)) throw new Error('Video file not found on server');
+  let ffmpegInput = videoPath;
+  if (!fs.existsSync(videoPath)) {
+      // Use B2 signed URL
+      const b2Service = (await import('./b2.service.js')).default;
+      ffmpegInput = await b2Service.getPresignedUrl(`orders/${orderId}/${filename}`);
+  }
 
-  return await getVideoDuration(videoPath);
+  return await getVideoDuration(ffmpegInput);
 }
 
-async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
+export async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -3181,8 +3954,8 @@ async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
 }
 
 // Service to extract a thumbnail for films (not order videos)
-const Film = require('../models/Film');
-const { extractThumbnail } = require('./videoThumbnail.service'); // you must have this utility for generic videos
+import Film from '../models/Film.js';
+import { extractThumbnail } from './videoThumbnail.service.js'; // you must have this utility for generic videos
 
 /**
  * Extracts and saves a thumbnail for a given film.
@@ -3191,7 +3964,7 @@ const { extractThumbnail } = require('./videoThumbnail.service'); // you must ha
  * @param {number} timeInSeconds - The time in seconds to extract the thumbnail (default: 1).
  * @returns {Promise<{ thumbnailUrl: string, thumbnailFilename: string }>}
  */
-async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
+export async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
   // Lookup film
   const film = await Film.findById(filmId);
   if (!film) throw new Error('Film not found');
@@ -3200,7 +3973,11 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
   const UPLOAD_DIR_FILMS = Credentials.UPLOAD_DIR_FILMS || "./uploads/films";
   const filmPath = path.resolve(UPLOAD_DIR_FILMS, filename);
 
-  if (!fs.existsSync(filmPath)) throw new Error('Film video file not found on server');
+  let ffmpegInput = filmPath;
+  if (!fs.existsSync(filmPath)) {
+      const b2Service = (await import('./b2.service.js')).default;
+      ffmpegInput = await b2Service.getPresignedUrl(`films/${filename}`);
+  }
 
   // Use extractThumbnail 
   // Compose a unique thumbnail filename
@@ -3210,63 +3987,66 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
 
   // Actually extract thumbnail (writes file to disk)
   await extractThumbnail(
-    filmPath,
+    ffmpegInput,
     thumbnailPath,
     timeInSeconds
   );
 
-  // Save thumbnail to disk
-  const newThumbnailFilename = thumbnailFilename;
+  // Save thumbnail to disk (already done by extractThumbnail)
+  
+  // Upload to B2
+  const b2Service = (await import('./b2.service.js')).default;
+  const thumbBuffer = fs.readFileSync(thumbnailPath);
+  const thumbKey = `films/${thumbnailFilename}`;
+  await b2Service.upload(thumbKey, thumbBuffer);
 
-  // Prepare URL (you may have a helper for this, or adjust path)
-  const thumbnailUrl = `/uploads/films/${newThumbnailFilename}`;
+  // Construct B2 URL (unsigned, route will sign it)
+  const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+
+  // Cleanup local thumbnail
+  if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
 
   // Return both thumbnail URL and filename for saving in the DB, caller will save to record
   return {
     thumbnailUrl,
-    thumbnailFilename: newThumbnailFilename,
+    thumbnailFilename: thumbnailFilename,
   };
 }
-
-
-module.exports = {
-  getVideoDurationService,
-  extractThumbnailService,
-  extractThumbnailForFilmsService
-};
 </file>
 
 <file path="services/videoThumbnail.service.js">
-const ffmpeg = require('fluent-ffmpeg');
-const fs = require('fs');
-const path = require('path');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import ffmpeg from 'fluent-ffmpeg';
+import fs from 'fs';
+import path from 'path';
+import logger from '../utils/logger.js';
+import Credentials  from '../config/Credentials.js';
+import b2 from './b2.service.js';
+import Order from '../models/order.js';
 
-// Set FFmpeg and FFprobe paths - try to use installer, fallback to system FFmpeg
-try {
-  const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-  ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-  // FFprobe is usually in the same directory as ffmpeg
-  const ffprobePath = ffmpegInstaller.path.replace('ffmpeg.exe', 'ffprobe.exe').replace('ffmpeg', 'ffprobe');
-  if (fs.existsSync(ffprobePath)) {
-    ffmpeg.setFfprobePath(ffprobePath);
-  }
-  logger.info('FFmpeg path set from @ffmpeg-installer/ffmpeg');
-} catch (err) {
-  // If installer is not available, try to use system FFmpeg
-  // You can also set FFMPEG_PATH and FFPROBE_PATH environment variables
-  if (Credentials.FFMPEG_PATH) {
-    ffmpeg.setFfmpegPath(Credentials.FFMPEG_PATH);
-    logger.info('FFmpeg path set from FFMPEG_PATH environment variable');
-  }
-  if (Credentials.FFPROBE_PATH) {
-    ffmpeg.setFfprobePath(Credentials.FFPROBE_PATH);
-    logger.info('FFprobe path set from FFPROBE_PATH environment variable');
-  }
-  if (!Credentials.FFMPEG_PATH && !Credentials.FFPROBE_PATH) {
-    logger.warn('FFmpeg installer not found. Using system FFmpeg if available.');
-  }
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+
+// Set FFmpeg and FFprobe paths
+if (ffmpegInstaller && ffmpegInstaller.path) {
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+    // FFprobe is usually in the same directory as ffmpeg
+    const ffprobePath = ffmpegInstaller.path.replace('ffmpeg.exe', 'ffprobe.exe').replace('ffmpeg', 'ffprobe');
+    if (fs.existsSync(ffprobePath)) {
+        ffmpeg.setFfprobePath(ffprobePath);
+    }
+    logger.info('FFmpeg path set from @ffmpeg-installer/ffmpeg');
+} else {
+    // Fallback to environment variables or system paths
+    if (Credentials.FFMPEG_PATH) {
+        ffmpeg.setFfmpegPath(Credentials.FFMPEG_PATH);
+        logger.info('FFmpeg path set from FFMPEG_PATH environment variable');
+    }
+    if (Credentials.FFPROBE_PATH) {
+        ffmpeg.setFfprobePath(Credentials.FFPROBE_PATH);
+        logger.info('FFprobe path set from FFPROBE_PATH environment variable');
+    }
+    if (!Credentials.FFMPEG_PATH && !Credentials.FFPROBE_PATH) {
+        logger.warn('FFmpeg installer path not found. Using system FFmpeg if available.');
+    }
 }
 
 const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS;
@@ -3278,7 +4058,7 @@ const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS;
  * @param {number} timeInSeconds - Time in seconds to extract frame (default: 1)
  * @returns {Promise<string>} Path to the generated thumbnail
  */
-async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
+export async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
   return new Promise((resolve, reject) => {
     // Ensure output directory exists
     const outputDir = path.dirname(outputPath);
@@ -3286,9 +4066,9 @@ async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    ffmpeg(videoPath)
+    const command = ffmpeg(videoPath)
       .screenshots({
-        timestamps: [timeInSeconds],
+        timestamps: [String(timeInSeconds)], // ensure it's a string/number FFmpeg likes
         filename: path.basename(outputPath),
         folder: outputDir,
         size: '1280x720' // Max size, maintains aspect ratio
@@ -3298,7 +4078,7 @@ async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
         resolve(outputPath);
       })
       .on('error', (err) => {
-        logger.error(`Error extracting thumbnail: ${err.message}`);
+        logger.error(`Error extracting thumbnail from ${videoPath}: ${err.message}`);
         reject(err);
       });
   });
@@ -3309,7 +4089,7 @@ async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1) {
  * @param {string} videoPath - Full path to the video file
  * @returns {Promise<number>} Duration in seconds
  */
-async function getVideoDuration(videoPath) {
+export async function getVideoDuration(videoPath) {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
       if (err) {
@@ -3330,49 +4110,64 @@ async function getVideoDuration(videoPath) {
  * @param {number} timeInSeconds - Time in seconds to extract frame (default: 1)
  * @returns {Promise<{thumbnailPath: string, thumbnailUrl: string}>}
  */
-async function extractOrderVideoThumbnail(orderId, videoFilename, timeInSeconds = 1) {
-  const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, videoFilename);
+export async function extractOrderVideoThumbnail(orderId, videoFilename, timeInSeconds = 1) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  const videoFile = order.media.find(m => m.filename === videoFilename);
+  if (!videoFile) throw new Error('Video not found in order');
+
+  const videoKey = `orders/${orderId}/${videoFilename}`;
   
-  if (!fs.existsSync(videoPath)) {
-    throw new Error(`Video file not found: ${videoPath}`);
+  // Try local first if exists
+  const localVideoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, videoFilename);
+  let ffmpegInput = localVideoPath;
+
+  if (!fs.existsSync(localVideoPath)) {
+    // Fallback to B2 signed URL
+    logger.info(`Video not found locally, getting signed URL from B2 for: ${videoKey}`);
+    ffmpegInput = await b2.getPresignedUrl(videoKey);
   }
 
   // Generate thumbnail filename
-  const videoNameWithoutExt = path.parse(videoFilename).name;
-  const thumbnailFilename = `thumb-${videoNameWithoutExt}-${Date.now()}.jpg`;
-  const thumbnailPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, thumbnailFilename);
+  const thumbName = `thumb-${Date.now()}-${videoFilename}.jpg`;
+  const tempThumbPath = path.resolve('tmp', thumbName);
   
-  // Extract thumbnail
-  await extractThumbnail(videoPath, thumbnailPath, timeInSeconds);
+  // Extract thumbnail (to local tmp folder)
+  await extractThumbnail(ffmpegInput, tempThumbPath, timeInSeconds);
   
-  // Generate URL path
-  const thumbnailUrl = `/${UPLOAD_DIR_ORDERS.replace(/^[.\\/]+/, "")}/${orderId}/${thumbnailFilename}`;
+  // Upload extracted thumbnail to B2
+  const thumbBuffer = fs.readFileSync(tempThumbPath);
+  const thumbKey = `orders/${orderId}/${thumbName}`;
+  await b2.upload(thumbKey, thumbBuffer);
+  
+  // Construct B2 URL for the thumbnail
+  // We use the same format as in orderMediaService but we'll return the unsigned S3 URL 
+  // because the route that calls this will sign it before returning to user.
+  const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+  
+  // Clean up local temp thumbnail
+  if (fs.existsSync(tempThumbPath)) fs.unlinkSync(tempThumbPath);
   
   return {
-    thumbnailPath,
+    thumbnailPath: tempThumbPath, // Keep for compatibility if needed, though it's deleted
     thumbnailUrl,
-    thumbnailFilename
+    thumbnailFilename: thumbName
   };
 }
-
-module.exports = {
-  extractThumbnail,
-  getVideoDuration,
-  extractOrderVideoThumbnail
-};
 </file>
 
 <file path="utils/fileProccess.js">
-const fs = require('fs');
-const path = require('path');
-const logger = require("../utils/logger");
+import fs from 'fs';
+import path from 'path';
+import logger from "../utils/logger.js";
 
 /**
  * Delete a file by its given file system path.
  * @param {string} filePath
  * @returns {Promise<void>}
  */
-const deleteFileByPath = (filePath) => {
+export const deleteFileByPath = (filePath) => {
   return new Promise((resolve, reject) => {
     if (!filePath) {
       logger.warn('Attempted to delete file with no file path provided');
@@ -3395,7 +4190,7 @@ const deleteFileByPath = (filePath) => {
  * @param {string} folderPath
  * @returns {Promise<void>}
  */
-const deleteFolderByPath = (folderPath) => {
+export const deleteFolderByPath = (folderPath) => {
   return new Promise((resolve, reject) => {
     if (!folderPath) {
       logger.warn('Attempted to delete folder with no folder path provided');
@@ -3412,20 +4207,18 @@ const deleteFolderByPath = (folderPath) => {
     });
   });
 };
-
-
-module.exports = {
-  deleteFileByPath,
-  deleteFolderByPath
-};
 </file>
 
 <file path="utils/logger.js">
-require('dotenv').config();
-const { createLogger, format, transports } = require('winston');
-const { combine, timestamp, printf, colorize, align  } = format;
-const DailyRotateFile = require('winston-daily-rotate-file');
-const path = require('path');
+import dotenv from 'dotenv';
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import path from 'path';
+
+dotenv.config();
+
+const { createLogger, format, transports } = winston;
+const { combine, timestamp, printf, colorize, align } = format;
 
 const LOG_DIR = process.env.LOG_DIR || './logs';
 
@@ -3433,8 +4226,11 @@ const logFormat = printf(({ level, message, timestamp }) => {
   return `${timestamp} ${level}: ${message}`;
 });
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const logger = createLogger({
     level: 'info',
+    silent: !isDevelopment, // Only log in development
     format: combine(
         colorize(),
         timestamp({ format: 'YYYY-MM-DD HH:mm:ss Z' }),
@@ -3468,7 +4264,69 @@ const logger = createLogger({
     ]
 });
 
-module.exports = logger
+export default logger;
+</file>
+
+<file path="utils/signingUtils.js">
+import b2 from "../services/b2.service.js";
+
+/**
+ * Signs a list of media file objects for a specific order.
+ * @param {string} orderId - The ID of the order.
+ * @param {Array} files - The array of file objects to sign.
+ * @returns {Promise<Array>} - The array of signed file objects.
+ */
+export const signOrderFiles = async (orderId, files) => {
+    if (!files || files.length === 0) return files;
+    const prefix = `orders/${orderId}/`;
+    const tokenData = await b2.getFolderToken(prefix);
+    if (!tokenData) return files;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${filename}?Authorization=${authorizationToken}`;
+
+    return files.map(f => {
+        const newF = (typeof f.toObject === 'function') ? f.toObject() : { ...f };
+        if (newF.filename) newF.url = sign(newF.filename);
+        if (newF.thumbnailFilename) newF.thumbnail = sign(newF.thumbnailFilename);
+        return newF;
+    });
+};
+
+/**
+ * Signs an entire order object's media and background.
+ * @param {Object} orderOrDoc - The order object or Mongoose document.
+ * @param {Object} [sharedTokenData] - Optional pre-fetched token data.
+ * @returns {Promise<Object>} - The signed order object.
+ */
+export const signOrderMedia = async (orderOrDoc, sharedTokenData = null) => {
+    if (!orderOrDoc) return orderOrDoc;
+    const order = (typeof orderOrDoc.toObject === 'function') ? orderOrDoc.toObject() : orderOrDoc;
+    const orderId = order._id.toString();
+    
+    let tokenData = sharedTokenData;
+    if (!tokenData) {
+        const prefix = `orders/${orderId}/`; 
+        tokenData = await b2.getFolderToken(prefix);
+    }
+    
+    if (!tokenData) return order;
+
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${filename}?Authorization=${authorizationToken}`;
+
+    if (order.media && order.media.length > 0) {
+        order.media = order.media.map(m => {
+            const newM = { ...m };
+            if (newM.filename) newM.url = sign(newM.filename);
+            if (newM.thumbnailFilename) newM.thumbnail = sign(newM.thumbnailFilename);
+            return newM;
+        });
+    }
+    if (order.orderBackground && order.orderBackground.filename) {
+        order.orderBackground.image = sign(order.orderBackground.filename);
+    }
+    return order;
+};
 </file>
 
 </files>

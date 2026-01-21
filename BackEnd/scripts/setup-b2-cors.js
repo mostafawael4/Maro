@@ -31,21 +31,26 @@ async function setupB2Cors() {
         allowedOperations: [
           "b2_download_file_by_id",
           "b2_download_file_by_name",
-          "s3_get"
+          "b2_upload_file",
+          "b2_upload_part",
+          "s3_get",
+          "s3_put"
         ],
-        allowedHeaders: ["range", "authorization", "content-type", "x-bz-content-sha1"],
-        exposeHeaders: ["content-range", "x-bz-content-sha1", "content-length"],
+        allowedHeaders: ["range", "authorization", "content-type", "x-bz-content-sha1", "x-bz-file-name", "x-bz-info-*"],
+        exposeHeaders: ["content-range", "x-bz-content-sha1", "content-length", "x-bz-upload-timestamp"],
         maxAgeSeconds: 3600,
       },
     ];
 
-    await b2.updateBucket({
+    const response = await b2.updateBucket({
       bucketId: Credentials.B2_BUCKET_ID,
       bucketName: Credentials.B2_BUCKET_NAME,
       corsRules: corsRules,
+       bucketType: "allPublic",
     });
 
     console.log("✅ CORS rules updated successfully!");
+    console.log(response.data);
     console.log("Origins allowed:", corsRules[0].allowedOrigins.join(", "));
   } catch (error) {
     console.error("❌ Failed to update CORS rules:");

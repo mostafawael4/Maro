@@ -3,7 +3,7 @@ const router = express.Router();
 import Order from "../../models/order.js";
 import { normalizePricingSelections } from '../../services/pricingService.js';
 import { requireAdminAuth, requireAdminOrEditorAuth } from "../../middleware/auth.js";
-import { uploadMediaFiles } from '../../services/orderMediaService.js';
+import { uploadMediaFiles, prepareDirectUploads, confirmDirectUploads } from '../../services/orderMediaService.js';
 import { getVideoDurationService, extractThumbnailService } from '../../services/videoService.js';
 import multer from "multer";
 import allowedExtensions from "../../config/allowed_extensions.js";
@@ -270,6 +270,36 @@ router.post(
     }
   }
 );
+
+// POST /orders/:orderId/prepare-direct-upload - Get B2 upload tokens and check for duplicates
+router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { files, foldername } = req.body; // files: [{ originalname, mimetype }]
+    
+    const result = await prepareDirectUploads(orderId, files, foldername);
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    logger.error(`POST /orders/${req.params.orderId}/prepare-direct-upload failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
+// POST /orders/:orderId/confirm-direct-upload - Finalize upload in DB after client finishes B2 upload
+router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { uploadedFiles, foldername } = req.body; // uploadedFiles: [{ filename, originalName, mimetype }]
+    
+    const result = await confirmDirectUploads(orderId, uploadedFiles, foldername);
+    
+    const signedAdded = await signOrderFiles(orderId, result.added);
+    return res.json({ ok: true, added: signedAdded });
+  } catch (err) {
+    logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+});
 
 router.post("/upload", uploadMemory,  async (req, res) => {
   try {
@@ -538,9 +568,12 @@ router.get("/:orderId/download/:filename", async (req, res) => {
     
     logger.info(`Download requested for: ${key}`);
     
+
+    const startTime = Date.now();
     // Get file from B2
     const fileBuffer = await b2.downloadFileByName(key);
     
+    logger.info(`Downloaded ${key} in ${Date.now() - startTime}ms`);
     // Set appropriate headers
     res.type(filename);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

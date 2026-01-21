@@ -376,47 +376,28 @@ export class OrdersComponent implements OnInit {
     // Start progress simulation as fallback (in case progress events don't fire)
     this.startProgressSimulation();
 
-    // Use chunked upload for better performance
-    this.ordersService.uploadOrderImagesInChunks(orderId, files, folderName).subscribe({
+    // Use THE OPTIMUM SOLUTION: Direct Client-to-B2 Upload
+    this.ordersService.uploadOrderMediaDirectly(orderId, files, folderName).subscribe({
       next: (event: any) => {
-        // Handle chunk start event
-        if (event.type === 'chunk-start') {
-          this.uploadCurrentChunk = event.chunkIndex;
-          this.uploadTotalChunks = event.totalChunks;
-          this.uploadChunkInfo = `Uploading batch ${event.chunkIndex} of ${event.totalChunks}`;
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Handle chunk complete event
-        if (event.type === 'chunk-complete') {
-          this.uploadCurrentChunk = event.chunkIndex;
-          this.uploadChunkInfo = `Completed batch ${event.chunkIndex} of ${event.totalChunks}`;
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Handle progress events (type 1 = UploadProgress)
-        if (event.type === HttpEventType.UploadProgress) {
+        // Handle progress events
+        if (event.type === 'progress') {
           // Stop simulation since we have real progress
           this.stopProgressSimulation();
 
-          // Use overall progress from chunked upload
-          if (event.overallProgress !== undefined) {
-            this.uploadProgress = event.overallProgress;
-            this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.overallProgress) / 100);
-            this.uploadCurrentChunk = event.chunkIndex || 0;
-            this.uploadTotalChunks = event.totalChunks || 0;
-            if (this.uploadTotalChunks > 1) {
-              this.uploadChunkInfo = `Batch ${this.uploadCurrentChunk}/${this.uploadTotalChunks} - ${event.chunkProgress || 0}%`;
-            }
-            this.updateUploadSpeed();
-            this.cdr.markForCheck();
-          }
+          this.uploadProgress = event.percent;
+          this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.percent) / 100);
+          this.uploadChunkInfo = `Uploading: ${event.currentFile}`;
+          this.updateUploadSpeed();
+          this.cdr.markForCheck();
         }
-        // Handle Response event (type 4 = Response)
-        else if (event.type === HttpEventType.Response || event.type === 4) {
+        
+        // Handle duplicates notification (optional display)
+        if (event.type === 'duplicates' && event.duplicates?.length > 0) {
+          console.log(`${event.duplicates.length} duplicate files detected.`);
+        }
 
+        // Handle completion event
+        if (event.type === 'complete') {
           // Stop simulation
           this.stopProgressSimulation();
           // Upload complete - ensure progress shows 100%
@@ -428,9 +409,8 @@ export class OrdersComponent implements OnInit {
           // Small delay to show 100% before closing
           setTimeout(() => {
             this.stopUploadTimeTracking();
-            const response = event.body;
+            const response = event; 
             const successCount = response?.added?.length || 0;
-            const failedCount = response?.failed?.length || 0;
             const duplicateCount = response?.duplicates?.length || 0;
 
             this.uploadingOrderId = null;
@@ -443,8 +423,9 @@ export class OrdersComponent implements OnInit {
             // Reload orders to update image count
             this.loadOrders();
 
-            // Build simplified result message with only counts
+            // Build simplified result message
             let messageParts: string[] = [];
+            const failedCount = response?.failed?.length || 0;
 
             if (successCount > 0) {
               messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
@@ -456,35 +437,34 @@ export class OrdersComponent implements OnInit {
 
             if (failedCount > 0) {
               messageParts.push(`Failed to upload ${failedCount} file(s).`);
+              // Optionally list names if few
+              if (failedCount <= 3) {
+                 const names = response.failed.map((f: any) => f.originalName).join(', ');
+                 messageParts.push(`(${names})`);
+              }
             }
 
             // Determine result type and message
-            if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
-              // All files were duplicates
-              this.uploadResultType = 'error';
+            if (failedCount > 0) {
+               this.uploadResultType = 'error';
+            } else if (successCount === 0 && duplicateCount > 0) {
+              this.uploadResultType = 'error'; // Treat all duplicates as a "warning/error" requiring attention
               this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
-            } else if (failedCount > 0 || (successCount === 0 && duplicateCount === 0)) {
-              // Partial success or complete failure
-              this.uploadResultType = successCount > 0 ? 'success' : 'error';
-              this.uploadResultMessage = messageParts.join('\n\n');
+              // Override messageParts for this specific case as per original logic, 
+              // or just use messageParts. Let's stick to messageParts for consistency but custom message for all-dup is nice.
+              // Actually, sticking to the constructed message is more flexible:
             } else {
-              // Complete success (with or without duplicates)
               this.uploadResultType = 'success';
-              this.uploadResultMessage = messageParts.join('\n\n');
+            }
+            
+            if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
+                 this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
+            } else {
+                 this.uploadResultMessage = messageParts.join('\n\n');
             }
 
             this.showUploadResultModal = true;
-          }, 500); // Increased delay to ensure 100% is visible
-        }
-        // Handle any other event that might indicate completion
-        else if (event.body && event.ok !== undefined) {
-          // This might be a response wrapped differently
-
-          this.stopProgressSimulation();
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
-          this.updateUploadSpeed();
-          this.cdr.markForCheck();
+          }, 500);
         }
       },
       error: (err) => {
@@ -502,20 +482,8 @@ export class OrdersComponent implements OnInit {
 
         // Show error modal
         this.uploadResultType = 'error';
-        this.uploadResultMessage = err.error?.message || 'Failed to upload images. Please try again.';
+        this.uploadResultMessage = typeof err === 'string' ? err : 'Failed to upload images directly to B2. Check your connection.';
         this.showUploadResultModal = true;
-      },
-      complete: () => {
-        // This is called when the observable completes
-        // Ensure progress is at 100% if upload was successful
-
-        if (this.uploadingOrderId === orderId && this.uploadProgress < 100) {
-
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
-          this.updateUploadSpeed();
-          this.cdr.markForCheck();
-        }
       }
     });
   }

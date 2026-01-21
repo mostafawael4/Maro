@@ -154,17 +154,42 @@ class B2Service {
     }
 
     async downloadFileByName(fileName) {
+        const startTime = Date.now();
         await this.authorize();
+        logger.info(`authorized in ${Date.now() - startTime}ms`);
         try {
+            const downloadStartTime = Date.now();
             const response = await this.b2.downloadFileByName({
                 bucketName: Credentials.B2_BUCKET_NAME,
                 fileName: fileName,
                 responseType: 'arraybuffer'
             });
+            logger.info(`get response in ${Date.now() - downloadStartTime}ms`);
+
             return response.data;
         } catch (err) {
             logger.error(`B2 Download Error for ${fileName}: ${err.message}`);
             throw err;
+        }
+    }
+
+    async downloadFileRange(fileName, startByte, endByte) {
+        await this.authorize();
+        try {
+            const response = await this.b2.downloadFileByName({
+                bucketName: Credentials.B2_BUCKET_NAME,
+                fileName: fileName,
+                responseType: 'arraybuffer',
+                axiosConfig: {
+                    headers: {
+                        'Range': `bytes=${startByte}-${endByte}`
+                    }
+                }
+            });
+            return response.data;
+        } catch (err) {
+             logger.error(`B2 Range Download Error for ${fileName}: ${err.message}`);
+             throw err;
         }
     }
 
