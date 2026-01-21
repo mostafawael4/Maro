@@ -666,47 +666,49 @@
   position: relative;
   width: 100%;
   max-width: 520px;
-  background: linear-gradient(135deg, rgba(26, 1, 5, 0.95) 0%, rgba(26, 1, 5, 0.98) 100%);
+  background: white;
   border-radius: 18px;
   padding: 2rem;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-  border: 2px solid rgba(255, 218, 185, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 
   h2 {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    color: #ffdab9;
+    color: #333;
     margin-bottom: 0.5rem;
     font-size: 1.8rem;
   }
 
   .order-name {
     margin-bottom: 1.5rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #666;
   }
 
   .modal-label {
     display: block;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #ffdab9;
+    color: #333;
     margin-bottom: 0.5rem;
   }
 
   input[type="text"] {
     width: 100%;
     padding: 0.9rem 1.2rem;
-    border: 2px solid rgba(107, 31, 31, 0.2);
+    border: 2px solid rgba(0, 0, 0, 0.15);
     border-radius: 12px;
     font-size: 1rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin-bottom: 1.25rem;
-    background: rgba(26, 1, 5, 0.6);
+    background: #f9f9f9;
+    color: #333;
     transition: all 0.3s ease;
 
     &:focus {
       outline: none;
-      border-color: #ffdab9;
-      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.15);
+      border-color: #8B3A3A;
+      box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
+      background: white;
     }
 
     &:disabled {
@@ -731,24 +733,32 @@
   cursor: pointer;
   transition: all 0.2s ease;
 
+  svg {
+    color: #666;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.1);
+    
+    svg {
+      color: #333;
+    }
   }
 }
 
 .dropzone {
   position: relative;
-  border: 2px dashed rgba(107, 31, 31, 0.4);
+  border: 2px dashed rgba(0, 0, 0, 0.2);
   border-radius: 14px;
   padding: 2rem;
   text-align: center;
-  background: rgba(26, 1, 5, 0.3);
+  background: #f9f9f9;
   transition: all 0.3s ease;
   margin-bottom: 1rem;
   min-height: 200px;
 
   &.drag-over {
-    border-color: #ffdab9;
+    border-color: #8B3A3A;
     background: rgba(139, 58, 58, 0.05);
   }
 
@@ -776,7 +786,7 @@
     z-index: 0;
 
     svg {
-      color: #ffdab9;
+      color: #8B3A3A;
       margin-bottom: 0.75rem;
     }
 
@@ -784,13 +794,14 @@
       font-size: 1rem;
       font-weight: 600;
       margin: 0;
+      color: #333;
     }
 
     span {
       display: block;
       margin-top: 0.35rem;
       font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.7);
+      color: #666;
     }
   }
 }
@@ -832,7 +843,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    background: rgba(107, 31, 31, 0.08);
+    background: rgba(0, 0, 0, 0.05);
     padding: 0.5rem 0.9rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -845,6 +856,7 @@
       white-space: nowrap;
       flex: 1;
       min-width: 0;
+      color: #333;
     }
 
     button {
@@ -1056,11 +1068,12 @@
   }
 
   .btn-cancel {
-    background: rgba(0, 0, 0, 0.05);
-    color: #8B3A3A;
+    background: #f3f4f6;
+    color: #666;
 
     &:hover:not(:disabled) {
-      background: rgba(0, 0, 0, 0.1);
+      background: #e5e7eb;
+      color: #333;
     }
   }
 
