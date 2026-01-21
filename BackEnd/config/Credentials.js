@@ -5,8 +5,8 @@ dotenv.config();
 const NODE_ENV = process.env.NODE_ENV;
 
 const PORT = process.env.PORT || 4000;
-const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 4000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 4000;
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || '';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
 
 const DB_USER = process.env.DB_USER || '';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
