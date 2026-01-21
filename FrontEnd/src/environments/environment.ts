@@ -1,6 +1,6 @@
 // This file is used for development
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:4000'
+  apiUrl: 'https://maro-production.up.railway.app/'
 };
 
