@@ -30,7 +30,7 @@ export class BackgroundImageSelectorComponent {
   constructor(private ordersService: OrdersService) {}
 
   getImageUrl(image: OrderImage): string {
-    return `${this.baseUrl}${image.url}`;
+    return `${image.url}`;
   }
 
   getDisplayName(image: OrderImage): string {

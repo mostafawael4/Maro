@@ -13,6 +13,13 @@ import * as orderService from "../../services/order.service.js";
 import Credentials from '../../config/Credentials.js'
 import b2 from "../../services/b2.service.js"
 import fs from "fs";
+import path from "path";
+import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
+import uploadService from "../../services/upload.service.js";
+
+// Helper to sign a list of file objects for a specific order
+// (Removed local implementation to use utility)
+
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -55,6 +62,11 @@ router.post("/", async (req, res) => {
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
+    
+    // Optimize: fetch one token for the whole bucket to sign the list
+    const sharedToken = await b2.getFolderToken("");
+    const signedList = await Promise.all(list.map(o => signOrderMedia(o, sharedToken)));
+
     logger.info(
       `Listed all orders by ${
         req.session && req.session.adminId
@@ -62,7 +74,7 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
           : "unknown admin"
       }`
     );
-    return res.json({ ok: true, orders: list });
+    return res.json({ ok: true, orders: signedList });
   } catch (err) {
     logger.error(`GET /orders failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -77,8 +89,9 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
       logger.warn(`Order not found: ${req.params.orderId}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order fetched: ${req.params.orderId}`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(
       `GET /orders/${req.params.orderId} failed: ${err.stack || err}`
@@ -160,9 +173,11 @@ router.put("/:orderId", async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    
+    const signedOrder = await signOrderMedia(updatedOrder);
 
     logger.info(`Order ${orderId} updated by admin.`);
-    return res.json({ ok: true, order: updatedOrder });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`PUT /orders/:orderId failed: ${err.stack || err.message || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -240,9 +255,12 @@ router.post(
           .join(", ")}]`
       );
 
+      const signedAdded = await signOrderFiles(orderId, result.added);
+      
       return res.json({
         ok: true,
         ...result,
+        added: signedAdded
       });
     } catch (err) {
       logger.error(
@@ -281,8 +299,9 @@ router.get("/view/by-email", async (req, res) => {
       logger.warn(`Order view attempted for non-existent email: ${email}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -301,8 +320,9 @@ router.get("/view/orders-by-email",
       if (!orders || orders.length === 0) {
         return res.status(404).json({ ok: false, message: "No orders found for email" });
       }
+      const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
       logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders });
+      return res.json({ ok: true, orders: signedOrders });
     } catch (err) {
       logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
       return res.status(500).json({ ok: false, message: "Server error" });
@@ -431,17 +451,13 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     if (mediaIndex !== -1) {
       // Delete old thumbnail if exists
       if (order.media[mediaIndex].thumbnailFilename) {
-        const path = require("path");
-        const fs = require("fs");
-        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
-        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
-        if (fs.existsSync(oldThumbPath)) {
+          const oldFilename = order.media[mediaIndex].thumbnailFilename;
           try {
-            fs.unlinkSync(oldThumbPath);
+              await uploadService.deleteFile(orderId, oldFilename);
+              logger.info(`Deleted old thumbnail ${oldFilename} from B2 for order ${orderId}`);
           } catch (err) {
-            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+              logger.warn(`Failed to delete old thumbnail ${oldFilename} from B2: ${err.message}`);
           }
-        }
       }
 
       order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
@@ -450,9 +466,12 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     }
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`orders/${orderId}/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({ 
       ok: true, 
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {
@@ -493,10 +512,15 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     order.orderBackground.filename = filename;
     await order.save();
 
+    const signedBackground = await b2.getPresignedUrl(`orders/${orderId}/${filename}`);
+
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({ 
       ok: true, 
-      orderBackground: order.orderBackground
+      orderBackground: {
+          ...order.orderBackground,
+          image: signedBackground
+      }
     });
   } catch (err) {
     logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);

@@ -82,7 +82,7 @@ export class FilmVideoPosterSelectorComponent implements OnInit {
     this.filmsService.extractFilmThumbnail(this.filmId, timeInSeconds).subscribe({
       next: (response) => {
         if (response.ok) {
-          this.previewThumbnail = `${this.baseUrl}${response.thumbnail}`;
+          this.previewThumbnail = `${response.thumbnail}`;
           this.extractedThumbnailData = {
             thumbnail: response.thumbnail,
             thumbnailFilename: response.thumbnailFilename

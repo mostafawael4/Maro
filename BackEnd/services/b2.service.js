@@ -6,32 +6,129 @@ import logger from '../utils/logger.js';
 
 
 class B2Service {
-    constructor(keyId, key) {
+    constructor() {
         this.b2 = new B2({ applicationKeyId: Credentials.B2_APPLICATION_KEY_ID, applicationKey: Credentials.B2_APPLICATION_KEY });
-        this.authenticated = false;
+        this.authPromise = null;
+        this.uploadUrlPool = [];
     }
     
     async authorize() {
-        if (!this.authenticated) {
-          console.log(Credentials.B2_APPLICATION_KEY_ID, Credentials.B2_APPLICATION_KEY);
-        await this.b2.authorize();
-        this.authenticated = true;
-      }
+        if (this.authPromise) return this.authPromise;
+        
+        this.authPromise = (async () => {
+            try {
+                // Check if already authorized effectively? 
+                // The library doesn't expose a simple "isAuthorized" check that is reliable without overhead.
+                // We'll trust the caller to rely on the promise.
+                console.log('Authorizing B2...', Credentials.B2_APPLICATION_KEY_ID);
+                const response = await this.b2.authorize();
+                this.downloadUrl = response.data.downloadUrl;
+                // Clear pool on re-auth as old tokens might be invalid
+                this.uploadUrlPool = [];
+            } catch (err) {
+                this.authPromise = null; // Reset on failure so we can retry
+                throw err;
+            }
+        })();
+        
+        return this.authPromise;
+    }
+
+    async getPresignedUrl(key) {
+        await this.authorize();
+        try {
+             // 24 hours duration
+             const response = await this.b2.getDownloadAuthorization({
+                bucketId: Credentials.B2_BUCKET_ID,
+                fileNamePrefix: key,
+                validDurationInSeconds: 86400,
+            });
+            const authorizationToken = response.data.authorizationToken;
+            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}?Authorization=${authorizationToken}`;
+        } catch (err) {
+             logger.error(`B2 Presign Error: ${err.message}`);
+             // Fallback
+             return `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+        }
+    }
+
+    async getFolderToken(prefix) {
+        await this.authorize();
+        try {
+             const response = await this.b2.getDownloadAuthorization({
+                bucketId: Credentials.B2_BUCKET_ID,
+                fileNamePrefix: prefix,
+                validDurationInSeconds: 86400,
+            });
+            return {
+                baseDownloadUrl: this.downloadUrl,
+                authorizationToken: response.data.authorizationToken,
+                bucketName: Credentials.B2_BUCKET_NAME
+            };
+        } catch (err) {
+             logger.error(`B2 Token Error: ${err.message}`);
+             return null;
+        }
+    }
+
+    async getUploadUrl() {
+        await this.authorize();
+        
+        if (this.uploadUrlPool.length > 0) {
+            return this.uploadUrlPool.pop();
+        }
+
+        const response = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
+        return {
+            uploadUrl: response.data.uploadUrl,
+            authorizationToken: response.data.authorizationToken
+        };
     }
   
-  
     async upload(fileName, buffer) {
-      await this.authorize();
-      const uploadUrl = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
-  
-      const result = await this.b2.uploadFile({
-        uploadUrl: uploadUrl.data.uploadUrl,
-        uploadAuthToken: uploadUrl.data.authorizationToken,
-        fileName,
-        data: buffer
-      });
-  
-      return result.data;
+      let urlData = null;
+      try {
+        urlData = await this.getUploadUrl();
+        
+        const result = await this.b2.uploadFile({
+            uploadUrl: urlData.uploadUrl,
+            uploadAuthToken: urlData.authorizationToken,
+            fileName,
+            data: buffer
+        });
+
+        // If successful, return the URL to the pool
+        this.uploadUrlPool.push(urlData);
+        return result.data;
+      } catch (err) {
+        // If upload fails, we do NOT return the URL to the pool as it might be bad/expired.
+        
+        // Simple retry for 401 (Unauthorized) or specific B2 errors if needed
+        if (err.response && err.response.status === 401) {
+            logger.warn(`B2 Upload 401, retrying with fresh URL: ${fileName}`);
+            // Force re-auth might be needed if the account auth is bad, 
+            // but usually 401 on uploadFile means the upload URL/token is expired.
+            
+            // Try one more time with a fresh URL
+            const freshUrlData = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
+            
+            const retryResult = await this.b2.uploadFile({
+                uploadUrl: freshUrlData.data.uploadUrl,
+                uploadAuthToken: freshUrlData.data.authorizationToken,
+                fileName,
+                data: buffer
+            });
+            
+            // If retry works, pool this new valid URL
+            this.uploadUrlPool.push({
+                uploadUrl: freshUrlData.data.uploadUrl,
+                authorizationToken: freshUrlData.data.authorizationToken
+            });
+            return retryResult.data;
+        }
+        
+        throw err;
+      }
     }
 
     async listFileNames(prefix) {
@@ -81,4 +178,4 @@ class B2Service {
     }
 }
   
-export default new B2Service(Credentials.B2_APPLICATION_KEY_ID, Credentials.B2_APPLICATION_KEY);
+export default new B2Service();

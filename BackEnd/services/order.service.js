@@ -71,7 +71,24 @@ const deleteOrderFileByFileName = async (orderId, filename) => {
   if (!filename) throw new Error("Filename is required");
   
   try {
-    // Delete file from B2
+    // Find the order to get media details
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("Order not found");
+
+    const mediaItem = order.media.find(m => m.filename === filename);
+    
+    // If media item has a thumbnail, delete it first
+    if (mediaItem && mediaItem.thumbnailFilename) {
+        try {
+            await uploadService.deleteFile(orderId, mediaItem.thumbnailFilename);
+            logger.info(`Deleted associated thumbnail: ${mediaItem.thumbnailFilename} (orderId: ${orderId})`);
+        } catch (thumbErr) {
+            logger.error(`Failed to delete associated thumbnail ${mediaItem.thumbnailFilename}: ${thumbErr.message}`);
+            // We continue even if thumbnail delete fails, to ensure main file is attempted
+        }
+    }
+
+    // Delete main file from B2
     await uploadService.deleteFile(orderId, filename);
     logger.info(`Deleted file: ${filename} (orderId: ${orderId})`);
 

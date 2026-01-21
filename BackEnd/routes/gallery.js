@@ -8,6 +8,16 @@ import uploadService from "../services/upload.service.js";
 import allowedExtensions from "../config/allowed_extensions.js";
 import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
+import b2 from "../services/b2.service.js";
+
+const signGalleryImage = (image, tokenData) => {
+    if (!image || !tokenData) return image;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/gallery/${filename}?Authorization=${authorizationToken}`;
+    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+    if (newImage.filename) newImage.url = sign(newImage.filename);
+    return newImage;
+};
 
 // Upload image to gallery
 
@@ -54,10 +64,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     logger.info(
       `Gallery upload successful. Total images uploaded: ${results.length}`
     );
+
+    const tokenData = await b2.getFolderToken("gallery/");
+    const signedResults = results.map(img => signGalleryImage(img, tokenData));
+
     res
       .status(201)
       .json(
-        Array.isArray(results) && results.length === 1 ? results[0] : results
+        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
       );
   } catch (err) {
     logger.error("Gallery upload error:", err);
@@ -69,9 +83,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 router.get("/", async (req, res) => {
   logger.info("Fetching all gallery images.");
   try {
-    const images = await Gallery.find().sort({ uploadedAt: -1 });
+    const images = await Gallery.find().sort({ uploadedAt: -1 }).lean();
+    
+    // Get token for gallery prefix
+    const tokenData = await b2.getFolderToken("gallery/");
+    const signedImages = images.map(img => signGalleryImage(img, tokenData));
+
     logger.info(`Fetched ${images.length} gallery images.`);
-    res.json(images);
+    res.json(signedImages);
   } catch (err) {
     logger.error("Error fetching all gallery images:", err);
     res.status(500).json({ error: "Failed to fetch gallery images" });

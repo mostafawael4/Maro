@@ -170,7 +170,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   getImageUrl(image: OrderImage): string {
-    return `${this.baseUrl}${image.url}`;
+    return `${image.url}`;
   }
 
   isVideo(file: OrderImage): boolean {
@@ -381,7 +381,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   getVideoThumbnailUrl(media: OrderImage): string {
     if (media.thumbnail) {
-      return `${this.baseUrl}${media.thumbnail}`;
+      return `${media.thumbnail}`;
     }
     return '';
   }

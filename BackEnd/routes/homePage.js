@@ -8,6 +8,16 @@ import uploadService from "../services/upload.service.js";
 import allowedExtensions from "../config/allowed_extensions.js";
 import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
+import b2 from "../services/b2.service.js";
+
+const signHomePageImage = (image, tokenData) => {
+    if (!image || !tokenData) return image;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
+    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+    if (newImage.filename) newImage.url = sign(newImage.filename);
+    return newImage;
+};
 
 // Upload image to home page
 
@@ -53,10 +63,14 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
     logger.info(
       `HomePage upload successful. Total images uploaded: ${results.length}`
     );
+
+    const tokenData = await b2.getFolderToken("homepage/");
+    const signedResults = results.map(img => signHomePageImage(img, tokenData));
+
     res
       .status(201)
       .json(
-        Array.isArray(results) && results.length === 1 ? results[0] : results
+        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
       );
   } catch (err) {
     logger.error("HomePage upload error:", err);
@@ -69,8 +83,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all homePage images.");
   try {
     const images = await HomePage.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("homepage/");
+    const signedImages = images.map(img => signHomePageImage(img, tokenData));
+
     logger.info(`Fetched ${images.length} homePage images.`);
-    res.json(images);
+    res.json(signedImages);
   } catch (err) {
     logger.error("Error fetching all homePage images:", err);
     res.status(500).json({ error: "Failed to fetch homePage images" });

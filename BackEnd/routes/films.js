@@ -10,6 +10,17 @@ import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
 import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
 import { extractThumbnailForFilmsService } from '../services/videoService.js';
+import b2 from "../services/b2.service.js";
+
+const signFilm = (film, tokenData) => {
+    if (!film || !tokenData) return film;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${filename}?Authorization=${authorizationToken}`;
+    const newFilm = (typeof film.toObject === 'function') ? film.toObject() : { ...film };
+    if (newFilm.filename) newFilm.url = sign(newFilm.filename);
+    if (newFilm.thumbnailFilename) newFilm.thumbnail = sign(newFilm.thumbnailFilename);
+    return newFilm;
+};
 
 // Upload video with description
 const storage = multer.memoryStorage(); // Use memory storage to access buffer
@@ -52,7 +63,10 @@ router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
 
     logger.info(`Film record created: ${newFilm.filename}`);
 
-    res.status(201).json(newFilm);
+    const tokenData = await b2.getFolderToken("films/");
+    const signedFilm = signFilm(newFilm, tokenData);
+
+    res.status(201).json(signedFilm);
   } catch (err) {
     logger.error("Film upload error:", err);
     res.status(500).json({ error: "Failed to upload video" });
@@ -64,8 +78,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all films.");
   try {
     const films = await Film.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("films/");
+    const signedFilms = films.map(f => signFilm(f, tokenData));
+
     logger.info(`Fetched ${films.length} films.`);
-    res.json(films);
+    res.json(signedFilms);
   } catch (err) {
     logger.error("Error fetching films:", err);
     res.status(500).json({ error: "Failed to fetch films" });
@@ -112,8 +130,19 @@ router.delete("/delete", async (req, res) => {
 
     // Now, remove the file from B2 before deleting the DB record
     try {
+      // Delete main film file
       await uploadService.deleteFile(undefined, filmToDelete.filename, { isFilm: true });
       logger.info(`Deleted film file from B2: ${filmToDelete.filename}`);
+
+      // Delete thumbnail if it exists
+      if (filmToDelete.thumbnailFilename) {
+          try {
+              await uploadService.deleteFile(undefined, filmToDelete.thumbnailFilename, { isFilm: true });
+              logger.info(`Deleted associated film thumbnail from B2: ${filmToDelete.thumbnailFilename}`);
+          } catch (thumbErr) {
+              logger.error(`Failed to delete film thumbnail ${filmToDelete.thumbnailFilename} from B2: ${thumbErr.message}`);
+          }
+      }
     } catch (fileErr) {
       logger.error(`Failed to delete film file from B2 (${filmToDelete.filename}): ${fileErr.message}`);
       return res.status(500).json({ error: `Failed to delete film file from B2: ${fileErr.message}` });
@@ -157,16 +186,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 
     // Delete old thumbnail if exists
     if (film.thumbnailFilename) {
-      const fs = require("fs");
-      const path = require("path");
-      const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS || "./uploads/films";
-      const oldThumbPath = path.resolve(UPLOAD_DIR_FILMS, film.thumbnailFilename);
-      if (fs.existsSync(oldThumbPath)) {
-        try {
-          fs.unlinkSync(oldThumbPath);
-        } catch (err) {
-          logger.warn(`Failed to delete old film thumbnail: ${oldThumbPath}`);
-        }
+      const oldFilename = film.thumbnailFilename;
+      try {
+        await uploadService.deleteFile(undefined, oldFilename, { isFilm: true });
+        logger.info(`Deleted old film thumbnail ${oldFilename} from B2`);
+      } catch (err) {
+        logger.warn(`Failed to delete old film thumbnail ${oldFilename} from B2: ${err.message}`);
       }
     }
 
@@ -176,9 +201,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
     await film.save();
 
     logger.info(`Thumbnail extracted and set for film ${film.filename} (${film._id})`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`films/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({
       ok: true,
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {

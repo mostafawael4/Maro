@@ -9,6 +9,7 @@ import logger from "../../utils/logger.js";
 import { handleMulterErrors } from "../../middleware/upload.js";
 import { deleteOrderFileByFileName } from "../../services/order.service.js";
 import Credentials  from '../../config/Credentials.js';
+import { signOrderFiles } from "../../utils/signingUtils.js";
 
 
 // GET /:orderId - return order's folders count and names (admin only)
@@ -65,11 +66,13 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
       ? order.media.filter(item => item.foldername === foldername)
       : [];
 
+    const signedMedia = await signOrderFiles(orderId, filteredMedia);
+
     return res.json({
       ok: true,
       foldername,
-      count: filteredMedia.length,
-      media: filteredMedia
+      count: signedMedia.length,
+      media: signedMedia
     });
 
   } catch (err) {

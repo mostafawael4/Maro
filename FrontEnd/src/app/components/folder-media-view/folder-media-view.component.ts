@@ -151,12 +151,12 @@ export class FolderMediaViewComponent {
   }
 
   getImageUrl(image: OrderImage): string {
-    return `${this.baseUrl}${image.url}`;
+    return `${image.url}`;
   }
 
   getVideoThumbnailUrl(image: OrderImage): string {
     if (!image.thumbnail) return '';
-    return `${this.baseUrl}${image.thumbnail}`;
+    return `${image.thumbnail}`;
   }
 
   getDisplayName(image: OrderImage): string {
