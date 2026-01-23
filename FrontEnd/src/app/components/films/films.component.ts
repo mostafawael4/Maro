@@ -203,7 +203,13 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
         
         // Clean up visible films tracking
         if (index !== -1) {
-          this.visibleFilms.delete(index);
+          // Shift indices for visible films
+          const newVisible = new Set<number>();
+          this.visibleFilms.forEach(i => {
+            if (i < index) newVisible.add(i);
+            else if (i > index) newVisible.add(i - 1);
+          });
+          this.visibleFilms = newVisible;
         }
         
         // Re-observe films after deletion (browser only)
