@@ -21,62 +21,81 @@ const signGalleryImage = (image, tokenData) => {
 
 // Upload image to gallery
 
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.images];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only image files are allowed!"));
-  },
-}).array("images", 50);
-
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
-  logger.info("Received gallery upload request.");
+// Prepare Direct Upload
+router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    const files = req.files || [];
-    if (!files.length) {
-      logger.warn("No files uploaded in gallery upload.");
-      return res.status(400).json({ error: "No files uploaded" });
+    const { files } = req.body; 
+    if (!files || !files.length) {
+        return res.status(400).json({ error: "No files provided" });
     }
-    const results = [];
+
+    const uploadSlots = [];
     for (const file of files) {
-      logger.info(`Processing file for gallery upload: ${file.originalname}`);
-      // Await the async saveFile
-      const fileUrl = await uploadService.saveFile(
-        undefined,
-        file.buffer,
-        file.originalname,
-        { isGallery: true }
-      );
-      logger.info(`Saved gallery file: ${fileUrl}`);
+        if (!allowedExtensions.images.includes(file.mimetype)) {
+             logger.warn(`Blocked gallery upload of unsupported type: ${file.mimetype}`);
+             continue; 
+        }
 
-      // Optionally save to Gallery collection:
-      const newImage = await Gallery.create({
-        filename: fileUrl.split("/").pop(), // Extract filename from URL
-        url: fileUrl,
-        uploadedAt: new Date(),
-      });
-      logger.info(`Gallery image record created: ${newImage.filename}`);
-      results.push(newImage);
+        const context = { type: 'gallery' };
+        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+        
+        uploadSlots.push({
+            originalName: file.originalname,
+            filename: slot.filename,
+            key: slot.key,
+            uploadUrl: slot.uploadUrl,
+            authorizationToken: slot.authorizationToken,
+            mimetype: file.mimetype
+        });
     }
-    logger.info(
-      `Gallery upload successful. Total images uploaded: ${results.length}`
-    );
 
-    const tokenData = await b2.getFolderToken("gallery/");
-    const signedResults = results.map(img => signGalleryImage(img, tokenData));
-
-    res
-      .status(201)
-      .json(
-        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
-      );
+    res.json({ ok: true, uploadSlots });
   } catch (err) {
-    logger.error("Gallery upload error:", err);
-    res.status(500).json({ error: "Failed to upload image to gallery" });
+    logger.error("Gallery prepare upload error:", err);
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
+});
+
+// Confirm Direct Upload
+router.post("/confirm-direct-upload", async (req, res) => {
+    try {
+        const { uploadedFiles } = req.body; 
+        if (!uploadedFiles || !uploadedFiles.length) {
+            return res.status(400).json({ error: "No files to confirm" });
+        }
+
+        const results = [];
+        for (const file of uploadedFiles) {
+            const context = { type: 'gallery' };
+            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            
+            if (!exists) {
+                logger.warn(`Gallery file verification failed: ${file.filename}`);
+                continue;
+            }
+
+            const newImage = await Gallery.create({
+                filename: file.filename,
+                url: url,
+                uploadedAt: new Date(),
+            });
+            logger.info(`Gallery image record created: ${newImage.filename}`);
+            results.push(newImage);
+        }
+        
+        const tokenData = await b2.getFolderToken("gallery/");
+        const signedResults = results.map(img => signGalleryImage(img, tokenData));
+
+        res.status(201).json({ 
+            ok: true, 
+            added: signedResults,
+            message: `${results.length} file(s) confirmed.` 
+        });
+
+    } catch (err) {
+        logger.error("Gallery confirm upload error:", err);
+        res.status(500).json({ error: "Failed to confirm upload" });
+    }
 });
 
 // Get all gallery images

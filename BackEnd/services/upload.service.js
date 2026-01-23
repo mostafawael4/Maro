@@ -1,11 +1,110 @@
+// ... imports
 import b2Service from "./b2.service.js";
 import logger from "../utils/logger.js";
 import Credentials from "../config/Credentials.js";
 import fs from "fs";
 import path from "path";
 
+// Helper to determine key and filename logic
+const getContextPaths = (context, originalName) => {
+    const { type, orderId } = context;
+    let keyPrefix = '';
+    let filenamePrefix = '';
+
+    if (type === 'gallery') {
+       keyPrefix = 'gallery';
+       filenamePrefix = 'gallery-';
+    } else if (type === 'film') {
+       keyPrefix = 'films';
+       filenamePrefix = 'film-';
+    } else if (type === 'homepage') {
+       keyPrefix = 'homepage';
+       filenamePrefix = 'homepage-';
+    } else if (type === 'order') {
+       if (!orderId) throw new Error("orderId required for order upload context");
+       keyPrefix = `orders/${orderId}`;
+       filenamePrefix = 'order-'; // actually order logic uses just random suffix usually, keeping consistent with simple logic here
+    } else {
+       throw new Error(`Unknown upload context type: ${type}`);
+    }
+
+    // If for order, we might use a lighter prefix or none as per existing logic,
+    // but having a prefix helps collision avoidance.
+    // Existing logic in orderMediaService uses: Date + Random + OriginalName
+    
+    // We will stick to a standard pattern:
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    // Sanitize original name
+    const sanitizedOriginal = originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    
+    // For Orders, existing was: `orders/${orderId}/${uniqueSuffix}-${f.originalname}`
+    // For others in saveFile: `${keyPrefix}/${filenamePrefix}${uniqueSuffix}${ext}`
+    
+    let filename;
+    if (type === 'order') {
+        filename = `${uniqueSuffix}-${sanitizedOriginal}`;
+    } else {
+        filename = `${filenamePrefix}${uniqueSuffix}-${sanitizedOriginal}`;
+    }
+    
+    const key = `${keyPrefix}/${filename}`;
+    
+    return { key, filename, keyPrefix };
+};
+
+
 /**
- * Save an uploaded file buffer to B2
+ * Prepare a direct upload
+ * @param {Object} context { type: 'gallery'|'film'|'homepage'|'order', orderId? }
+ * @param {Object} fileInfo { originalName, mimeType, size }
+ * @returns {Promise<Object>} { uploadUrl, authorizationToken, key, filename }
+ */
+const prepareDirectUpload = async (context, fileInfo) => {
+    const { originalName } = fileInfo;
+    const { key, filename } = getContextPaths(context, originalName);
+
+    // Get Native B2 Upload URL/Token
+    const { uploadUrl, authorizationToken } = await b2Service.getUploadUrl();
+
+    return {
+        uploadUrl,
+        authorizationToken,
+        key,
+        filename
+    };
+};
+
+/**
+ * Verify a direct upload exists in B2
+ * @param {Object} context { type: 'gallery'|'film'|'homepage'|'order', orderId? }
+ * @param {string} filename The filename returned from prepareDirectUpload
+ * @returns {Promise<Object>} { exists: boolean, url: string, key: string }
+ */
+const verifyFileExists = async (context, filename) => {
+    const { type, orderId } = context;
+    let keyPrefix = '';
+    
+    if (type === 'gallery') keyPrefix = 'gallery';
+    else if (type === 'film') keyPrefix = 'films';
+    else if (type === 'homepage') keyPrefix = 'homepage';
+    else if (type === 'order') keyPrefix = `orders/${orderId}`;
+    
+    const key = `${keyPrefix}/${filename}`;
+
+    // Use listFileNames to verify existence
+    const foundFiles = await b2Service.listFileNames(key, 1);
+    const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+
+    return {
+        exists,
+        url: exists ? b2Service.getFileUrl(key) : null,
+        key
+    };
+};
+
+
+/**
+ * Save an uploaded file buffer to B2 (Legacy/Server-side upload)
  * @param {string|undefined} orderId If present, saves to orders directory, otherwise to gallery/films/homepage
  * @param {Buffer|string} buffer File contents or path to temporary file
  * @param {string} originalname Original file name
@@ -17,32 +116,12 @@ const saveFile = async (orderId, buffer, originalname, options = {}) => {
   const isFilm = options.isFilm || false;
   const isHomePage = options.isHomePage || false;
 
-  let keyPrefix = '';
-  // Prefixes for filenames to avoid collisions/identify types easily
-  let filenamePrefix = ''; 
+  let contextType = 'order';
+  if (isGallery) contextType = 'gallery';
+  else if (isFilm) contextType = 'film';
+  else if (isHomePage) contextType = 'homepage';
 
-  if (isGallery) {
-    keyPrefix = 'gallery';
-    filenamePrefix = 'gallery-';
-  } else if (isFilm) {
-    keyPrefix = 'films';
-    filenamePrefix = 'film-';
-  } else if (isHomePage) {
-    keyPrefix = 'homepage';
-    filenamePrefix = 'homepage-';
-  } else {
-    if (!orderId) {
-      logger.error("orderId required if not saving as gallery, film, or homepage file");
-      throw new Error("orderId required if not saving as gallery file");
-    }
-    keyPrefix = `orders/${orderId}`;
-    filenamePrefix = 'order-';
-  }
-
-  const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-  const ext = path.extname(originalname);
-  const filename = `${filenamePrefix}${uniqueSuffix}${ext}`;
-  const key = `${keyPrefix}/${filename}`;
+  const { key } = getContextPaths({ type: contextType, orderId }, originalname);
 
   let dataToUpload = buffer;
   // If buffer is a file path, read it
@@ -64,9 +143,7 @@ const saveFile = async (orderId, buffer, originalname, options = {}) => {
     await b2Service.upload(key, dataToUpload);
     logger.info(`Saved file to B2: ${key}`);
     
-    // Construct URL - Assuming typical S3-compatible URL for B2
-    const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
-    return url;
+    return b2Service.getFileUrl(key);
   } catch (err) {
     logger.error(`Failed to save file to B2: ${originalname}, error: ${err instanceof Error ? err.stack : err}`);
     throw err;
@@ -147,5 +224,8 @@ export default {
   saveFile,
   listOrderFiles,
   deleteFile,
-  deleteOrderFile
+  deleteOrderFile,
+  prepareDirectUpload,
+  verifyFileExists
 };
+

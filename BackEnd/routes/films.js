@@ -23,54 +23,84 @@ const signFilm = (film, tokenData) => {
 };
 
 // Upload video with description
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.videos];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only video files are allowed!"));
-  },
-}).single("videos");
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
-  logger.info("Received film upload request.");
+// Prepare Direct Upload
+router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    const file = req.file;
-    const { description } = req.body;
-
-    if (!file) {
-      logger.warn("No file uploaded in film upload.");
-      return res.status(400).json({ error: "No file uploaded" });
+    // Films usually single upload in existing code, but let's support array or just handle one
+    // Frontend sends 'files' array usually in our new service structure.
+    const { files } = req.body; 
+    if (!files || !files.length) {
+        return res.status(400).json({ error: "No files provided" });
     }
 
-    logger.info(`Processing file for film upload: ${file.originalname}`);
+    const uploadSlots = [];
+    for (const file of files) {
+        if (!allowedExtensions.videos.includes(file.mimetype)) {
+             logger.warn(`Blocked film upload of unsupported type: ${file.mimetype}`);
+             continue; 
+        }
 
-    const fileUrl = await uploadService.saveFile(
-      undefined,
-      file.buffer,
-      file.originalname,
-      { isFilm: true }
-    );
-    logger.info(`Saved film file: ${fileUrl}`);
+        const context = { type: 'film' };
+        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+        
+        uploadSlots.push({
+            originalName: file.originalname,
+            filename: slot.filename,
+            key: slot.key,
+            uploadUrl: slot.uploadUrl,
+            authorizationToken: slot.authorizationToken,
+            mimetype: file.mimetype
+        });
+    }
 
-    // Optionally generate/save unique filename with timestamp if desired
-    const newFilm = await Film.create({
-      filename: fileUrl.split("/").pop(),
-      url: fileUrl,
-      description,
-    });
-
-    logger.info(`Film record created: ${newFilm.filename}`);
-
-    const tokenData = await b2.getFolderToken("films/");
-    const signedFilm = signFilm(newFilm, tokenData);
-
-    res.status(201).json(signedFilm);
+    res.json({ ok: true, uploadSlots });
   } catch (err) {
-    logger.error("Film upload error:", err);
-    res.status(500).json({ error: "Failed to upload video" });
+    logger.error("Film prepare upload error:", err);
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
+});
+
+// Confirm Direct Upload
+router.post("/confirm-direct-upload", async (req, res) => {
+    try {
+        const { uploadedFiles, description } = req.body; 
+        if (!uploadedFiles || !uploadedFiles.length) {
+            return res.status(400).json({ error: "No files to confirm" });
+        }
+
+        const results = [];
+        for (const file of uploadedFiles) {
+            const context = { type: 'film' };
+            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            
+            if (!exists) {
+                logger.warn(`Film file verification failed: ${file.filename}`);
+                continue;
+            }
+
+            const newFilm = await Film.create({
+                filename: file.filename,
+                url: url,
+                description: description || '',
+                uploadedAt: new Date()
+            });
+            logger.info(`Film record created: ${newFilm.filename}`);
+            results.push(newFilm);
+        }
+        
+        const tokenData = await b2.getFolderToken("films/");
+        const signedResults = results.map(f => signFilm(f, tokenData));
+
+        res.status(201).json({ 
+            ok: true, 
+            added: signedResults,
+            message: `${results.length} film(s) confirmed.` 
+        });
+
+    } catch (err) {
+        logger.error("Film confirm upload error:", err);
+        res.status(500).json({ error: "Failed to confirm upload" });
+    }
 });
 
 // Get all films

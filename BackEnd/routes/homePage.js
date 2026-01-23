@@ -21,61 +21,89 @@ const signHomePageImage = (image, tokenData) => {
 
 // Upload image to home page
 
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.images];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only image files are allowed!"));
-  },
-}).array("images", 30);
-
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
-  logger.info("Received homePage upload request.");
+// Prepare Direct Upload
+router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    const files = req.files || [];
-    if (!files.length) {
-      logger.warn("No files uploaded in homePage upload.");
-      return res.status(400).json({ error: "No files uploaded" });
+    const { files } = req.body; // Expects array of { originalname, mimetype, size }
+    if (!files || !files.length) {
+        return res.status(400).json({ error: "No files provided" });
     }
-    const results = [];
+
+    const uploadSlots = [];
     for (const file of files) {
-      logger.info(`Processing file for homePage upload: ${file.originalname}`);
-      const fileUrl = await uploadService.saveFile(
-        undefined,
-        file.buffer,
-        file.originalname,
-        { isHomePage: true }
-      );
-      logger.info(`Saved homePage file: ${fileUrl}`);
+        // Enforce validations (mime type check is good here too)
+        if (!allowedExtensions.images.includes(file.mimetype)) {
+             logger.warn(`Blocked homepage upload of unsupported type: ${file.mimetype}`);
+             continue; 
+        }
 
-      // Save to HomePage collection
-      const newImage = await HomePage.create({
-        filename: fileUrl.split("/").pop(),
-        url: fileUrl,
-        uploadedAt: new Date(),
-      });
-      logger.info(`HomePage image record created: ${newImage.filename}`);
-      results.push(newImage);
+        const context = { type: 'homepage' };
+        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+        
+        uploadSlots.push({
+            originalName: file.originalname,
+            filename: slot.filename,
+            key: slot.key,
+            uploadUrl: slot.uploadUrl,
+            authorizationToken: slot.authorizationToken,
+            mimetype: file.mimetype
+        });
     }
-    logger.info(
-      `HomePage upload successful. Total images uploaded: ${results.length}`
-    );
 
-    const tokenData = await b2.getFolderToken("homepage/");
-    const signedResults = results.map(img => signHomePageImage(img, tokenData));
-
-    res
-      .status(201)
-      .json(
-        Array.isArray(signedResults) && signedResults.length === 1 ? signedResults[0] : signedResults
-      );
+    res.json({ ok: true, uploadSlots });
   } catch (err) {
-    logger.error("HomePage upload error:", err);
-    res.status(500).json({ error: "Failed to upload image to home page" });
+    logger.error("HomePage prepare upload error:", err);
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
+});
+
+// Confirm Direct Upload
+router.post("/confirm-direct-upload", async (req, res) => {
+    try {
+        const { uploadedFiles } = req.body; // Array of { filename, originalName }
+        if (!uploadedFiles || !uploadedFiles.length) {
+            return res.status(400).json({ error: "No files to confirm" });
+        }
+
+        const results = [];
+        for (const file of uploadedFiles) {
+            const context = { type: 'homepage' };
+            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            
+            if (!exists) {
+                logger.warn(`HomePage file verification failed: ${file.filename}`);
+                continue;
+            }
+
+            // Save to HomePage collection
+            const newImage = await HomePage.create({
+                filename: file.filename,
+                url: url,
+                uploadedAt: new Date(),
+            });
+            logger.info(`HomePage image record created: ${newImage.filename}`);
+            results.push(newImage);
+        }
+        
+        // Sign URLs before returning if needed (though we just saved the public URL ideally, 
+        // existing logic signs them. Let's see... existing saveFile returned signed B2 URL? 
+        // No, saveFile return S3 URL.
+        // Existing GET / signs them.
+        
+        // We should return consistency.
+        const tokenData = await b2.getFolderToken("homepage/");
+        const signedResults = results.map(img => signHomePageImage(img, tokenData));
+
+        res.status(201).json({ 
+            ok: true, 
+            added: signedResults,
+            message: `${results.length} file(s) confirmed.` 
+        });
+
+    } catch (err) {
+        logger.error("HomePage confirm upload error:", err);
+        res.status(500).json({ error: "Failed to confirm upload" });
+    }
 });
 
 // Get all homePage images

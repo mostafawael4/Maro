@@ -1,7 +1,5 @@
 import B2 from "backblaze-b2";
-
 import Credentials from  '../config/Credentials.js';
-
 import logger from '../utils/logger.js';
 
 
@@ -10,6 +8,7 @@ class B2Service {
         this.b2 = new B2({ applicationKeyId: Credentials.B2_APPLICATION_KEY_ID, applicationKey: Credentials.B2_APPLICATION_KEY });
         this.authPromise = null;
         this.uploadUrlPool = [];
+        this.downloadUrl = null;
     }
     
     async authorize() {
@@ -52,8 +51,8 @@ class B2Service {
             return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}?Authorization=${authorizationToken}`;
         } catch (err) {
              logger.error(`B2: Presign Error for ${key}: ${err.message}`);
-             // Fallback to raw URL so at least something is returned, though it may be blocked by B2 privacy
-             return `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+             // Fallback
+             return this.getFileUrl(key);
         }
     }
 
@@ -91,6 +90,22 @@ class B2Service {
             authorizationToken: response.data.authorizationToken
         };
     }
+
+    /**
+     * Get the public URL for a file (Native B2 format)
+     * @param {string} key 
+     * @returns {string}
+     */
+    getFileUrl(key) {
+        // e.g. https://f005.backblazeb2.com/file/<bucketName>/<key>
+        // We will assume downloadUrl is populated or fallback to a known structure if needed, 
+        // but authorize() should have run.
+        if (this.downloadUrl) {
+            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}`;
+        }
+        // Fallback or if not authorized yet (though caller usually ensures auth)
+        return `https://f005.backblazeb2.com/file/${Credentials.B2_BUCKET_NAME}/${key}`;
+    }
   
     async upload(fileName, buffer) {
       let urlData = null;
@@ -113,8 +128,6 @@ class B2Service {
         // Simple retry for 401 (Unauthorized) or specific B2 errors if needed
         if (err.response && err.response.status === 401) {
             logger.warn(`B2 Upload 401, retrying with fresh URL: ${fileName}`);
-            // Force re-auth might be needed if the account auth is bad, 
-            // but usually 401 on uploadFile means the upload URL/token is expired.
             
             // Try one more time with a fresh URL
             const freshUrlData = await this.b2.getUploadUrl({ bucketId: Credentials.B2_BUCKET_ID });
@@ -135,16 +148,16 @@ class B2Service {
         }
         
         throw err;
-      }
+    }
     }
 
-    async listFileNames(prefix) {
+    async listFileNames(prefix, maxFileCount = 1000) {
         await this.authorize();
         try {
             const response = await this.b2.listFileNames({
                 bucketId: Credentials.B2_BUCKET_ID,
                 prefix: prefix,
-                maxFileCount: 1000,
+                maxFileCount: maxFileCount,
             });
             return response.data.files;
         } catch (err) {

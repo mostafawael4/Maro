@@ -380,91 +380,106 @@ export class OrdersComponent implements OnInit {
     this.ordersService.uploadOrderMediaDirectly(orderId, files, folderName).subscribe({
       next: (event: any) => {
         // Handle progress events
-        if (event.type === 'progress') {
+        if (event.type === HttpEventType.UploadProgress) {
           // Stop simulation since we have real progress
           this.stopProgressSimulation();
 
-          this.uploadProgress = event.percent;
-          this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.percent) / 100);
-          this.uploadChunkInfo = `Uploading: ${event.currentFile}`;
+          if (event.total) {
+            this.uploadProgress = Math.round((event.loaded / event.total) * 100);
+            this.uploadProgressBytes = event.loaded; // This might be percentage-based relative to 100 in DirectUploadService
+            // In DirectUploadService we emit loaded as percent, total as 100.
+            // But let's check: 
+            // observer.next({ type: HttpEventType.UploadProgress, loaded: totalPercent, total: 100 });
+            // So event.loaded IS the percent.
+            
+            // To be safe with display binding which expects percent:
+            // this.uploadProgress = event.loaded; 
+            
+            // But wait, existing code used: 
+            // this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.percent) / 100);
+            
+            // So if event.loaded is percent (0-100):
+            this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.loaded) / 100);
+          }
+           
+          // this.uploadChunkInfo = `Uploading: ${event.currentFile}`; // We lost currentFile info in DirectUploadService standard event
+          this.uploadChunkInfo = 'Uploading files...';
           this.updateUploadSpeed();
           this.cdr.markForCheck();
         }
         
-        // Handle duplicates notification (optional display)
-        if (event.type === 'duplicates' && event.duplicates?.length > 0) {
-          console.log(`${event.duplicates.length} duplicate files detected.`);
-        }
-
         // Handle completion event
-        if (event.type === 'complete') {
-          // Stop simulation
-          this.stopProgressSimulation();
-          // Upload complete - ensure progress shows 100%
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
-          this.updateUploadSpeed();
-          this.cdr.markForCheck();
+        if (event.type === HttpEventType.Response) {
+          const body = event.body;
+          if (body && body.type === 'complete') {
+             // Stop simulation
+            this.stopProgressSimulation();
+            // Upload complete - ensure progress shows 100%
+            this.uploadProgress = 100;
+            this.uploadProgressBytes = this.uploadTotalBytes;
+            this.updateUploadSpeed();
+            this.cdr.markForCheck();
 
-          // Small delay to show 100% before closing
-          setTimeout(() => {
-            this.stopUploadTimeTracking();
-            const response = event; 
-            const successCount = response?.added?.length || 0;
-            const duplicateCount = response?.duplicates?.length || 0;
-
-            this.uploadingOrderId = null;
-
-            // Close upload modal first
-            if (onSuccess) {
-              onSuccess();
+            // Handle duplicates notification (optional display)
+            if (body.duplicates && body.duplicates.length > 0) {
+              console.log(`${body.duplicates.length} duplicate files detected.`);
             }
 
-            // Reload orders to update image count
-            this.loadOrders();
+            // Small delay to show 100% before closing
+            setTimeout(() => {
+              this.stopUploadTimeTracking();
+              const response = body; 
+              const successCount = response?.added?.length || 0;
+              const duplicateCount = response?.duplicates?.length || 0;
 
-            // Build simplified result message
-            let messageParts: string[] = [];
-            const failedCount = response?.failed?.length || 0;
+              this.uploadingOrderId = null;
 
-            if (successCount > 0) {
-              messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
-            }
-
-            if (duplicateCount > 0) {
-              messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded).`);
-            }
-
-            if (failedCount > 0) {
-              messageParts.push(`Failed to upload ${failedCount} file(s).`);
-              // Optionally list names if few
-              if (failedCount <= 3) {
-                 const names = response.failed.map((f: any) => f.originalName).join(', ');
-                 messageParts.push(`(${names})`);
+              // Close upload modal first
+              if (onSuccess) {
+                onSuccess();
               }
-            }
 
-            // Determine result type and message
-            if (failedCount > 0) {
-               this.uploadResultType = 'error';
-            } else if (successCount === 0 && duplicateCount > 0) {
-              this.uploadResultType = 'error'; // Treat all duplicates as a "warning/error" requiring attention
-              this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
-              // Override messageParts for this specific case as per original logic, 
-              // or just use messageParts. Let's stick to messageParts for consistency but custom message for all-dup is nice.
-              // Actually, sticking to the constructed message is more flexible:
-            } else {
-              this.uploadResultType = 'success';
-            }
-            
-            if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
-                 this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
-            } else {
-                 this.uploadResultMessage = messageParts.join('\n\n');
-            }
+              // Reload orders to update image count
+              this.loadOrders();
 
-            this.showUploadResultModal = true;
-          }, 500);
+              // Build simplified result message
+              let messageParts: string[] = [];
+              const failedCount = response?.failed?.length || 0;
+
+              if (successCount > 0) {
+                messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
+              }
+
+              if (duplicateCount > 0) {
+                messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded).`);
+              }
+
+              if (failedCount > 0) {
+                messageParts.push(`Failed to upload ${failedCount} file(s).`);
+                // Optionally list names if few
+                if (failedCount <= 3) {
+                   const names = response.failed.map((f: any) => f.originalName).join(', ');
+                   messageParts.push(`(${names})`);
+                }
+              }
+
+              // Determine result type and message
+              if (failedCount > 0) {
+                 this.uploadResultType = 'error';
+              } else if (successCount === 0 && duplicateCount > 0) {
+                this.uploadResultType = 'error'; // Treat all duplicates as a "warning/error" requiring attention
+                this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
+              } else {
+                this.uploadResultType = 'success';
+              }
+              
+              if (!(successCount === 0 && duplicateCount > 0 && failedCount === 0)) {
+                   this.uploadResultMessage = messageParts.join('\n\n');
+              }
+
+              this.showUploadResultModal = true;
+            }, 500);
+          }
         }
       },
       error: (err) => {

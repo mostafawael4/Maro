@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { HttpEventType } from '@angular/common/http';
+import { DirectUploadService } from './direct-upload.service';
 
 export interface GalleryImage {
   _id: string;
@@ -17,24 +17,20 @@ export interface GalleryImage {
 export class GalleryService {
   private apiUrl = `${environment.apiUrl}/gallery`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private directUpload: DirectUploadService) { }
 
   // Get all gallery images
   getAllImages(): Observable<GalleryImage[]> {
     return this.http.get<GalleryImage[]>(this.apiUrl);
   }
 
-  // Upload images to gallery (requires admin authentication)
+  // Upload images to gallery
   uploadImages(files: File[]): Observable<any> {
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('images', file);
-    });
-    return this.http.post(`${this.apiUrl}/upload`, formData, {
-      withCredentials: true,
-      reportProgress: true,
-      observe: 'events'
-    });
+    return this.directUpload.uploadFiles(
+        `${this.apiUrl}/prepare-direct-upload`,
+        `${this.apiUrl}/confirm-direct-upload`,
+        files
+    );
   }
 
   // Delete an image from gallery (requires admin authentication)

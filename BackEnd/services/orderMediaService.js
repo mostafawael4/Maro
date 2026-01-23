@@ -62,9 +62,9 @@ export  async function uploadMediaFiles(orderId, files, foldername) {
 
         // Upload to B2
         await b2.upload(key, buffer);
-        // Construct B2 URL (Assuming S3 compatible URL pattern for Backblaze)
-        // Adjust region as needed (e.g. us-west-003)
-        const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+        
+        // Construct Native B2 URL
+        const url = b2.getFileUrl(key);
         const filename = key.split('/').pop();
 
         const fileObj = {
@@ -99,7 +99,7 @@ export  async function uploadMediaFiles(orderId, files, foldername) {
             const thumbKey = `orders/${orderId}/${thumbName}`;
             await b2.upload(thumbKey, thumbBuffer);
             
-            fileObj.thumbnail = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+            fileObj.thumbnail = b2.getFileUrl(thumbKey);
             fileObj.thumbnailFilename = thumbName;
 
             // Cleanup thumbnail
@@ -139,7 +139,19 @@ export async function prepareDirectUploads(orderId, files, foldername) {
   const duplicates = [];
   const uploadSlots = [];
 
+  const allowedMimes = [...allowedExtensions.images, ...allowedExtensions.videos];
+  const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+
   for (const f of files) {
+    if (!allowedMimes.includes(f.mimetype)) {
+        logger.warn(`Blocked upload of unsupported type: ${f.mimetype}`);
+        continue; // Skip invalid files or throw error
+    }
+    if (f.size && f.size > MAX_SIZE) {
+        logger.warn(`Blocked upload of oversized file: ${f.originalname} (${f.size} bytes)`);
+        continue;
+    }
+
     const isDuplicate = existingMedia.some(
       (existing) =>
         existing.originalName === f.originalname &&
@@ -153,15 +165,16 @@ export async function prepareDirectUploads(orderId, files, foldername) {
       const b2FileName = `${uniqueSuffix}-${f.originalname}`;
       const key = `orders/${orderId}/${b2FileName}`;
       
-      const uploadData = await b2.getUploadUrl();
+      // Use Native B2 Upload URL
+      const { uploadUrl, authorizationToken } = await b2.getUploadUrl();
       
       uploadSlots.push({
         originalName: f.originalname,
         filename: b2FileName,
         key: key,
         mimetype: f.mimetype,
-        uploadUrl: uploadData.uploadUrl,
-        authorizationToken: uploadData.authorizationToken
+        uploadUrl: uploadUrl,
+        authorizationToken: authorizationToken
       });
     }
   }
@@ -177,7 +190,22 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
 
   for (const f of uploadedFiles) {
     const key = `orders/${orderId}/${f.filename}`;
-    const url = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${key}`;
+    
+    // Verify file existence in B2 using listFileNames (b2.service removed headObject)
+    // We search for the specific file name in the folder (prefix)
+    // Actually the prefix is the full key for exact match attempt
+    const foundFiles = await b2.listFileNames(key, 1);
+    
+    // B2 listFileNames returns files starting with prefix.
+    // We should check if one matches exactly.
+    const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+
+    if (!exists) {
+        logger.warn(`File verification failed: ${key} not found.`);
+        continue;
+    }
+
+    const url = b2.getFileUrl(key);
 
     const fileObj = {
       foldername: foldername || null,
@@ -219,7 +247,7 @@ async function processVideoThumbnailBackground(orderId, filename, originalName, 
     const thumbKey = `orders/${orderId}/${thumbName}`;
     await b2.upload(thumbKey, thumbBuffer);
     
-    const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+    const thumbnailUrl = b2.getFileUrl(thumbKey);
 
     // Update DB
     await Order.updateOne(

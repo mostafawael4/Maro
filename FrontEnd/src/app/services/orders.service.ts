@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { DirectUploadService } from './direct-upload.service';
 
 export interface OrderImage {
   filename: string;
@@ -148,7 +149,8 @@ export interface FolderMediaResponse {
 export class OrdersService {
   private apiUrl = `${environment.apiUrl}/orders`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private directUpload: DirectUploadService) { }
+
 
   getOrders(): Observable<OrdersResponse> {
     return this.http.get<OrdersResponse>(this.apiUrl, { withCredentials: true });
@@ -422,130 +424,13 @@ export class OrdersService {
    * 3. Inform Backend to sync metadata and generate thumbnails
    */
   uploadOrderMediaDirectly(orderId: string, files: File[], folderName: string): Observable<any> {
-    return new Observable(observer => {
-      const fileInfos = files.map(f => ({ originalname: f.name, mimetype: f.type }));
-      
-      this.http.post<any>(`${this.apiUrl}/${orderId}/prepare-direct-upload`, { 
-        files: fileInfos, 
-        foldername: folderName 
-      }, { withCredentials: true }).subscribe({
-        next: async (resp) => {
-          if (!resp.ok) {
-            observer.error(resp.message);
-            return;
-          }
-
-          const { uploadSlots, duplicates } = resp;
-          const successfulUploads: any[] = [];
-          const failedUploads: any[] = [];
-          let totalProgress = 0;
-          const progressPerFile = 100 / (files.length || 1);
-
-          // If everything is a duplicate, we can finish early
-          if (uploadSlots.length === 0 && duplicates.length > 0) {
-            observer.next({ type: 'complete', added: [], duplicates });
-            observer.complete();
-            return;
-          }
-
-          for (let i = 0; i < uploadSlots.length; i++) {
-            const slot = uploadSlots[i];
-            const file = files.find(f => f.name === slot.originalName);
-            if (!file) continue;
-
-            let retryCount = 0;
-            const maxRetries = 2; // Total 3 attempts
-            let success = false;
-
-            while (retryCount <= maxRetries && !success) {
-              try {
-                await this.uploadToB2(slot.uploadUrl, slot.authorizationToken, slot.key, file, (progress) => {
-                  const currentFileProgress = (progress / 100) * progressPerFile;
-                  observer.next({ 
-                    type: 'progress', 
-                    percent: Math.round(totalProgress + currentFileProgress),
-                    currentFile: file.name
-                  });
-                });
-                
-                success = true;
-                successfulUploads.push({
-                  filename: slot.filename,
-                  originalName: slot.originalName,
-                  mimetype: slot.mimetype
-                });
-              } catch (err) {
-                retryCount++;
-                if (retryCount <= maxRetries) {
-                  console.warn(`Upload failed for ${file.name}, retrying (${retryCount}/${maxRetries})...`, err);
-                  // Optional: add a small delay before retry
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                } else {
-                  console.error(`Direct upload failed for ${file.name} after ${maxRetries + 1} attempts:`, err);
-                }
-              }
-            }
-            
-            if (!success) {
-              failedUploads.push({
-                  originalName: file.name,
-                  reason: 'Max retries exceeded'
-              });
-            }
-
-            totalProgress += progressPerFile;
-          }
-
-          // Step 3: Confirm with Backend (only successful ones)
-          if (successfulUploads.length > 0) {
-            this.http.post<any>(`${this.apiUrl}/${orderId}/confirm-direct-upload`, {
-              uploadedFiles: successfulUploads,
-              foldername: folderName
-            }, { withCredentials: true }).subscribe({
-              next: (confirmResp) => {
-                observer.next({ type: 'complete', ...confirmResp, duplicates, failed: failedUploads });
-                observer.complete();
-              },
-              error: (err) => observer.error('Failed to confirm upload with server')
-            });
-          } else {
-            observer.next({ type: 'complete', added: [], duplicates, failed: failedUploads });
-            observer.complete();
-          }
-        },
-        error: (err) => observer.error('Failed to prepare upload slots')
-      });
-    });
-  }
-
-  private async uploadToB2(uploadUrl: string, token: string, fileName: string, file: File, onProgress: (p: number) => void): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', uploadUrl);
-      
-      xhr.setRequestHeader('Authorization', token);
-      xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
-      xhr.setRequestHeader('Content-Type', file.type || 'b2/x-auto');
-      xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify'); 
-      
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = (event.loaded / event.total) * 100;
-          onProgress(percent);
-        }
-      };
-
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText));
-        } else {
-          reject(new Error(`B2 Upload failed with status ${xhr.status}: ${xhr.responseText}`));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error('B2 XHR Network Error'));
-      xhr.send(file);
-    });
+     return this.directUpload.uploadFiles(
+         `${this.apiUrl}/${orderId}/prepare-direct-upload`,
+         `${this.apiUrl}/${orderId}/confirm-direct-upload`,
+         files,
+         { foldername: folderName },
+         { foldername: folderName }
+     );
   }
 }
 

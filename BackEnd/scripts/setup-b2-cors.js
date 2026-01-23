@@ -21,37 +21,55 @@ async function setupB2Cors() {
     console.log(`Updating CORS rules for bucket: ${Credentials.B2_BUCKET_NAME} (${Credentials.B2_BUCKET_ID})`);
 
     const corsRules = [
+      // Rule 1: Uploads (Strict restriction)
       {
-        corsRuleName: "allow-frontend-downloads",
+        corsRuleName: "allow-app-uploads",
         allowedOrigins: [
-          "http://localhost:4200",
-          "https://localhost:4200",
-          "*" // Allows any origin to download using signed links. 
-        ],
+          "http://localhost:4200", 
+        ], 
         allowedOperations: [
-          "b2_download_file_by_id",
-          "b2_download_file_by_name",
-          "b2_upload_file",
-          "b2_upload_part",
-          "s3_get",
-          "s3_put"
+          "s3_put" // ONLY PUT allowed here
         ],
-        allowedHeaders: ["range", "authorization", "content-type", "x-bz-content-sha1", "x-bz-file-name", "x-bz-info-*"],
-        exposeHeaders: ["content-range", "x-bz-content-sha1", "content-length", "x-bz-upload-timestamp"],
+        allowedHeaders: [
+          "content-type",
+          "x-amz-server-side-encryption",
+          "x-amz-meta-*" // Allow custom metadata if needed
+        ],
+        exposedHeaders: [],
         maxAgeSeconds: 3600,
       },
+      // Rule 2: Downloads (Broader access for reading)
+      {
+        corsRuleName: "allow-app-downloads",
+        allowedOrigins: [
+          "http://localhost:4200"
+        ],
+        allowedOperations: [
+          "s3_get",
+          "s3_head"
+        ],
+        allowedHeaders: [
+          "range",
+          "authorization"
+        ],
+        exposeHeaders: [
+          "content-range",
+          "content-length",
+          "x-amz-meta-*"
+        ],
+        maxAgeSeconds: 3600,
+      }
     ];
 
     const response = await b2.updateBucket({
       bucketId: Credentials.B2_BUCKET_ID,
       bucketName: Credentials.B2_BUCKET_NAME,
       corsRules: corsRules,
-       bucketType: "allPublic",
     });
 
     console.log("✅ CORS rules updated successfully!");
-    console.log(response.data);
-    console.log("Origins allowed:", corsRules[0].allowedOrigins.join(", "));
+    console.log(JSON.stringify(response.data, null, 2));
+    
   } catch (error) {
     console.error("❌ Failed to update CORS rules:");
     if (error.response && error.response.data) {
