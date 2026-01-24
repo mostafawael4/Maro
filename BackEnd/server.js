@@ -43,14 +43,17 @@ import roleInjector from "./middleware/roleInjector.js";
     );
 
     // create a write stream for requests
-    const accessLogStream = fs.createWriteStream(
-      path.join(Credentials.LOG_DIR || "./logs", "access.log"),
-      { flags: "a" }
-    );
+    let accessLogStream;
+    if(Credentials.NODE_ENV === "development") {
+        accessLogStream = fs.createWriteStream(
+            path.join(Credentials.LOG_DIR || "./logs", "access.log"),
+            { flags: "a" }
+        );
+    }
 
     // log every request to console & file
-    app.use(morgan("combined", { stream: accessLogStream }));
-    app.use(morgan("dev"));
+    app.use(morgan("combined", { stream: accessLogStream || process.stdout }));
+    app.use(morgan("dev", { stream: process.stdout }));
 
     // sessions (using MongoStore)
     app.use(
@@ -99,7 +102,7 @@ import roleInjector from "./middleware/roleInjector.js";
     app.listen(Credentials.PORT, () => {
       if(Credentials.NODE_ENV === "development") console.log(`Server listening on http://localhost:${Credentials.PORT}`);
       
-      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.0`);
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.1`);
     });
   } catch (err) {
     console.error("Startup error:", err);

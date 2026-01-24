@@ -8,3 +8,6 @@ rollback to native B2 SDK instead of S3 SDK
 fix cors rules in b2 bucket
 fix uploads from client side
 fix delete media stucking in homepage in front end
+
+1.5.1
+add logger to production as a console logger

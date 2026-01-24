@@ -209,68 +209,6 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
   }
 });
 
-// POST /orders/:orderId/upload - admin only upload images/videos to this order
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './tmp/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix)
-  }
-}); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.images, ...allowedExtensions.videos];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only image and video files are allowed!"));
-  },
-}).array("media");
-
-router.post(
-  "/:orderId/upload",
-  requireAdminAuth,
-  uploadMemory, // Apply Multer middleware
-  handleMulterErrors, // Handle Multer errors
-  async (req, res) => {
-    try {
-      const orderId = req.params.orderId;
-
-      const files = req.files || [];
-      const { foldername } = req.body;
-
-      if (!files.length) {
-        logger.warn(`Upload attempt to order ${orderId} with no files`);
-      } else {
-        logger.info(`Uploading ${files.length} files to order ${orderId}`);
-      }
-
-      const result = await uploadMediaFiles(orderId, files, foldername);
-
-      logger.info(
-        `Files added to order ${orderId}: [${(result.fileObjs || [])
-          .map((f) => f.filename)
-          .join(", ")}]`
-      );
-
-      const signedAdded = await signOrderFiles(orderId, result.added);
-      
-      return res.json({
-        ok: true,
-        ...result,
-        added: signedAdded
-      });
-    } catch (err) {
-      logger.error(
-        `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`
-      );
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
-  }
-);
-
 // POST /orders/:orderId/prepare-direct-upload - Get B2 upload tokens and check for duplicates
 router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res) => {
   try {
@@ -300,19 +238,6 @@ router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res
     return res.status(500).json({ ok: false, message: err.message });
   }
 });
-
-router.post("/upload", uploadMemory,  async (req, res) => {
-  try {
-    const { path, originalname } = req.file;
-
-    const buffer = fs.readFileSync(path);
-    const uploaded = await b2.upload(`orders/${originalname}`, buffer);
-    fs.unlinkSync(path);
-    res.json(uploaded);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-})
 
 // GET /order/view?email=...  (public) - returns order images if email found
 router.get("/view/by-email", async (req, res) => {
