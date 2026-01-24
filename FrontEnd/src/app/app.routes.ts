@@ -38,5 +38,5 @@ export const routes: Routes = [
     { path: 'feedbacks', component: FeedbacksComponent, data: { title: 'Feedbacks' } },
     { path: 'calendar', component: CalendarComponent, canActivate: [authGuard], data: { title: 'Calendar' } },
     { path: 'change-password', component: ChangePasswordComponent, canActivate: [authGuard], data: { title: 'Change Password' } },
-    { path: '**', component: NotFoundComponent, data: { title: 'Page Not Found' } }, // 404 - must be last
+    { path: 'notfound', component: NotFoundComponent, data: { title: 'Page Not Found' } }, // 404 - must be last
 ];

@@ -267,3 +267,46 @@ select {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
+
+/* ========================================
+   MOBILE RESPONSIVE HEADER STYLES
+   ========================================
+   Reduces header font sizes for mobile devices
+   to ensure better readability and layout
+   ======================================== */
+
+@media (max-width: 768px) {
+
+  h1,
+  .page-title,
+  .component-header h1,
+  .header-title {
+    font-size: clamp(1.5rem, 4vw, 2rem) !important;
+  }
+
+  h2,
+  .section-title,
+  .component-header h2 {
+    font-size: clamp(1.25rem, 3.5vw, 1.75rem) !important;
+  }
+
+  h3,
+  .component-header h3 {
+    font-size: clamp(1.1rem, 3vw, 1.5rem) !important;
+  }
+
+  h4,
+  .component-header h4 {
+    font-size: clamp(1rem, 2.5vw, 1.25rem) !important;
+  }
+
+  h5,
+  .component-header h5 {
+    font-size: clamp(0.9rem, 2vw, 1.1rem) !important;
+  }
+
+  h6,
+  .component-header h6 {
+    font-size: clamp(0.85rem, 1.75vw, 1rem) !important;
+  }
+}
