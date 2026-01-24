@@ -11,3 +11,6 @@ fix delete media stucking in homepage in front end
 
 1.5.1
 add logger to production as a console logger
+
+1.5.2
+remove static files from server

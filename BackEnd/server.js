@@ -11,10 +11,6 @@ import connectDB from "./config/db.js";
 
 import Credentials from "./config/Credentials.js";
 
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 import allRoutes from "./routes/routes.js";
 import roleInjector from "./middleware/roleInjector.js";
 
@@ -91,18 +87,14 @@ import roleInjector from "./middleware/roleInjector.js";
     app.use("/", allRoutes);
 
     // serve uploaded images statically
-    const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR);
-    app.use("/uploads", express.static(uploadsDir));
-
-    // small health endpoint
-    app.get("/", (req, res) =>
-      res.json({ ok: true, message: "Maro backend running" })
-    );
+    // disabled for since v1.4.0 (using B2 bucket with client side upload)
+    //const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR);
+    //app.use("/uploads", express.static(uploadsDir));
 
     app.listen(Credentials.PORT, () => {
       if(Credentials.NODE_ENV === "development") console.log(`Server listening on http://localhost:${Credentials.PORT}`);
       
-      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.1`);
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.2`);
     });
   } catch (err) {
     console.error("Startup error:", err);
