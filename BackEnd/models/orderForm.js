@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 const pricingPackageSchema = new Schema({
@@ -74,4 +74,4 @@ const OrderFormSchema = new Schema({
   },
 });
 
-module.exports = OrderFormSchema;
+export default OrderFormSchema;

@@ -1,24 +1,26 @@
-const express = require("express");
-const cors = require("cors");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const bodyParser = require("body-parser");
-const path = require("path");
-const fs = require("fs");
-const logger = require("./utils/logger");
-const morgan = require("morgan");
+import express from "express";
+import cors from "cors";
+import session from "express-session";
+import MongoStore from "connect-mongo";
+import bodyParser from "body-parser";
+import path from "path";
+import fs from "fs";
+import morgan from "morgan";
 
-const connectDB = require("./config/db");
+import connectDB from "./config/db.js";
 
-const Credentials = require("./config/Credentials.js");
+import Credentials from "./config/Credentials.js";
 
-const allRoutes = require("./routes/routes");
+import allRoutes from "./routes/routes.js";
+import roleInjector from "./middleware/roleInjector.js";
 
 (async () => {
   try {
     await connectDB(Credentials.MONGO_URI);
 
     const app = express();
+    app.set("trust proxy", 1); // trust first proxy
+
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
@@ -37,14 +39,17 @@ const allRoutes = require("./routes/routes");
     );
 
     // create a write stream for requests
-    const accessLogStream = fs.createWriteStream(
-      path.join(Credentials.LOG_DIR || "./logs", "access.log"),
-      { flags: "a" }
-    );
+    let accessLogStream;
+    if(Credentials.NODE_ENV === "development") {
+        accessLogStream = fs.createWriteStream(
+            path.join(Credentials.LOG_DIR || "./logs", "access.log"),
+            { flags: "a" }
+        );
+    }
 
     // log every request to console & file
-    app.use(morgan("combined", { stream: accessLogStream }));
-    app.use(morgan("dev"));
+    app.use(morgan("combined", { stream: accessLogStream || process.stdout }));
+    app.use(morgan("dev", { stream: process.stdout }));
 
     // sessions (using MongoStore)
     app.use(
@@ -52,32 +57,44 @@ const allRoutes = require("./routes/routes");
         secret: Credentials.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
+        proxy: true, // required for secure cookies behind a proxy
         cookie: {
           maxAge: 1000 * 60 * 60 * 8, // 8 hours
           secure: Credentials.NODE_ENV === "production", // only true online
           sameSite: Credentials.NODE_ENV === "production" ? "none" : "lax",
+          httpOnly: true,
         },
         store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
       })
     );
 
     // Role injector - attaches session role info to API JSON responses
-    app.use(require("./middleware/roleInjector"));
+    app.use(roleInjector);
+
+    app.use((req, res, next) => {
+      const start = process.hrtime(); // high-res timer
+
+      res.on("finish", () => {
+        const diff = process.hrtime(start);
+        const ms = diff[0] * 1e3 + diff[1] / 1e6;
+        console.log(`${req.method} ${req.originalUrl} took ${ms.toFixed(2)}ms`);
+      });
+
+      next();
+    });
 
     // routes
     app.use("/", allRoutes);
 
     // serve uploaded images statically
-    const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR);
-    app.use("/uploads", express.static(uploadsDir));
-
-    // small health endpoint
-    app.get("/", (req, res) =>
-      res.json({ ok: true, message: "Maro backend running" })
-    );
+    // disabled for since v1.4.0 (using B2 bucket with client side upload)
+    //const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR);
+    //app.use("/uploads", express.static(uploadsDir));
 
     app.listen(Credentials.PORT, () => {
-      logger.info(`Server listening on http://localhost:${Credentials.PORT}`);
+      if(Credentials.NODE_ENV === "development") console.log(`Server listening on http://localhost:${Credentials.PORT}`);
+      
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.2`);
     });
   } catch (err) {
     console.error("Startup error:", err);

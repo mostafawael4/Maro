@@ -1,63 +1,106 @@
-const express = require("express");
-const multer = require("multer");
-const Film = require("../models/Film");
+import express from "express";
+import multer from "multer";
+import Film from "../models/Film.js";
 const router = express.Router();
-const Credential = require("../config/Credentials")
-const path  = require("path");
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../middleware/auth.js");
-const { deleteFileByPath } = require("../utils/fileProccess");
-const { extractThumbnailForFilmsService } = require('../services/videoService');
+import Credential from "../config/Credentials.js"
+import path  from "path";
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
+import { extractThumbnailForFilmsService } from '../services/videoService.js';
+import b2 from "../services/b2.service.js";
+
+const signFilm = (film, tokenData) => {
+    if (!film || !tokenData) return film;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${filename}?Authorization=${authorizationToken}`;
+    const newFilm = (typeof film.toObject === 'function') ? film.toObject() : { ...film };
+    if (newFilm.filename) newFilm.url = sign(newFilm.filename);
+    if (newFilm.thumbnailFilename) newFilm.thumbnail = sign(newFilm.thumbnailFilename);
+    return newFilm;
+};
 
 // Upload video with description
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.videos];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only video files are allowed!"));
-  },
-}).single("videos");
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
-  logger.info("Received film upload request.");
+// Prepare Direct Upload
+router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    const file = req.file;
-    const { description } = req.body;
-
-    if (!file) {
-      logger.warn("No file uploaded in film upload.");
-      return res.status(400).json({ error: "No file uploaded" });
+    // Films usually single upload in existing code, but let's support array or just handle one
+    // Frontend sends 'files' array usually in our new service structure.
+    const { files } = req.body; 
+    if (!files || !files.length) {
+        return res.status(400).json({ error: "No files provided" });
     }
 
-    logger.info(`Processing file for film upload: ${file.originalname}`);
+    const uploadSlots = [];
+    for (const file of files) {
+        if (!allowedExtensions.videos.includes(file.mimetype)) {
+             logger.warn(`Blocked film upload of unsupported type: ${file.mimetype}`);
+             continue; 
+        }
 
-    const fileUrl = uploadService.saveFile(
-      undefined,
-      file.buffer,
-      file.originalname,
-      { isFilm: true }
-    );
-    logger.info(`Saved film file: ${fileUrl}`);
+        const context = { type: 'film' };
+        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+        
+        uploadSlots.push({
+            originalName: file.originalname,
+            filename: slot.filename,
+            key: slot.key,
+            uploadUrl: slot.uploadUrl,
+            authorizationToken: slot.authorizationToken,
+            mimetype: file.mimetype
+        });
+    }
 
-    // Optionally generate/save unique filename with timestamp if desired
-    const newFilm = await Film.create({
-      filename: fileUrl.split("/").pop(),
-      url: fileUrl,
-      description,
-    });
-
-    logger.info(`Film record created: ${newFilm.filename}`);
-
-    res.status(201).json(newFilm);
+    res.json({ ok: true, uploadSlots });
   } catch (err) {
-    logger.error("Film upload error:", err);
-    res.status(500).json({ error: "Failed to upload video" });
+    logger.error("Film prepare upload error:", err);
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
+});
+
+// Confirm Direct Upload
+router.post("/confirm-direct-upload", async (req, res) => {
+    try {
+        const { uploadedFiles, description } = req.body; 
+        if (!uploadedFiles || !uploadedFiles.length) {
+            return res.status(400).json({ error: "No files to confirm" });
+        }
+
+        const results = [];
+        for (const file of uploadedFiles) {
+            const context = { type: 'film' };
+            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            
+            if (!exists) {
+                logger.warn(`Film file verification failed: ${file.filename}`);
+                continue;
+            }
+
+            const newFilm = await Film.create({
+                filename: file.filename,
+                url: url,
+                description: description || '',
+                uploadedAt: new Date()
+            });
+            logger.info(`Film record created: ${newFilm.filename}`);
+            results.push(newFilm);
+        }
+        
+        const tokenData = await b2.getFolderToken("films/");
+        const signedResults = results.map(f => signFilm(f, tokenData));
+
+        res.status(201).json({ 
+            ok: true, 
+            added: signedResults,
+            message: `${results.length} film(s) confirmed.` 
+        });
+
+    } catch (err) {
+        logger.error("Film confirm upload error:", err);
+        res.status(500).json({ error: "Failed to confirm upload" });
+    }
 });
 
 // Get all films
@@ -65,8 +108,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all films.");
   try {
     const films = await Film.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("films/");
+    const signedFilms = films.map(f => signFilm(f, tokenData));
+
     logger.info(`Fetched ${films.length} films.`);
-    res.json(films);
+    res.json(signedFilms);
   } catch (err) {
     logger.error("Error fetching films:", err);
     res.status(500).json({ error: "Failed to fetch films" });
@@ -111,15 +158,24 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "Film not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_FILMS;
-    const filePath = path.resolve(uploadsDir, filmToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted film file from disk: ${filmToDelete.filename}`);
+      // Delete main film file
+      await uploadService.deleteFile(undefined, filmToDelete.filename, { isFilm: true });
+      logger.info(`Deleted film file from B2: ${filmToDelete.filename}`);
+
+      // Delete thumbnail if it exists
+      if (filmToDelete.thumbnailFilename) {
+          try {
+              await uploadService.deleteFile(undefined, filmToDelete.thumbnailFilename, { isFilm: true });
+              logger.info(`Deleted associated film thumbnail from B2: ${filmToDelete.thumbnailFilename}`);
+          } catch (thumbErr) {
+              logger.error(`Failed to delete film thumbnail ${filmToDelete.thumbnailFilename} from B2: ${thumbErr.message}`);
+          }
+      }
     } catch (fileErr) {
-      logger.error(`Failed to delete film file from disk (${filmToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete film file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete film file from B2 (${filmToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete film file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
@@ -160,16 +216,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 
     // Delete old thumbnail if exists
     if (film.thumbnailFilename) {
-      const fs = require("fs");
-      const path = require("path");
-      const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS || "./uploads/films";
-      const oldThumbPath = path.resolve(UPLOAD_DIR_FILMS, film.thumbnailFilename);
-      if (fs.existsSync(oldThumbPath)) {
-        try {
-          fs.unlinkSync(oldThumbPath);
-        } catch (err) {
-          logger.warn(`Failed to delete old film thumbnail: ${oldThumbPath}`);
-        }
+      const oldFilename = film.thumbnailFilename;
+      try {
+        await uploadService.deleteFile(undefined, oldFilename, { isFilm: true });
+        logger.info(`Deleted old film thumbnail ${oldFilename} from B2`);
+      } catch (err) {
+        logger.warn(`Failed to delete old film thumbnail ${oldFilename} from B2: ${err.message}`);
       }
     }
 
@@ -179,9 +231,12 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
     await film.save();
 
     logger.info(`Thumbnail extracted and set for film ${film.filename} (${film._id})`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`films/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({
       ok: true,
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {
@@ -195,4 +250,4 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 });
 
 
-module.exports = router;
+export default router;

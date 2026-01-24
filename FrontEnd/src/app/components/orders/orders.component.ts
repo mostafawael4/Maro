@@ -21,7 +21,7 @@ export class OrdersComponent implements OnInit {
   loading = true;
   error = '';
   baseUrl = environment.apiUrl;
-  isAuthenticated: boolean|null = null;
+  isAuthenticated: boolean | null = null;
   isAdmin: boolean = false;
   searchEmail = '';
   uploadingOrderId: string | null = null;
@@ -42,15 +42,18 @@ export class OrdersComponent implements OnInit {
   uploadStartTime: number = 0;
   uploadElapsedTime: string = '0s';
   uploadSpeed: string = '0 Bytes';
+  uploadCurrentChunk: number = 0;
+  uploadTotalChunks: number = 0;
+  uploadChunkInfo: string = '';
   private uploadProgressInterval: any = null;
   private uploadProgressSimulator: any = null;
-  
+
   // For normal users
   showEmailModal = false;
   authLoaded = false;
   userEmail = '';
   emailError = '';
-  
+
   // Delete modal
   showDeleteModal = false;
   orderIdToDelete: string | null = null;
@@ -70,7 +73,7 @@ export class OrdersComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // debugger;
@@ -78,7 +81,7 @@ export class OrdersComponent implements OnInit {
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth;
       this.isAdmin = this.authService.isAdmin();
-      
+
       if (this.isAuthenticated === true) {
         // If admin, load all orders; if editor, show email modal like client
         if (this.isAdmin) {
@@ -94,7 +97,7 @@ export class OrdersComponent implements OnInit {
       }
       // If null, UI will not show either yet
     });
-    
+
     // Initialize admin status
     this.isAdmin = this.authService.isAdmin();
   }
@@ -120,7 +123,7 @@ export class OrdersComponent implements OnInit {
       this.filteredOrders = this.orders;
       return;
     }
-    this.filteredOrders = this.orders.filter(order => 
+    this.filteredOrders = this.orders.filter(order =>
       order.email.toLowerCase().includes(this.searchEmail.toLowerCase())
     );
   }
@@ -128,17 +131,17 @@ export class OrdersComponent implements OnInit {
   getFirstImage(order: Order): string {
     // Use order.orderBackground.image if present (newer orders)
     if (order.orderBackground && order.orderBackground.image) {
-      return `${this.baseUrl}${order.orderBackground.image}`;
+      return `${order.orderBackground.image}`;
     }
     // Otherwise, use the first image from media array if exists and is an image
     if (order.media && order.media.length > 0) {
       // Prefer images (not videos) for order preview
       const firstImage = order.media.find(m => !m.url?.match(/\.(mp4|mov|webm)$/i));
       if (firstImage) {
-        return `${this.baseUrl}${firstImage.url}`;
+        return `${firstImage.url}`;
       }
       // Fall back to first media if all are videos
-      return `${this.baseUrl}${order.media[0].url}`;
+      return `${order.media[0].url}`;
     }
     // Default placeholder if nothing available
     return 'assets/images/placeholder.jpg';
@@ -147,8 +150,8 @@ export class OrdersComponent implements OnInit {
   openOrderDetails(orderId: string): void {
     // Pass user email in query params for normal users
     if (!this.isAuthenticated && this.userEmail) {
-      this.router.navigate(['/order-details', orderId], { 
-        queryParams: { email: this.userEmail } 
+      this.router.navigate(['/order-details', orderId], {
+        queryParams: { email: this.userEmail }
       });
     } else {
       this.router.navigate(['/order-details', orderId]);
@@ -203,10 +206,10 @@ export class OrdersComponent implements OnInit {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   }
 
@@ -282,6 +285,9 @@ export class OrdersComponent implements OnInit {
     this.uploadTotalBytes = 0;
     this.uploadElapsedTime = '0s';
     this.uploadSpeed = '0 Bytes';
+    this.uploadCurrentChunk = 0;
+    this.uploadTotalChunks = 0;
+    this.uploadChunkInfo = '';
   }
 
   onFileInputChange(event: Event): void {
@@ -352,7 +358,7 @@ export class OrdersComponent implements OnInit {
     this.uploadingOrderId = orderId;
     this.uploadError = '';
     this.uploadSuccess = '';
-    
+
     // Calculate total file size
     this.uploadTotalBytes = files.reduce((total, file) => total + file.size, 0);
     this.uploadProgressBytes = 0;
@@ -360,108 +366,120 @@ export class OrdersComponent implements OnInit {
     this.uploadStartTime = Date.now();
     this.uploadElapsedTime = '0s';
     this.uploadSpeed = '0 Bytes';
-    
+    this.uploadCurrentChunk = 0;
+    this.uploadTotalChunks = 0;
+    this.uploadChunkInfo = '';
+
     // Start time tracking
     this.startUploadTimeTracking();
-    
+
     // Start progress simulation as fallback (in case progress events don't fire)
     this.startProgressSimulation();
 
-    this.ordersService.uploadOrderImages(orderId, files, folderName).subscribe({
+    // Use THE OPTIMUM SOLUTION: Direct Client-to-B2 Upload
+    this.ordersService.uploadOrderMediaDirectly(orderId, files, folderName).subscribe({
       next: (event: any) => {
-        
-        
-        // Handle progress events (type 1 = UploadProgress, type 3 = DownloadProgress which can also be used for upload)
-        if (event.type === HttpEventType.UploadProgress || (event.type === 3 && event.loaded !== undefined)) {
+        // Handle progress events
+        if (event.type === HttpEventType.UploadProgress) {
           // Stop simulation since we have real progress
           this.stopProgressSimulation();
+
           if (event.total) {
-            this.uploadProgressBytes = event.loaded;
-            const calculatedProgress = Math.round((event.loaded / event.total) * 100);
-            // If loaded equals or exceeds total, we're at 100%
-            if (event.loaded >= event.total) {
-              this.uploadProgress = 100;
-              this.uploadProgressBytes = this.uploadTotalBytes;
-              
-            } else {
-              this.uploadProgress = calculatedProgress;
-            }
-            this.updateUploadSpeed();
+            this.uploadProgress = Math.round((event.loaded / event.total) * 100);
+            this.uploadProgressBytes = event.loaded; // This might be percentage-based relative to 100 in DirectUploadService
+            // In DirectUploadService we emit loaded as percent, total as 100.
+            // But let's check: 
+            // observer.next({ type: HttpEventType.UploadProgress, loaded: totalPercent, total: 100 });
+            // So event.loaded IS the percent.
             
-            this.cdr.markForCheck();
+            // To be safe with display binding which expects percent:
+            // this.uploadProgress = event.loaded; 
+            
+            // But wait, existing code used: 
+            // this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.percent) / 100);
+            
+            // So if event.loaded is percent (0-100):
+            this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.loaded) / 100);
           }
-        } 
-        // Handle Response event (type 4 = Response)
-        else if (event.type === HttpEventType.Response || event.type === 4) {
-          
-          // Stop simulation
-          this.stopProgressSimulation();
-          // Upload complete - ensure progress shows 100%
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
+           
+          // this.uploadChunkInfo = `Uploading: ${event.currentFile}`; // We lost currentFile info in DirectUploadService standard event
+          this.uploadChunkInfo = 'Uploading files...';
           this.updateUploadSpeed();
           this.cdr.markForCheck();
-          
-          // Small delay to show 100% before closing
-          setTimeout(() => {
-            this.stopUploadTimeTracking();
-            const response = event.body;
-            const successCount = response?.added?.length || 0;
-            const failedCount = response?.failed?.length || 0;
-            const duplicateCount = response?.duplicates?.length || 0;
-            
-            this.uploadingOrderId = null;
-          
-            // Close upload modal first
-            if (onSuccess) {
-              onSuccess();
-            }
-            
-            // Reload orders to update image count
-            this.loadOrders();
-            
-            // Build simplified result message with only counts
-            let messageParts: string[] = [];
-            
-            if (successCount > 0) {
-              messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
-            }
-            
-            if (duplicateCount > 0) {
-              messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded).`);
-            }
-            
-            if (failedCount > 0) {
-              messageParts.push(`Failed to upload ${failedCount} file(s).`);
-            }
-            
-            // Determine result type and message
-            if (successCount === 0 && duplicateCount > 0 && failedCount === 0) {
-              // All files were duplicates
-              this.uploadResultType = 'error';
-              this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
-            } else if (failedCount > 0 || (successCount === 0 && duplicateCount === 0)) {
-              // Partial success or complete failure
-              this.uploadResultType = successCount > 0 ? 'success' : 'error';
-              this.uploadResultMessage = messageParts.join('\n\n');
-            } else {
-              // Complete success (with or without duplicates)
-              this.uploadResultType = 'success';
-              this.uploadResultMessage = messageParts.join('\n\n');
-            }
-            
-            this.showUploadResultModal = true;
-          }, 500); // Increased delay to ensure 100% is visible
         }
-        // Handle any other event that might indicate completion
-        else if (event.body && event.ok !== undefined) {
-          // This might be a response wrapped differently
-          
-          this.stopProgressSimulation();
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
-          this.updateUploadSpeed();
-          this.cdr.markForCheck();
+        
+        // Handle completion event
+        if (event.type === HttpEventType.Response) {
+          const body = event.body;
+          if (body && body.type === 'complete') {
+             // Stop simulation
+            this.stopProgressSimulation();
+            // Upload complete - ensure progress shows 100%
+            this.uploadProgress = 100;
+            this.uploadProgressBytes = this.uploadTotalBytes;
+            this.updateUploadSpeed();
+            this.cdr.markForCheck();
+
+            // Handle duplicates notification (optional display)
+            if (body.duplicates && body.duplicates.length > 0) {
+              console.log(`${body.duplicates.length} duplicate files detected.`);
+            }
+
+            // Small delay to show 100% before closing
+            setTimeout(() => {
+              this.stopUploadTimeTracking();
+              const response = body; 
+              const successCount = response?.added?.length || 0;
+              const duplicateCount = response?.duplicates?.length || 0;
+
+              this.uploadingOrderId = null;
+
+              // Close upload modal first
+              if (onSuccess) {
+                onSuccess();
+              }
+
+              // Reload orders to update image count
+              this.loadOrders();
+
+              // Build simplified result message
+              let messageParts: string[] = [];
+              const failedCount = response?.failed?.length || 0;
+
+              if (successCount > 0) {
+                messageParts.push(`Uploaded ${successCount} file(s) successfully.`);
+              }
+
+              if (duplicateCount > 0) {
+                messageParts.push(`Skipped ${duplicateCount} file(s) (already uploaded).`);
+              }
+
+              if (failedCount > 0) {
+                messageParts.push(`Failed to upload ${failedCount} file(s).`);
+                // Optionally list names if few
+                if (failedCount <= 3) {
+                   const names = response.failed.map((f: any) => f.originalName).join(', ');
+                   messageParts.push(`(${names})`);
+                }
+              }
+
+              // Determine result type and message
+              if (failedCount > 0) {
+                 this.uploadResultType = 'error';
+              } else if (successCount === 0 && duplicateCount > 0) {
+                this.uploadResultType = 'error'; // Treat all duplicates as a "warning/error" requiring attention
+                this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
+              } else {
+                this.uploadResultType = 'success';
+              }
+              
+              if (!(successCount === 0 && duplicateCount > 0 && failedCount === 0)) {
+                   this.uploadResultMessage = messageParts.join('\n\n');
+              }
+
+              this.showUploadResultModal = true;
+            }, 500);
+          }
         }
       },
       error: (err) => {
@@ -471,28 +489,16 @@ export class OrdersComponent implements OnInit {
         this.uploadProgress = 0;
         this.uploadSpeed = '0 Bytes';
         console.error('Error uploading images:', err);
-        
+
         // Close upload modal
         if (onSuccess) {
           onSuccess();
         }
-        
+
         // Show error modal
         this.uploadResultType = 'error';
-        this.uploadResultMessage = err.error?.message || 'Failed to upload images. Please try again.';
+        this.uploadResultMessage = typeof err === 'string' ? err : 'Failed to upload images directly to B2. Check your connection.';
         this.showUploadResultModal = true;
-      },
-      complete: () => {
-        // This is called when the observable completes
-        // Ensure progress is at 100% if upload was successful
-        
-        if (this.uploadingOrderId === orderId && this.uploadProgress < 100) {
-          
-          this.uploadProgress = 100;
-          this.uploadProgressBytes = this.uploadTotalBytes;
-          this.updateUploadSpeed();
-          this.cdr.markForCheck();
-        }
       }
     });
   }
@@ -527,13 +533,13 @@ export class OrdersComponent implements OnInit {
         this.stopProgressSimulation();
         return;
       }
-      
+
       // Only simulate if we haven't received real progress and haven't reached 95%
       if (this.uploadProgress < 95 && this.uploadingOrderId !== null) {
         // Gradually increase progress up to 95% (leave room for completion)
         simulatedProgress += 1.5;
         if (simulatedProgress > 95) simulatedProgress = 95;
-        
+
         // Only update if we haven't received real progress
         if (this.uploadProgress < simulatedProgress) {
           this.uploadProgress = Math.round(simulatedProgress);
@@ -582,7 +588,7 @@ export class OrdersComponent implements OnInit {
   // Email Modal Methods for Normal Users
   submitEmail(): void {
     this.emailError = '';
-    
+
     // Validate email
     if (!this.userEmail.trim()) {
       this.emailError = 'Please enter your email address';

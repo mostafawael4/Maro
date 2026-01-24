@@ -1,4 +1,4 @@
-{
+export default {
   "images":[
     "image/jpeg",
     "image/png",

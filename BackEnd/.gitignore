@@ -3,3 +3,6 @@ node_modules
 package-lock.json
 uploads
 logs
+uploads
+tmp
+b2-windows.exe

@@ -1,16 +1,25 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const Order = require("../../models/order.js");
-const { normalizePricingSelections } = require('../../services/pricingService');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require("../../middleware/auth.js");
-const { uploadMediaFiles } = require('../../services/orderMediaService');
-const { getVideoDurationService, extractThumbnailService } = require('../../services/videoService');
-const multer = require("multer");
-const allowedExtensions = require("../../config/allowed_extensions.json");
-const logger = require("../../utils/logger.js");
-const { handleMulterErrors } = require("../../middleware/upload.js").default;
-const { getOrderFilesPaths, deleteOrderfolder, deleteOrderFileByFileName } = require("../../services/order.service.js");
-const Credentials = require('../../config/Credentials.js')
+import Order from "../../models/order.js";
+import { normalizePricingSelections } from '../../services/pricingService.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from "../../middleware/auth.js";
+import { uploadMediaFiles, prepareDirectUploads, confirmDirectUploads } from '../../services/orderMediaService.js';
+import { getVideoDurationService, extractThumbnailService } from '../../services/videoService.js';
+import multer from "multer";
+import allowedExtensions from "../../config/allowed_extensions.js";
+import logger from "../../utils/logger.js";
+import { handleMulterErrors } from "../../middleware/upload.js";
+import * as orderService from "../../services/order.service.js";
+import Credentials from '../../config/Credentials.js'
+import b2 from "../../services/b2.service.js"
+import fs from "fs";
+import path from "path";
+import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
+import uploadService from "../../services/upload.service.js";
+
+// Helper to sign a list of file objects for a specific order
+// (Removed local implementation to use utility)
+
 
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
@@ -53,6 +62,11 @@ router.post("/", async (req, res) => {
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
+    
+    // Optimize: fetch one token for the whole bucket to sign the list
+    const sharedToken = await b2.getFolderToken("");
+    const signedList = await Promise.all(list.map(o => signOrderMedia(o, sharedToken)));
+
     logger.info(
       `Listed all orders by ${
         req.session && req.session.adminId
@@ -60,7 +74,7 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
           : "unknown admin"
       }`
     );
-    return res.json({ ok: true, orders: list });
+    return res.json({ ok: true, orders: signedList });
   } catch (err) {
     logger.error(`GET /orders failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -75,8 +89,9 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
       logger.warn(`Order not found: ${req.params.orderId}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order fetched: ${req.params.orderId}`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(
       `GET /orders/${req.params.orderId} failed: ${err.stack || err}`
@@ -158,9 +173,11 @@ router.put("/:orderId", async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    
+    const signedOrder = await signOrderMedia(updatedOrder);
 
     logger.info(`Order ${orderId} updated by admin.`);
-    return res.json({ ok: true, order: updatedOrder });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`PUT /orders/:orderId failed: ${err.stack || err.message || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -192,56 +209,35 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
   }
 });
 
-// POST /orders/:orderId/upload - admin only upload images/videos to this order
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.images, ...allowedExtensions.videos];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only image and video files are allowed!"));
-  },
-}).array("media", 50);
-
-router.post(
-  "/:orderId/upload",
-  requireAdminAuth,
-  uploadMemory, // Apply Multer middleware
-  handleMulterErrors, // Handle Multer errors
-  async (req, res) => {
-    try {
-      const orderId = req.params.orderId;
-
-      const files = req.files || [];
-      const { foldername } = req.body;
-
-      if (!files.length) {
-        logger.warn(`Upload attempt to order ${orderId} with no files`);
-      } else {
-        logger.info(`Uploading ${files.length} files to order ${orderId}`);
-      }
-
-      const result = await uploadMediaFiles(orderId, files, foldername);
-
-      logger.info(
-        `Files added to order ${orderId}: [${(result.fileObjs || [])
-          .map((f) => f.filename)
-          .join(", ")}]`
-      );
-
-      return res.json({
-        ok: true,
-        ...result,
-      });
-    } catch (err) {
-      logger.error(
-        `POST /orders/${req.params.orderId}/upload failed: ${err.stack || err}`
-      );
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
+// POST /orders/:orderId/prepare-direct-upload - Get B2 upload tokens and check for duplicates
+router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { files, foldername } = req.body; // files: [{ originalname, mimetype }]
+    
+    const result = await prepareDirectUploads(orderId, files, foldername);
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    logger.error(`POST /orders/${req.params.orderId}/prepare-direct-upload failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: err.message });
   }
-);
+});
+
+// POST /orders/:orderId/confirm-direct-upload - Finalize upload in DB after client finishes B2 upload
+router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { uploadedFiles, foldername } = req.body; // uploadedFiles: [{ filename, originalName, mimetype }]
+    
+    const result = await confirmDirectUploads(orderId, uploadedFiles, foldername);
+    
+    const signedAdded = await signOrderFiles(orderId, result.added);
+    return res.json({ ok: true, added: signedAdded });
+  } catch (err) {
+    logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: err.message });
+  }
+});
 
 // GET /order/view?email=...  (public) - returns order images if email found
 router.get("/view/by-email", async (req, res) => {
@@ -258,8 +254,9 @@ router.get("/view/by-email", async (req, res) => {
       logger.warn(`Order view attempted for non-existent email: ${email}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
+    const signedOrder = await signOrderMedia(order);
     logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
-    return res.json({ ok: true, order });
+    return res.json({ ok: true, order: signedOrder });
   } catch (err) {
     logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -278,8 +275,9 @@ router.get("/view/orders-by-email",
       if (!orders || orders.length === 0) {
         return res.status(404).json({ ok: false, message: "No orders found for email" });
       }
+      const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
       logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders });
+      return res.json({ ok: true, orders: signedOrders });
     } catch (err) {
       logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
       return res.status(500).json({ ok: false, message: "Server error" });
@@ -298,7 +296,7 @@ router.delete("/:orderId", requireAdminAuth,
       
       // Use deleteOrderFiles service to remove folder
       try {
-        await deleteOrderfolder(orderId);
+        await orderService.deleteOrderfolder(orderId);
       } catch (deleteErr) {
         logger.error(`Error deleting order files for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
         return res.status(500).json({ ok: false, message: "Failed to delete order files", error: deleteErr.message || deleteErr });
@@ -335,7 +333,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       // use getOrderFilesPaths to get all files for the order
       let filePaths;
       try {
-        filePaths = await getOrderFilesPaths(orderId);
+        filePaths = await orderService.getOrderFilesPaths(orderId);
       } catch (error) {
         logger.error(`Error getting order file paths for orderId ${orderId}: ${error.stack || error.message || error}`);
         return res.status(500).json({ ok: false, message: "Failed to fetch order file paths", error: error.message || error });
@@ -352,7 +350,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       const failedDeletions = [];
       for (const filename of filenames) {
         try {
-          await deleteOrderFileByFileName(orderId, filename);
+          await orderService.deleteOrderFileByFileName(orderId, filename);
         } catch (deleteErr) {
           logger.error(`Error deleting file ${filename} for orderId ${orderId}: ${deleteErr.stack || deleteErr.message || deleteErr}`);
           failedDeletions.push({ filename, error: deleteErr.message || deleteErr });
@@ -408,17 +406,13 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     if (mediaIndex !== -1) {
       // Delete old thumbnail if exists
       if (order.media[mediaIndex].thumbnailFilename) {
-        const path = require("path");
-        const fs = require("fs");
-        const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
-        const oldThumbPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, order.media[mediaIndex].thumbnailFilename);
-        if (fs.existsSync(oldThumbPath)) {
+          const oldFilename = order.media[mediaIndex].thumbnailFilename;
           try {
-            fs.unlinkSync(oldThumbPath);
+              await uploadService.deleteFile(orderId, oldFilename);
+              logger.info(`Deleted old thumbnail ${oldFilename} from B2 for order ${orderId}`);
           } catch (err) {
-            logger.warn(`Failed to delete old thumbnail: ${oldThumbPath}`);
+              logger.warn(`Failed to delete old thumbnail ${oldFilename} from B2: ${err.message}`);
           }
-        }
       }
 
       order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
@@ -427,9 +421,12 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     }
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
+    
+    const signedThumbnail = await b2.getPresignedUrl(`orders/${orderId}/${thumbnailResult.thumbnailFilename}`);
+
     return res.json({ 
       ok: true, 
-      thumbnail: thumbnailResult.thumbnailUrl,
+      thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
   } catch (err) {
@@ -470,10 +467,15 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     order.orderBackground.filename = filename;
     await order.save();
 
+    const signedBackground = await b2.getPresignedUrl(`orders/${orderId}/${filename}`);
+
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({ 
       ok: true, 
-      orderBackground: order.orderBackground
+      orderBackground: {
+          ...order.orderBackground,
+          image: signedBackground
+      }
     });
   } catch (err) {
     logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
@@ -481,10 +483,37 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
-const orderFolderRoutes = require('./orderFolders');
+// GET /orders/:orderId/download/:filename - public (with obfuscated orderId) or authenticated download
+router.get("/:orderId/download/:filename", async (req, res) => {
+  try {
+    const { orderId, filename } = req.params;
+    
+    // Construct the B2 key
+    const key = `orders/${orderId}/${filename}`;
+    
+    logger.info(`Download requested for: ${key}`);
+    
+
+    const startTime = Date.now();
+    // Get file from B2
+    const fileBuffer = await b2.downloadFileByName(key);
+    
+    logger.info(`Downloaded ${key} in ${Date.now() - startTime}ms`);
+    // Set appropriate headers
+    res.type(filename);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    return res.send(Buffer.from(fileBuffer));
+  } catch (err) {
+    logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
+    return res.status(500).json({ ok: false, message: "Download failed" });
+  }
+});
+
+import orderFolderRoutes from './orderFolders.js';
 router.use("/folders", orderFolderRoutes);
 
-const emails = require('./emails');
+import emails from './emails.js';
 router.use("/emails", emails);
 
-module.exports = router;
+export default router;

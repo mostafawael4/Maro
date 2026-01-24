@@ -1,181 +1,231 @@
-const fs = require("fs");
-const path = require("path");
-const Credential = require("../config/Credentials");
-const logger = require("../utils/logger");
-const UPLOAD_DIR_ORDERS = Credential.UPLOAD_DIR_ORDERS;
-const UPLOAD_DIR_GALLERY = Credential.UPLOAD_DIR_GALLERY;
-const UPLOAD_DIR_FILMS = Credential.UPLOAD_DIR_FILMS;
-const UPLOAD_DIR_HOMEPAGE = Credential.UPLOAD_DIR_HOMEPAGE;
+// ... imports
+import b2Service from "./b2.service.js";
+import logger from "../utils/logger.js";
+import Credentials from "../config/Credentials.js";
+import fs from "fs";
+import path from "path";
+
+// Helper to determine key and filename logic
+const getContextPaths = (context, originalName) => {
+    const { type, orderId } = context;
+    let keyPrefix = '';
+    let filenamePrefix = '';
+
+    if (type === 'gallery') {
+       keyPrefix = 'gallery';
+       filenamePrefix = 'gallery-';
+    } else if (type === 'film') {
+       keyPrefix = 'films';
+       filenamePrefix = 'film-';
+    } else if (type === 'homepage') {
+       keyPrefix = 'homepage';
+       filenamePrefix = 'homepage-';
+    } else if (type === 'order') {
+       if (!orderId) throw new Error("orderId required for order upload context");
+       keyPrefix = `orders/${orderId}`;
+       filenamePrefix = 'order-'; // actually order logic uses just random suffix usually, keeping consistent with simple logic here
+    } else {
+       throw new Error(`Unknown upload context type: ${type}`);
+    }
+
+    // If for order, we might use a lighter prefix or none as per existing logic,
+    // but having a prefix helps collision avoidance.
+    // Existing logic in orderMediaService uses: Date + Random + OriginalName
+    
+    // We will stick to a standard pattern:
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    // Sanitize original name
+    const sanitizedOriginal = originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    
+    // For Orders, existing was: `orders/${orderId}/${uniqueSuffix}-${f.originalname}`
+    // For others in saveFile: `${keyPrefix}/${filenamePrefix}${uniqueSuffix}${ext}`
+    
+    let filename;
+    if (type === 'order') {
+        filename = `${uniqueSuffix}-${sanitizedOriginal}`;
+    } else {
+        filename = `${filenamePrefix}${uniqueSuffix}-${sanitizedOriginal}`;
+    }
+    
+    const key = `${keyPrefix}/${filename}`;
+    
+    return { key, filename, keyPrefix };
+};
+
 
 /**
- * Ensures a given upload directory exists and returns its path.
- * Supported types: 'orders', 'gallery', 'films', 'homepage'
- * If 'orders', must provide orderId as second argument.
- *
- * @param {'orders'|'gallery'|'films'|'homepage'} type
- * @param {string} [orderId] - Required if type is 'orders'
- * @returns {string} absolute path to the upload directory
+ * Prepare a direct upload
+ * @param {Object} context { type: 'gallery'|'film'|'homepage'|'order', orderId? }
+ * @param {Object} fileInfo { originalName, mimeType, size }
+ * @returns {Promise<Object>} { uploadUrl, authorizationToken, key, filename }
  */
-const ensureUploadDir = (type, orderId) => {
-  let baseDir;
-  let dirPath;
-  switch (type) {
-    case 'orders':
-      if (!orderId) {
-        logger.error("orderId is required for 'orders' type");
-        throw new Error("orderId is required for 'orders' type");
-      }
-      baseDir = UPLOAD_DIR_ORDERS;
-      dirPath = path.resolve(baseDir, orderId);
-      logger.info(`Ensuring upload directory for order: ${dirPath}`);
-      break;
-    case 'gallery':
-      baseDir = UPLOAD_DIR_GALLERY;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring gallery upload directory: ${dirPath}`);
-      break;
-    case 'films':
-      baseDir = UPLOAD_DIR_FILMS;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring films upload directory: ${dirPath}`);
-      break;
-    case 'homepage':
-      baseDir = UPLOAD_DIR_HOMEPAGE;
-      dirPath = path.resolve(baseDir);
-      logger.info(`Ensuring homepage upload directory: ${dirPath}`);
-      break;
-    default:
-      logger.error("Unknown upload type: " + type);
-      throw new Error("Unknown upload type: " + type);
-  }
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-    logger.info(`Created upload directory at: ${dirPath}`);
-  } else {
-    logger.info(`Upload directory already exists: ${dirPath}`);
-  }
-  return dirPath;
-}
+const prepareDirectUpload = async (context, fileInfo) => {
+    const { originalName } = fileInfo;
+    const { key, filename } = getContextPaths(context, originalName);
+
+    // Get Native B2 Upload URL/Token
+    const { uploadUrl, authorizationToken } = await b2Service.getUploadUrl();
+
+    return {
+        uploadUrl,
+        authorizationToken,
+        key,
+        filename
+    };
+};
 
 /**
- * Save an uploaded file buffer to disk inside the correct directory (order or gallery)
- * @param {string|undefined} orderId If present, saves to orders directory, otherwise to gallery
- * @param {Buffer} buffer File contents
+ * Verify a direct upload exists in B2
+ * @param {Object} context { type: 'gallery'|'film'|'homepage'|'order', orderId? }
+ * @param {string} filename The filename returned from prepareDirectUpload
+ * @returns {Promise<Object>} { exists: boolean, url: string, key: string }
+ */
+const verifyFileExists = async (context, filename) => {
+    const { type, orderId } = context;
+    let keyPrefix = '';
+    
+    if (type === 'gallery') keyPrefix = 'gallery';
+    else if (type === 'film') keyPrefix = 'films';
+    else if (type === 'homepage') keyPrefix = 'homepage';
+    else if (type === 'order') keyPrefix = `orders/${orderId}`;
+    
+    const key = `${keyPrefix}/${filename}`;
+
+    // Use listFileNames to verify existence
+    const foundFiles = await b2Service.listFileNames(key, 1);
+    const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+
+    return {
+        exists,
+        url: exists ? b2Service.getFileUrl(key) : null,
+        key
+    };
+};
+
+
+/**
+ * Save an uploaded file buffer to B2 (Legacy/Server-side upload)
+ * @param {string|undefined} orderId If present, saves to orders directory, otherwise to gallery/films/homepage
+ * @param {Buffer|string} buffer File contents or path to temporary file
  * @param {string} originalname Original file name
  * @param {Object} options Options object, { isGallery: boolean, isFilm: boolean, isHomePage: boolean } (optional)
- * @returns {string} relative URL path of stored file
+ * @returns {Promise<string>} B2 URL of stored file
  */
-const saveFile = (orderId, buffer, originalname, options = {}) => {
+const saveFile = async (orderId, buffer, originalname, options = {}) => {
   const isGallery = options.isGallery || false;
   const isFilm = options.isFilm || false;
   const isHomePage = options.isHomePage || false;
-  let dirPath = '';
-  let urlPath = '';
-  const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-  const ext = path.extname(originalname);
-  let filename = uniqueSuffix + ext;
-  let prefixedFilename;
+
+  let contextType = 'order';
+  if (isGallery) contextType = 'gallery';
+  else if (isFilm) contextType = 'film';
+  else if (isHomePage) contextType = 'homepage';
+
+  const { key } = getContextPaths({ type: contextType, orderId }, originalname);
+
+  let dataToUpload = buffer;
+  // If buffer is a file path, read it
+  if (typeof buffer === 'string') {
+    if (fs.existsSync(buffer)) {
+      dataToUpload = fs.readFileSync(buffer);
+      // Cleanup temp file
+      try {
+        fs.unlinkSync(buffer);
+      } catch (e) {
+        logger.warn(`Failed to delete temp file: ${buffer}`);
+      }
+    } else {
+        throw new Error(`File path does not exist: ${buffer}`);
+    }
+  }
 
   try {
-    if (isGallery) {
-      dirPath = ensureUploadDir('gallery');;
-      prefixedFilename = `gallery-${filename}`;
-      urlPath = `/${UPLOAD_DIR_GALLERY.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to gallery: ${prefixedFilename}`);
-    } else if (isFilm) {
-      dirPath = ensureUploadDir('films');
-      prefixedFilename = `film-${filename}`;
-      urlPath = `/${UPLOAD_DIR_FILMS.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to films: ${prefixedFilename}`);
-    } else if (isHomePage) {
-      dirPath = ensureUploadDir("homepage");
-      prefixedFilename = `homepage-${filename}`;
-      urlPath = `/${UPLOAD_DIR_HOMEPAGE.replace(/^[.\\/]+/, "")}/${prefixedFilename}`;
-      logger.info(`Saving file to homepage: ${prefixedFilename}`);
-    } else {
-      if (!orderId) {
-        logger.error("orderId required if not saving as gallery, film, or homepage file");
-        throw new Error("orderId required if not saving as gallery file");
-      }
-      dirPath = ensureUploadDir('orders', orderId);
-      prefixedFilename = `order-${filename}`;
-      urlPath = `/${UPLOAD_DIR_ORDERS.replace(/^[.\\/]+/, "")}/${orderId}/${prefixedFilename}`;
-      logger.info(`Saving file to order (${orderId}): ${prefixedFilename}`);
-    }
-    filename = prefixedFilename;
-    const destPath = path.join(dirPath, filename);
-    fs.writeFileSync(destPath, buffer);
-    logger.info(`File successfully written: ${destPath}`);
-    return urlPath;
+    await b2Service.upload(key, dataToUpload);
+    logger.info(`Saved file to B2: ${key}`);
+    
+    return b2Service.getFileUrl(key);
   } catch (err) {
-    logger.error(`Failed to save file: ${originalname}, error: ${err instanceof Error ? err.stack : err}`);
+    logger.error(`Failed to save file to B2: ${originalname}, error: ${err instanceof Error ? err.stack : err}`);
     throw err;
   }
 }
 
 /**
  * List all uploaded files for an order or for the gallery
- * @param {string|undefined} orderId If present, lists order files; otherwise gallery files
- * @param {Object} options Options object, { isGallery: boolean } (optional)
- * @returns {Array<string>} array of file names
+ * Note: This now lists from B2 which might be slower. 
+ * @param {string|undefined} orderId 
+ * @param {Object} options 
+ * @returns {Promise<Array<string>>} array of file names (keys or basenames?)
  */
-const listOrderFiles = (orderId, options = {}) => {
+const listOrderFiles = async (orderId, options = {}) => {
   const isGallery = options.isGallery || false;
-  let dir;
+  let prefix;
   if (isGallery) {
-    dir = path.resolve(UPLOAD_DIR_GALLERY);
-    logger.info(`Listing files in gallery directory: ${dir}`);
+    prefix = 'gallery/';
   } else {
-    if (!orderId) {
-      logger.error("orderId required if not listing gallery files");
-      throw new Error("orderId required if not listing gallery files");
-    }
-    dir = path.resolve(UPLOAD_DIR_ORDERS, orderId);
-    logger.info(`Listing files in order directory (${orderId}): ${dir}`);
+    if (!orderId) throw new Error("orderId required if not listing gallery files");
+    prefix = `orders/${orderId}/`;
   }
-  if (!fs.existsSync(dir)) {
-    logger.warn(`Directory does not exist: ${dir}`);
+
+  try {
+    const files = await b2Service.listFileNames(prefix);
+    // Return just filenames (basename) to maintain some compatibility or full keys?
+    // Original listOrderFiles returned fs.readdirSync (basenames).
+    return files.map(f => f.fileName.split('/').pop());
+  } catch (err) {
+    logger.error(`Failed to list files: ${err.message}`);
     return [];
   }
-  const files = fs.readdirSync(dir);
-  logger.info(`Found ${files.length} file(s) in directory: ${dir}`);
-  return files;
 }
 
 /**
- * Deletes a file from an order's directory or from the gallery
- * @param {string|undefined} orderId If present, deletes from order upload dir, else from gallery
- * @param {string} filename Filename to delete
- * @param {Object} options Options object, { isGallery: boolean } (optional)
- * @returns {boolean} true if deleted, false if not found
+ * Deletes a file from B2
+ * @param {string|undefined} orderId 
+ * @param {string} filename 
+ * @param {Object} options 
+ * @returns {Promise<boolean>}
  */
-const deleteOrderFile = (orderId, filename, options = {}) => {
+const deleteFile = async (orderId, filename, options = {}) => {
   const isGallery = options.isGallery || false;
-  let filePath;
+  const isFilm = options.isFilm || false;
+  const isHomePage = options.isHomePage || false;
+
+  let key = '';
+
   if (isGallery) {
-    filePath = path.resolve(UPLOAD_DIR_GALLERY, filename);
-    logger.info(`Deleting gallery file: ${filePath}`);
+    key = `gallery/${filename}`;
+  } else if (isFilm) {
+    key = `films/${filename}`;
+  } else if (isHomePage) {
+    key = `homepage/${filename}`;
   } else {
-    if (!orderId) {
-      logger.error("orderId is required to delete non-gallery files");
-      throw new Error("orderId is required to delete non-gallery files");
+    if (!orderId) throw new Error("orderId required to delete non-global files");
+    key = `orders/${orderId}/${filename}`;
+  }
+
+  try {
+    const deleted = await b2Service.deleteFile(key);
+    if (deleted) {
+        logger.info(`Deleted file from B2: ${key}`);
+    } else {
+        logger.warn(`File not found in B2 to delete: ${key}`);
     }
-    filePath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
-    logger.info(`Deleting order file: ${filePath}`);
+    return deleted;
+  } catch (err) {
+    logger.error(`Failed to delete file from B2: ${key}, error: ${err.message}`);
+    throw err;
   }
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-    logger.info(`Deleted file: ${filePath}`);
-    return true;
-  } else {
-    logger.warn(`File does not exist, cannot delete: ${filePath}`);
-  }
-  return false;
 }
 
-module.exports = {
-  ensureUploadDir,
+// Aliases for compatibility/clarity
+const deleteOrderFile = deleteFile;
+
+export default {
   saveFile,
   listOrderFiles,
+  deleteFile,
   deleteOrderFile,
+  prepareDirectUpload,
+  verifyFileExists
 };
+

@@ -1,10 +1,10 @@
-const Credentials = require('../config/Credentials');
-const { extractOrderVideoThumbnail, getVideoDuration } = require('./videoThumbnail.service');
-const Order = require('../models/order'); // Adjust as needed
-const path = require('path');
-const fs = require('fs');
+import Credentials from '../config/Credentials.js';
+import { extractOrderVideoThumbnail, getVideoDuration } from './videoThumbnail.service.js';
+import Order from '../models/order.js'; // Adjust as needed
+import path from 'path';
+import fs from 'fs';
 
-async function getVideoDurationService(orderId, filename) {
+export async function getVideoDurationService(orderId, filename) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -14,12 +14,17 @@ async function getVideoDurationService(orderId, filename) {
   const UPLOAD_DIR_ORDERS = Credentials.UPLOAD_DIR_ORDERS || "./uploads/orders";
   const videoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, filename);
 
-  if (!fs.existsSync(videoPath)) throw new Error('Video file not found on server');
+  let ffmpegInput = videoPath;
+  if (!fs.existsSync(videoPath)) {
+      // Use B2 signed URL
+      const b2Service = (await import('./b2.service.js')).default;
+      ffmpegInput = await b2Service.getPresignedUrl(`orders/${orderId}/${filename}`);
+  }
 
-  return await getVideoDuration(videoPath);
+  return await getVideoDuration(ffmpegInput);
 }
 
-async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
+export async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -30,8 +35,8 @@ async function extractThumbnailService(orderId, filename, timeInSeconds = 1) {
 }
 
 // Service to extract a thumbnail for films (not order videos)
-const Film = require('../models/Film');
-const { extractThumbnail } = require('./videoThumbnail.service'); // you must have this utility for generic videos
+import Film from '../models/Film.js';
+import { extractThumbnail } from './videoThumbnail.service.js'; // you must have this utility for generic videos
 
 /**
  * Extracts and saves a thumbnail for a given film.
@@ -40,7 +45,7 @@ const { extractThumbnail } = require('./videoThumbnail.service'); // you must ha
  * @param {number} timeInSeconds - The time in seconds to extract the thumbnail (default: 1).
  * @returns {Promise<{ thumbnailUrl: string, thumbnailFilename: string }>}
  */
-async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
+export async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds = 1) {
   // Lookup film
   const film = await Film.findById(filmId);
   if (!film) throw new Error('Film not found');
@@ -49,7 +54,11 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
   const UPLOAD_DIR_FILMS = Credentials.UPLOAD_DIR_FILMS || "./uploads/films";
   const filmPath = path.resolve(UPLOAD_DIR_FILMS, filename);
 
-  if (!fs.existsSync(filmPath)) throw new Error('Film video file not found on server');
+  let ffmpegInput = filmPath;
+  if (!fs.existsSync(filmPath)) {
+      const b2Service = (await import('./b2.service.js')).default;
+      ffmpegInput = await b2Service.getPresignedUrl(`films/${filename}`);
+  }
 
   // Use extractThumbnail 
   // Compose a unique thumbnail filename
@@ -59,27 +68,29 @@ async function extractThumbnailForFilmsService(filmId, filename, timeInSeconds =
 
   // Actually extract thumbnail (writes file to disk)
   await extractThumbnail(
-    filmPath,
+    ffmpegInput,
     thumbnailPath,
     timeInSeconds
   );
 
-  // Save thumbnail to disk
-  const newThumbnailFilename = thumbnailFilename;
+  // Save thumbnail to disk (already done by extractThumbnail)
+  
+  // Upload to B2
+  const b2Service = (await import('./b2.service.js')).default;
+  const thumbBuffer = fs.readFileSync(thumbnailPath);
+  const thumbKey = `films/${thumbnailFilename}`;
+  await b2Service.upload(thumbKey, thumbBuffer);
 
-  // Prepare URL (you may have a helper for this, or adjust path)
-  const thumbnailUrl = `/uploads/films/${newThumbnailFilename}`;
+  // Construct B2 URL (unsigned, route will sign it)
+  const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+
+  // Cleanup local thumbnail
+  if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
 
   // Return both thumbnail URL and filename for saving in the DB, caller will save to record
   return {
     thumbnailUrl,
-    thumbnailFilename: newThumbnailFilename,
+    thumbnailFilename: thumbnailFilename,
   };
 }
 
-
-module.exports = {
-  getVideoDurationService,
-  extractThumbnailService,
-  extractThumbnailForFilmsService
-};

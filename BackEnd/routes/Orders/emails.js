@@ -1,10 +1,10 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { sendMail } = require("../../services/emailService.js");
-const logger = require("../../utils/logger.js");
-const { requireAdminAuth } = require("../../middleware/auth.js");
-const Order = require("../../models/order.js");
-const Credentials  = require('../../config/Credentials.js');
+import { sendMail } from "../../services/emailService.js";
+import logger from "../../utils/logger.js";
+import { requireAdminAuth } from "../../middleware/auth.js";
+import Order from "../../models/order.js";
+import Credentials  from '../../config/Credentials.js';
 
 router.post("/:orderId", requireAdminAuth, async (req, res) =>{
     try {
@@ -70,4 +70,4 @@ router.post("/:orderId", requireAdminAuth, async (req, res) =>{
     }
 })
 
-module.exports = router;
+export default router;

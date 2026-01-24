@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const homePageSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -6,4 +6,4 @@ const homePageSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('HomePage', homePageSchema);
+export default mongoose.model('HomePage', homePageSchema);

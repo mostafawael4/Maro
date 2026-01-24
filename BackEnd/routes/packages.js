@@ -1,8 +1,8 @@
-const express = require('express');
-const Packages = require('../models/Package');
-const { requireAdminAuth } = require("../middleware/auth");
+import express from 'express';
+import Packages from '../models/Package.js';
+import { requireAdminAuth } from "../middleware/auth.js";
 const router = express.Router();
-const logger = require("../utils/logger");
+import logger from "../utils/logger.js";
 
 /**
  * ✅ Add or update a package category
@@ -78,4 +78,4 @@ router.get('/:packageName', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

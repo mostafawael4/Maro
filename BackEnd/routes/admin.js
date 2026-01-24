@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const Admin = require('../models/admin');
-const { requireAdminAuth, requireAdminOrEditorAuth } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const Credentials  = require('../config/Credentials.js');
+import bcrypt from 'bcryptjs';
+import Admin from '../models/admin.js';
+import { requireAdminAuth, requireAdminOrEditorAuth } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import Credentials from '../config/Credentials.js';
 
 // POST /admin/setup
 // Creates admin and editor users if neither exist.
@@ -133,10 +133,18 @@ router.post('/logout', requireAdminOrEditorAuth, (req, res) => {
   req.session.destroy(err => {
     if (err) {
       logger.error(`Logout failed for ${userType} (${userType === 'admin' ? 'adminId' : 'username'}=${userIdOrUsername}): ${err}`);
-      return res.status(500).json({ ok:false, message: 'Logout failed' });
+      return res.status(500).json({ ok: false, message: 'Logout failed' });
     }
     logger.info(`${userType.charAt(0).toUpperCase() + userType.slice(1)} logged out (${userType === 'admin' ? 'adminId' : 'username'}=${userIdOrUsername})`);
-    res.clearCookie('connect.sid');
+
+    // Clear cookie with the same settings as when it was created
+    res.clearCookie('connect.sid', {
+      path: '/',
+      secure: Credentials.NODE_ENV === 'production',
+      sameSite: Credentials.NODE_ENV === 'production' ? 'none' : 'lax',
+      httpOnly: true
+    });
+
     return res.json({ ok: true, message: 'Logged out' });
   });
 });
@@ -194,4 +202,4 @@ router.post('/change-password', requireAdminOrEditorAuth, async (req, res) => {
 
 
 
-module.exports = router;
+export default router;

@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const FeedbackSchema = new mongoose.Schema({
   feedback: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
-module.exports = FeedbackSchema;
+export default FeedbackSchema;

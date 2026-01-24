@@ -1,8 +1,12 @@
+import dotenv from "dotenv";
+dotenv.config(); 
+
+
 const NODE_ENV = process.env.NODE_ENV;
 
 const PORT = process.env.PORT || 4000;
-const SERVER_ORIGIN = process.env.SERVER_ORIGIN || 4000;
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 4000;
+const SERVER_ORIGIN = process.env.SERVER_ORIGIN || '';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
 
 const DB_USER = process.env.DB_USER || '';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
@@ -33,7 +37,12 @@ const SMTP_PASS = process.env.SMTP_PASS
 const FROM_EMAIL = process.env.FROM_EMAIL
 const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
 
-module.exports = {
+const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
+const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
+const B2_BUCKET_ID = process.env.B2_BUCKET_ID
+const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME
+
+export default {
   NODE_ENV,
   PORT,
   SERVER_ORIGIN,
@@ -55,5 +64,9 @@ module.exports = {
   SMTP_USER,
   SMTP_PASS,
   FROM_EMAIL,
-  CONTACT_RECEIVER
+  CONTACT_RECEIVER,
+  B2_APPLICATION_KEY_ID,
+  B2_APPLICATION_KEY,
+  B2_BUCKET_ID,
+  B2_BUCKET_NAME
 };

@@ -1,68 +1,109 @@
-const express = require("express");
-const multer = require("multer");
-const HomePage = require("../models/HomePage");
+import express from "express";
+import multer from "multer";
+import HomePage from "../models/HomePage.js";
 const router = express.Router();
-const path = require("path");
-const Credential = require("../config/Credentials");
-const uploadService = require("../services/upload.service");
-const allowedExtensions = require("../config/allowed_extensions");
-const logger = require("../utils/logger");
-const { handleMulterErrors } = require("../middleware/upload").default;
-const { deleteFileByPath } = require("../utils/fileProccess");
+import path  from "path";
+import Credential from "../config/Credentials.js";
+import uploadService from "../services/upload.service.js";
+import allowedExtensions from "../config/allowed_extensions.js";
+import logger from "../utils/logger.js";
+import { handleMulterErrors } from "../middleware/upload.js";
+import b2 from "../services/b2.service.js";
+
+const signHomePageImage = (image, tokenData) => {
+    if (!image || !tokenData) return image;
+    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
+    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+    if (newImage.filename) newImage.url = sign(newImage.filename);
+    return newImage;
+};
 
 // Upload image to home page
 
-const storage = multer.memoryStorage(); // Use memory storage to access buffer
-const uploadMemory = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // up to 2GB
-  fileFilter: (req, file, cb) => {
-    const allowed = [...allowedExtensions.images];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only image files are allowed!"));
-  },
-}).array("images", 30);
-
-router.post("/upload", uploadMemory, handleMulterErrors, async (req, res) => {
-  logger.info("Received homePage upload request.");
+// Prepare Direct Upload
+router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    const files = req.files || [];
-    if (!files.length) {
-      logger.warn("No files uploaded in homePage upload.");
-      return res.status(400).json({ error: "No files uploaded" });
+    const { files } = req.body; // Expects array of { originalname, mimetype, size }
+    if (!files || !files.length) {
+        return res.status(400).json({ error: "No files provided" });
     }
-    const results = [];
-    for (const file of files) {
-      logger.info(`Processing file for homePage upload: ${file.originalname}`);
-      const fileUrl = uploadService.saveFile(
-        undefined,
-        file.buffer,
-        file.originalname,
-        { isHomePage: true }
-      );
-      logger.info(`Saved homePage file: ${fileUrl}`);
 
-      // Save to HomePage collection
-      const newImage = await HomePage.create({
-        filename: fileUrl.split("/").pop(),
-        url: fileUrl,
-        uploadedAt: new Date(),
-      });
-      logger.info(`HomePage image record created: ${newImage.filename}`);
-      results.push(newImage);
+    const uploadSlots = [];
+    for (const file of files) {
+        // Enforce validations (mime type check is good here too)
+        if (!allowedExtensions.images.includes(file.mimetype)) {
+             logger.warn(`Blocked homepage upload of unsupported type: ${file.mimetype}`);
+             continue; 
+        }
+
+        const context = { type: 'homepage' };
+        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+        
+        uploadSlots.push({
+            originalName: file.originalname,
+            filename: slot.filename,
+            key: slot.key,
+            uploadUrl: slot.uploadUrl,
+            authorizationToken: slot.authorizationToken,
+            mimetype: file.mimetype
+        });
     }
-    logger.info(
-      `HomePage upload successful. Total images uploaded: ${results.length}`
-    );
-    res
-      .status(201)
-      .json(
-        Array.isArray(results) && results.length === 1 ? results[0] : results
-      );
+
+    res.json({ ok: true, uploadSlots });
   } catch (err) {
-    logger.error("HomePage upload error:", err);
-    res.status(500).json({ error: "Failed to upload image to home page" });
+    logger.error("HomePage prepare upload error:", err);
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
+});
+
+// Confirm Direct Upload
+router.post("/confirm-direct-upload", async (req, res) => {
+    try {
+        const { uploadedFiles } = req.body; // Array of { filename, originalName }
+        if (!uploadedFiles || !uploadedFiles.length) {
+            return res.status(400).json({ error: "No files to confirm" });
+        }
+
+        const results = [];
+        for (const file of uploadedFiles) {
+            const context = { type: 'homepage' };
+            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            
+            if (!exists) {
+                logger.warn(`HomePage file verification failed: ${file.filename}`);
+                continue;
+            }
+
+            // Save to HomePage collection
+            const newImage = await HomePage.create({
+                filename: file.filename,
+                url: url,
+                uploadedAt: new Date(),
+            });
+            logger.info(`HomePage image record created: ${newImage.filename}`);
+            results.push(newImage);
+        }
+        
+        // Sign URLs before returning if needed (though we just saved the public URL ideally, 
+        // existing logic signs them. Let's see... existing saveFile returned signed B2 URL? 
+        // No, saveFile return S3 URL.
+        // Existing GET / signs them.
+        
+        // We should return consistency.
+        const tokenData = await b2.getFolderToken("homepage/");
+        const signedResults = results.map(img => signHomePageImage(img, tokenData));
+
+        res.status(201).json({ 
+            ok: true, 
+            added: signedResults,
+            message: `${results.length} file(s) confirmed.` 
+        });
+
+    } catch (err) {
+        logger.error("HomePage confirm upload error:", err);
+        res.status(500).json({ error: "Failed to confirm upload" });
+    }
 });
 
 // Get all homePage images
@@ -70,8 +111,12 @@ router.get("/", async (req, res) => {
   logger.info("Fetching all homePage images.");
   try {
     const images = await HomePage.find().sort({ uploadedAt: -1 });
+
+    const tokenData = await b2.getFolderToken("homepage/");
+    const signedImages = images.map(img => signHomePageImage(img, tokenData));
+
     logger.info(`Fetched ${images.length} homePage images.`);
-    res.json(images);
+    res.json(signedImages);
   } catch (err) {
     logger.error("Error fetching all homePage images:", err);
     res.status(500).json({ error: "Failed to fetch homePage images" });
@@ -116,15 +161,13 @@ router.delete("/delete", async (req, res) => {
       return res.status(404).json({ error: "HomePage image not found" });
     }
 
-    // Now, remove the file from disk before deleting the DB record
-    const uploadsDir = Credential.UPLOAD_DIR_HOMEPAGE;
-    const filePath = path.resolve(uploadsDir, imageToDelete.filename);
+    // Now, remove the file from B2 before deleting the DB record
     try {
-      await deleteFileByPath(filePath);
-      logger.info(`Deleted homePage file from disk: ${imageToDelete.filename}`);
+      await uploadService.deleteFile(undefined, imageToDelete.filename, { isHomePage: true });
+      logger.info(`Deleted homePage file from B2: ${imageToDelete.filename}`);
     } catch (fileErr) {
-      logger.error(`Failed to delete homePage file from disk (${imageToDelete.filename}): ${fileErr.message}`);
-      return res.status(500).json({ error: `Failed to delete homePage file from disk: ${fileErr.message}` });
+      logger.error(`Failed to delete homePage file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
+      return res.status(500).json({ error: `Failed to delete homePage file from B2: ${fileErr.message}` });
     }
 
     // Now delete the DB record
@@ -145,5 +188,5 @@ router.delete("/delete", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
 

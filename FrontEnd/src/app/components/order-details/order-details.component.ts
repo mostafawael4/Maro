@@ -54,6 +54,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   showDeleteFolderModal = false;
   folderToDelete: string | null = null;
   deletingFolder = false;
+  batchDownloading = false;
+  zippingFolder = false;
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -170,7 +172,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   getImageUrl(image: OrderImage): string {
-    return `${this.baseUrl}${image.url}`;
+    return `${image.url}`;
   }
 
   isVideo(file: OrderImage): boolean {
@@ -227,53 +229,32 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   async downloadImage(media: OrderImage, event?: Event) {
     event?.stopPropagation(); // Prevent opening the slider
     
-    try {
-      const mediaUrl = this.getImageUrl(media);
-      
-      // Fetch the media file as a blob
-      const response = await fetch(mediaUrl);
-      const blob = await response.blob();
-      
-      // Create a blob URL
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      // Create a temporary anchor element to trigger download
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = media.originalName || media.filename;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-      console.error('Error downloading media:', error);
-      alert(`Failed to download ${this.isVideo(media) ? 'video' : 'image'}. Please try again.`);
-    }
+    if (!this.order?._id) return;
+    
+    const downloadUrl = this.ordersService.getDownloadUrl(this.order._id, media.filename);
+    
+    // Simple way to trigger download via backend
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = media.originalName || media.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   async downloadSelectedImages(mediaArray: OrderImage[]) {
-    if (!mediaArray || mediaArray.length === 0) return;
+    if (!mediaArray || mediaArray.length === 0 || !this.order?._id) return;
 
+    this.batchDownloading = true;
     try {
       // Download files sequentially to avoid browser blocking multiple downloads
       for (let i = 0; i < mediaArray.length; i++) {
         const media = mediaArray[i];
-        const mediaUrl = this.getImageUrl(media);
-        
-        // Fetch the media file as a blob
-        const response = await fetch(mediaUrl);
-        const blob = await response.blob();
-        
-        // Create a blob URL
-        const blobUrl = window.URL.createObjectURL(blob);
+        const downloadUrl = this.ordersService.getDownloadUrl(this.order._id, media.filename);
         
         // Create a temporary anchor element to trigger download
         const link = document.createElement('a');
-        link.href = blobUrl;
+        link.href = downloadUrl;
         link.download = media.originalName || media.filename;
         
         // Trigger download
@@ -281,17 +262,16 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
         link.click();
         document.body.removeChild(link);
         
-        // Clean up the blob URL
-        window.URL.revokeObjectURL(blobUrl);
-        
         // Small delay between downloads to prevent browser from blocking
         if (i < mediaArray.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
     } catch (error) {
       console.error('Error downloading selected media:', error);
       alert('Failed to download some files. Please try again.');
+    } finally {
+      this.batchDownloading = false;
     }
   }
 
@@ -381,7 +361,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   getVideoThumbnailUrl(media: OrderImage): string {
     if (media.thumbnail) {
-      return `${this.baseUrl}${media.thumbnail}`;
+      return `${media.thumbnail}`;
     }
     return '';
   }
@@ -626,6 +606,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   async onDownloadFolder(folderName: string): Promise<void> {
     if (!this.order?._id) return;
 
+    this.zippingFolder = true;
     try {
       // Show loading state (you can add a loading variable if needed)
       
@@ -658,8 +639,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       // Download each file and add to zip
       const downloadPromises = mediaToDownload.map(async (media) => {
         try {
-          const mediaUrl = this.getImageUrl(media);
-          const response = await fetch(mediaUrl);
+          const downloadUrl = this.ordersService.getDownloadUrl(this.order!._id, media.filename);
+          const response = await fetch(downloadUrl);
           const blob = await response.blob();
           const filename = media.originalName || media.filename;
           folder.file(filename, blob);
@@ -693,6 +674,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error downloading folder:', error);
       alert('Failed to download folder. Please try again.');
+    } finally {
+      this.zippingFolder = false;
     }
   }
 }

@@ -80,7 +80,8 @@
       [isAuthenticated]="isAuthenticated"
       (folderSelected)="selectFolder($event)"
       (folderDeleted)="onDeleteFolder($event)"
-      (folderDownload)="onDownloadFolder($event)">
+      (folderDownload)="onDownloadFolder($event)"
+      [zippingFolder]="zippingFolder">
     </app-order-folder-panel>
 
     <app-folder-media-view
@@ -94,6 +95,7 @@
       [isAuthenticated]="isAuthenticated"
       [baseUrl]="baseUrl"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
+      [orderId]="order._id"
       (back)="exitFolderView()"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
@@ -114,6 +116,7 @@
       [baseUrl]="baseUrl"
       [isAuthenticated]="isAuthenticated"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
+      [orderId]="order._id"
       (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)"
       (downloadSelectedMedia)="downloadSelectedImages($event)"

@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const OrderFormSchema = require('./orderForm')
-const FeedbackSchema = require('./orderFeedback')
+import mongoose from 'mongoose';
+import OrderFormSchema from './orderForm.js'
+import FeedbackSchema from './orderFeedback.js'
 
 const OrderSchema = new mongoose.Schema({
   email: { type: String, required: true, index: true },
@@ -33,4 +33,4 @@ OrderSchema.pre('save', function(next){
   next();
 });
 
-module.exports = mongoose.model('Order', OrderSchema);
+export default mongoose.model('Order', OrderSchema);

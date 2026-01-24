@@ -227,9 +227,23 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showDeleteModal = false;
         
         // Clean up loaded/visible images tracking
+        // Clean up loaded/visible images tracking
         if (index !== -1) {
-          this.loadedImages.delete(index);
-          this.visibleImages.delete(index);
+          // Shift indices for loaded images
+          const newLoaded = new Set<number>();
+          this.loadedImages.forEach(i => {
+            if (i < index) newLoaded.add(i);
+            else if (i > index) newLoaded.add(i - 1);
+          });
+          this.loadedImages = newLoaded;
+
+          // Shift indices for visible images
+          const newVisible = new Set<number>();
+          this.visibleImages.forEach(i => {
+            if (i < index) newVisible.add(i);
+            else if (i > index) newVisible.add(i - 1);
+          });
+          this.visibleImages = newVisible;
         }
         
         // Re-observe images after deletion (browser only)

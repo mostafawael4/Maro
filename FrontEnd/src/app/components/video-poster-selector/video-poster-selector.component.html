@@ -14,7 +14,7 @@
       <div class="video-container">
         <video
           #videoPlayer
-          [src]="baseUrl + videoUrl"
+          [src]="videoUrl"
           controls
           (loadedmetadata)="onLoadedMetadata()"
           (loadeddata)="onVideoLoaded()"
@@ -75,7 +75,7 @@
 
         <div *ngIf="currentThumbnail" class="current-thumbnail">
           <h3>Current Thumbnail:</h3>
-          <img [src]="baseUrl + currentThumbnail" alt="Current thumbnail">
+          <img [src]="currentThumbnail" alt="Current thumbnail">
         </div>
       </div>
     </div>

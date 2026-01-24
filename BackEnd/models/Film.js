@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const filmSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -9,4 +9,4 @@ const filmSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Film', filmSchema);
+export default mongoose.model('Film', filmSchema);
