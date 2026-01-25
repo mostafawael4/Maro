@@ -17,3 +17,6 @@ remove static files from server
 
 1.6.0
 add WebSocket server
+
+1.6.1
+add warn to logger on production
