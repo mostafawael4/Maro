@@ -23,3 +23,6 @@ add warn to logger on production
 
 1.6.2
 fix email service
+
+1.7.0
+add caching
