@@ -103,6 +103,10 @@ router.get("/", async (req, res) => {
     const tokenData = await b2.getFolderToken("gallery/");
     const signedImages = images.map(img => signGalleryImage(img, tokenData));
 
+    // Add cache headers for Layer 1 caching
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+    res.setHeader('Vary', 'Authorization');
+
     logger.info(`Fetched ${images.length} gallery images.`);
     res.json(signedImages);
   } catch (err) {

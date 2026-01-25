@@ -1,8 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
+import { tap, catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { DirectUploadService } from './direct-upload.service';
+import { MemoryCacheService } from './memory-cache.service';
+// import { StorageCacheService } from './storage-cache.service'; // Retired for folders
+import { IndexedDBCacheService } from './indexeddb-cache.service';
 
 export interface OrderImage {
   filename: string;
@@ -149,7 +153,12 @@ export interface FolderMediaResponse {
 export class OrdersService {
   private apiUrl = `${environment.apiUrl}/orders`;
 
-  constructor(private http: HttpClient, private directUpload: DirectUploadService) { }
+  constructor(
+    private http: HttpClient,
+    private directUpload: DirectUploadService,
+    private memoryCache: MemoryCacheService,
+    private indexedDB: IndexedDBCacheService
+  ) { }
 
 
   getOrders(): Observable<OrdersResponse> {
@@ -161,15 +170,74 @@ export class OrdersService {
   }
 
   getOrderFolders(orderId: string): Observable<OrderFoldersResponse> {
-    return this.http.get<OrderFoldersResponse>(`${this.apiUrl}/folders/${orderId}`, { withCredentials: true });
+    const cacheKey = `order-folders:${orderId}`;
+
+    // Layer 2: Check memory cache
+    const memCached = this.memoryCache.get<OrderFoldersResponse>(cacheKey);
+    if (memCached) {
+      console.log(`[Cache] Order folders from memory: ${orderId}`);
+      return of(memCached);
+    }
+
+    // Layer 4: Check IndexedDB (Async)
+    return from(this.indexedDB.get<OrderFoldersResponse>(this.indexedDB.LARGE_DATA_STORE, cacheKey)).pipe(
+      switchMap((dbCached: OrderFoldersResponse | null) => {
+        if (dbCached) {
+           console.log(`[Cache] Order folders from IndexedDB: ${orderId}`);
+           this.memoryCache.set(cacheKey, dbCached);
+           return of(dbCached);
+        }
+
+        // Fetch from API
+        console.log(`[Cache] Order folders from API: ${orderId}`);
+        return this.http.get<OrderFoldersResponse>(`${this.apiUrl}/folders/${orderId}`, { withCredentials: true }).pipe(
+          tap(response => {
+            this.memoryCache.set(cacheKey, response);
+            this.indexedDB.set(this.indexedDB.LARGE_DATA_STORE, cacheKey, response);
+          })
+        );
+      })
+    );
   }
 
   getFolderMedia(orderId: string, folderName: string): Observable<FolderMediaResponse> {
-    return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+    const cacheKey = `folder-media:${orderId}:${folderName}`;
+
+    // Layer 2: Check memory cache
+    const memCached = this.memoryCache.get<FolderMediaResponse>(cacheKey);
+    if (memCached) {
+      console.log(`[Cache] Folder media from memory: ${orderId}/${folderName}`);
+      return of(memCached);
+    }
+
+    // Layer 4: Check IndexedDB (Async)
+    return from(this.indexedDB.get<FolderMediaResponse>(this.indexedDB.LARGE_DATA_STORE, cacheKey)).pipe(
+      switchMap((dbCached: FolderMediaResponse | null) => {
+        if (dbCached) {
+           console.log(`[Cache] Folder media from IndexedDB: ${orderId}/${folderName}`);
+           this.memoryCache.set(cacheKey, dbCached);
+           return of(dbCached);
+        }
+
+        // Fetch from API
+        console.log(`[Cache] Folder media from API: ${orderId}/${folderName}`);
+        return this.http.get<FolderMediaResponse>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true }).pipe(
+          tap(response => {
+            this.memoryCache.set(cacheKey, response);
+            this.indexedDB.set(this.indexedDB.LARGE_DATA_STORE, cacheKey, response);
+          })
+        );
+      })
+    );
   }
 
   deleteOrderFolder(orderId: string, folderName: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true });
+    return this.http.delete<any>(`${this.apiUrl}/folders/${orderId}/${folderName}`, { withCredentials: true }).pipe(
+      tap(() => {
+        // Invalidate both folder list and folder media caches
+        this.invalidateFolderCache(orderId);
+      })
+    );
   }
 
   sendOrderCompletionEmail(orderId: string): Observable<any> {
@@ -341,7 +409,12 @@ export class OrdersService {
     return this.http.delete<any>(`${this.apiUrl}/${orderId}/deletemedia`, {
       body: { filenames },
       withCredentials: true
-    });
+    }).pipe(
+      tap(() => {
+        // Invalidate caches after deleting media
+        this.invalidateFolderCache(orderId);
+      })
+    );
   }
 
   updateOrder(orderId: string, updateFields: Partial<Order>): Observable<any> {
@@ -430,7 +503,25 @@ export class OrdersService {
          files,
          { foldername: folderName },
          { foldername: folderName, orderId: orderId }
+     ).pipe(
+       tap(() => {
+         // Invalidate caches after media upload
+         this.invalidateFolderCache(orderId);
+       })
      );
+  }
+
+  /**
+   * Invalidate all caches related to an order's folders and media
+   */
+  private invalidateFolderCache(orderId: string): void {
+    // Clear folder list cache
+    this.memoryCache.delete(`order-folders:${orderId}`);
+    this.indexedDB.delete(this.indexedDB.LARGE_DATA_STORE, `order-folders:${orderId}`);
+    
+    // Clear all folder media caches for this order
+    this.memoryCache.clearPattern(`folder-media:${orderId}:*`);
+    this.indexedDB.deletePattern(this.indexedDB.LARGE_DATA_STORE, `folder-media:${orderId}:*`);
   }
 }
 

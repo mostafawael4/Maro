@@ -37,6 +37,10 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
     }
     const folders = Array.from(foldersSet);
 
+    // Add cache headers for Layer 1 caching
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+    res.setHeader('Vary', 'Authorization');
+
     return res.json({
       ok: true,
       count: folders.length,
@@ -67,6 +71,10 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
       : [];
 
     const signedMedia = await signOrderFiles(orderId, filteredMedia);
+
+    // Add cache headers for Layer 1 caching
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+    res.setHeader('Vary', 'Authorization');
 
     return res.json({
       ok: true,
