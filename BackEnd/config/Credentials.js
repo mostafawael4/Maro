@@ -36,6 +36,7 @@ const SMTP_USER = process.env.SMTP_USER
 const SMTP_PASS = process.env.SMTP_PASS
 const FROM_EMAIL = process.env.FROM_EMAIL
 const CONTACT_RECEIVER = process.env.CONTACT_RECEIVER
+const RESEND_API_KEY = process.env.RESEND_API_KEY
 
 const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
 const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
@@ -65,6 +66,7 @@ export default {
   SMTP_PASS,
   FROM_EMAIL,
   CONTACT_RECEIVER,
+  RESEND_API_KEY,
   B2_APPLICATION_KEY_ID,
   B2_APPLICATION_KEY,
   B2_BUCKET_ID,
