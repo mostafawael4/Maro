@@ -76,11 +76,10 @@ export async function extractThumbnailForFilmsService(filmId, filename, timeInSe
     // Upload to B2
     const b2Service = (await import('./b2.service.js')).default;
     const thumbBuffer = fs.readFileSync(tempThumbPath);
-    const thumbKey = `films/${thumbnailFilename}`;
-    await b2Service.upload(thumbKey, thumbBuffer);
+    await b2Service.upload(thumbnailFilename, thumbBuffer);
 
     // Construct B2 URL (unsigned, route will sign it)
-    const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+    const thumbnailUrl = ``;
 
     // Return both thumbnail URL and filename for saving in the DB
     return {

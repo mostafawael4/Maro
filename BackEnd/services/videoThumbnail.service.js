@@ -61,8 +61,11 @@ export async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1)
         logger.info(`Thumbnail extracted successfully: ${outputPath}`);
         resolve(outputPath);
       })
-      .on('error', (err) => {
+      .on('error', (err, stdout, stderr) => {
         logger.error(`Error extracting thumbnail from ${videoPath}: ${err.message}`);
+        if (stderr) {
+            logger.error(`FFmpeg stderr: ${stderr}`);
+        }
         reject(err);
       });
   });
@@ -76,50 +79,32 @@ export async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1)
  * @returns {Promise<string>} Path to the generated thumbnail
  */
 export async function streamingExtractThumbnail(videoUrl, outputPath, timeInSeconds = 1) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Ensure output directory exists
-      const outputDir = path.dirname(outputPath);
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      logger.info(`Starting streaming thumbnail extraction from URL at ${timeInSeconds}s`);
-
-      // Use axios to stream video with range request - only get first 50MB
-      const maxBytes = 50 * 1024 * 1024; // 50MB should be enough for most thumbnail extractions
-      const response = await axios.get(videoUrl, {
-        responseType: 'stream',
-        headers: {
-          'Range': `bytes=0-${maxBytes}`
-        },
-        timeout: 30000 // 30 second timeout
-      });
-
-      const command = ffmpeg()
-        .input(response.data)
-        .inputOptions([
-          '-analyzeduration', '10000000',  // 10 seconds to analyze
-          '-probesize', '10000000'         // 10MB probe size
-        ])
-        .screenshots({
-          timestamps: [String(timeInSeconds)],
-          filename: path.basename(outputPath),
-          folder: outputDir,
-          size: '1280x720'
-        })
-        .on('end', () => {
-          logger.info(`Streaming thumbnail extracted successfully: ${outputPath}`);
-          resolve(outputPath);
-        })
-        .on('error', (err) => {
-          logger.error(`Error extracting thumbnail from stream: ${err.message}`);
-          reject(err);
-        });
-    } catch (err) {
-      logger.error(`Error setting up streaming extraction: ${err.message}`);
-      reject(err);
+  return new Promise((resolve, reject) => {
+    // Ensure output directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
+
+    logger.info(`Starting streaming thumbnail extraction from URL at ${timeInSeconds}s`);
+
+    // Pass URL directly to ffmpeg
+    ffmpeg(videoUrl)
+      .screenshots({
+        timestamps: [String(timeInSeconds)],
+        filename: path.basename(outputPath),
+        folder: outputDir,
+        size: '1280x720'
+      })
+      .on('end', () => {
+        logger.info(`Streaming thumbnail extracted successfully: ${outputPath}`);
+        resolve(outputPath);
+      })
+      .on('error', (err, stdout, stderr) => {
+        logger.error(`Error extracting thumbnail from stream: ${err.message}`);
+        if (stderr) logger.error(`FFmpeg stderr: ${stderr}`);
+        reject(err);
+      });
   });
 }
 
@@ -158,28 +143,21 @@ export async function extractOrderVideoThumbnail(orderId, videoFilename, timeInS
 
   const videoKey = `orders/${orderId}/${videoFilename}`;
 
-  // Try local first if exists
-  const localVideoPath = path.resolve(UPLOAD_DIR_ORDERS, orderId, videoFilename);
-
   // Generate thumbnail filename
   const thumbName = `thumb-${Date.now()}-${videoFilename}.jpg`;
   const tempThumbPath = path.resolve('tmp', thumbName);
 
   try {
-    if (fs.existsSync(localVideoPath)) {
-      // Video exists locally, use direct extraction
-      logger.info(`Video found locally, extracting thumbnail: ${localVideoPath}`);
-      await extractThumbnail(localVideoPath, tempThumbPath, timeInSeconds);
-    } else {
-      // Video is remote, use streaming approach to avoid downloading entire file
-      logger.info(`Video not found locally, using streaming extraction from B2: ${videoKey}`);
-      const streamUrl = await b2.getPresignedUrl(videoKey);
-      await streamingExtractThumbnail(streamUrl, tempThumbPath, timeInSeconds);
-    }
+    // Video is remote, use streaming approach to avoid downloading entire file
+    logger.info(`Using streaming extraction from B2: ${videoKey}`);
+    const streamUrl = await b2.getPresignedUrl(videoKey);
+    await streamingExtractThumbnail(streamUrl, tempThumbPath, timeInSeconds);
 
     // Upload extracted thumbnail to B2
     const thumbBuffer = fs.readFileSync(tempThumbPath);
     const thumbKey = `orders/${orderId}/${thumbName}`;
+
+    logger.info(`Uploading thumbnail to B2: ${thumbKey}`);
     await b2.upload(thumbKey, thumbBuffer);
 
     // Construct B2 URL for the thumbnail

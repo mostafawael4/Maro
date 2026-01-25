@@ -2,11 +2,14 @@
     {
         "corsRuleName": "allow-localhost-upload",
         "allowedOrigins": [
-            "http://localhost:4200"
+            "http://localhost:4200",
+            "https://peru-eagle-534543.hostingersite.com"
         ],
         "allowedOperations": [
             "b2_upload_file",
-            "b2_upload_part"
+            "b2_upload_part",
+            "b2_download_file_by_name",
+            "b2_download_file_by_id"
         ],
         "allowedHeaders": [
             "*"

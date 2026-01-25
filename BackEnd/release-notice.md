@@ -26,3 +26,6 @@ fix email service
 
 1.7.0
 add caching
+
+1.7.2
+remove order caching

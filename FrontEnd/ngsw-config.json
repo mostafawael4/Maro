@@ -32,8 +32,7 @@
             "urls": [
                 "/api/homepage",
                 "/api/gallery",
-                "/api/films",
-                "/api/orders/**"
+                "/api/films"
             ],
             "cacheConfig": {
                 "strategy": "freshness",
