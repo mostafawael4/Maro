@@ -14,3 +14,6 @@ add logger to production as a console logger
 
 1.5.2
 remove static files from server
+
+1.6.0
+add WebSocket server
