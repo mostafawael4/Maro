@@ -16,9 +16,9 @@ export async function getVideoDurationService(orderId, filename) {
 
   let ffmpegInput = videoPath;
   if (!fs.existsSync(videoPath)) {
-      // Use B2 signed URL
-      const b2Service = (await import('./b2.service.js')).default;
-      ffmpegInput = await b2Service.getPresignedUrl(`orders/${orderId}/${filename}`);
+    // Use B2 signed URL
+    const b2Service = (await import('./b2.service.js')).default;
+    ffmpegInput = await b2Service.getPresignedUrl(`orders/${orderId}/${filename}`);
   }
 
   return await getVideoDuration(ffmpegInput);
@@ -36,7 +36,8 @@ export async function extractThumbnailService(orderId, filename, timeInSeconds =
 
 // Service to extract a thumbnail for films (not order videos)
 import Film from '../models/Film.js';
-import { extractThumbnail } from './videoThumbnail.service.js'; // you must have this utility for generic videos
+import { extractThumbnail, streamingExtractThumbnail } from './videoThumbnail.service.js';
+import logger from '../utils/logger.js';
 
 /**
  * Extracts and saves a thumbnail for a given film.
@@ -54,43 +55,44 @@ export async function extractThumbnailForFilmsService(filmId, filename, timeInSe
   const UPLOAD_DIR_FILMS = Credentials.UPLOAD_DIR_FILMS || "./uploads/films";
   const filmPath = path.resolve(UPLOAD_DIR_FILMS, filename);
 
-  let ffmpegInput = filmPath;
-  if (!fs.existsSync(filmPath)) {
-      const b2Service = (await import('./b2.service.js')).default;
-      ffmpegInput = await b2Service.getPresignedUrl(`films/${filename}`);
-  }
-
-  // Use extractThumbnail 
   // Compose a unique thumbnail filename
   const thumbBase = path.basename(filename, path.extname(filename));
   const thumbnailFilename = `${thumbBase}_thumb_${Date.now()}.jpg`;
-  const thumbnailPath = path.resolve(UPLOAD_DIR_FILMS, thumbnailFilename);
+  const tempThumbPath = path.resolve('tmp', thumbnailFilename);
 
-  // Actually extract thumbnail (writes file to disk)
-  await extractThumbnail(
-    ffmpegInput,
-    thumbnailPath,
-    timeInSeconds
-  );
+  try {
+    if (fs.existsSync(filmPath)) {
+      // Film exists locally, use direct extraction
+      logger.info(`Film found locally, extracting thumbnail: ${filmPath}`);
+      await extractThumbnail(filmPath, tempThumbPath, timeInSeconds);
+    } else {
+      // Film is remote, use streaming approach to avoid downloading entire file
+      logger.info(`Film not found locally, using streaming extraction from B2: films/${filename}`);
+      const b2Service = (await import('./b2.service.js')).default;
+      const streamUrl = await b2Service.getPresignedUrl(`films/${filename}`);
+      await streamingExtractThumbnail(streamUrl, tempThumbPath, timeInSeconds);
+    }
 
-  // Save thumbnail to disk (already done by extractThumbnail)
-  
-  // Upload to B2
-  const b2Service = (await import('./b2.service.js')).default;
-  const thumbBuffer = fs.readFileSync(thumbnailPath);
-  const thumbKey = `films/${thumbnailFilename}`;
-  await b2Service.upload(thumbKey, thumbBuffer);
+    // Upload to B2
+    const b2Service = (await import('./b2.service.js')).default;
+    const thumbBuffer = fs.readFileSync(tempThumbPath);
+    const thumbKey = `films/${thumbnailFilename}`;
+    await b2Service.upload(thumbKey, thumbBuffer);
 
-  // Construct B2 URL (unsigned, route will sign it)
-  const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+    // Construct B2 URL (unsigned, route will sign it)
+    const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
 
-  // Cleanup local thumbnail
-  if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
-
-  // Return both thumbnail URL and filename for saving in the DB, caller will save to record
-  return {
-    thumbnailUrl,
-    thumbnailFilename: thumbnailFilename,
-  };
+    // Return both thumbnail URL and filename for saving in the DB
+    return {
+      thumbnailUrl,
+      thumbnailFilename: thumbnailFilename,
+    };
+  } finally {
+    // Cleanup local thumbnail
+    if (fs.existsSync(tempThumbPath)) {
+      fs.unlinkSync(tempThumbPath);
+      logger.info(`Cleaned up temp thumbnail: ${tempThumbPath}`);
+    }
+  }
 }
 
