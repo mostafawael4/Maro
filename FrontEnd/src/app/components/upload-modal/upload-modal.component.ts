@@ -57,7 +57,6 @@ export class UploadModalComponent implements OnInit, OnDestroy {
     // Subscribe to WebSocket events
     const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
       if (data) {
-        console.log('Upload complete via WebSocket:', data);
         this.processingStatus = data.message || 'Upload completed!';
         this.cdr.markForCheck();
       }
@@ -73,7 +72,6 @@ export class UploadModalComponent implements OnInit, OnDestroy {
 
     const processingStatusSubscription = this.websocketService.onProcessingStatus().subscribe((data) => {
       if (data) {
-        console.log('Processing status via WebSocket:', data);
         this.processingStatus = data.message || '';
         this.cdr.markForCheck();
       }

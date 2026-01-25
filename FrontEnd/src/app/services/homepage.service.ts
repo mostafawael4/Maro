@@ -28,7 +28,6 @@ export class HomePageService {
 
   // Get all homepage images
   getAllImages(): Observable<HomePageImage[]> {
-    console.log('[Homepage] Fetching images from API');
     return this.http.get<HomePageImage[]>(this.apiUrl).pipe(
       catchError(error => {
         console.error('Error fetching homepage images:', error);

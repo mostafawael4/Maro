@@ -55,7 +55,6 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
 
     const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
       if (data && data.context === 'film') {
-        console.log('Film upload complete via WebSocket:', data);
         this.processingStatus = data.message || 'Film uploaded!';
         this.cdr.markForCheck();
       }
@@ -71,7 +70,6 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
 
     const processingStatusSubscription = this.websocketService.onProcessingStatus().subscribe((data) => {
       if (data && data.context === 'film') {
-        console.log('Film processing status via WebSocket:', data);
         this.processingStatus = data.message || '';
         this.cdr.markForCheck();
       }

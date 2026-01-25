@@ -63,10 +63,28 @@ const prepareDirectUpload = async (context, fileInfo) => {
     const { originalName } = fileInfo;
     const { key, filename } = getContextPaths(context, originalName);
 
+    // Check if file already exists
+    // For Orders, this check is redundant if using orderMediaService, but harmless.
+    // For Homepage/Gallery/Films, this is new and necessary.
+    
+    // b2Service.listFileNames returns array of files starting with prefix
+    // accurate check requires exact match on fileName
+    const foundFiles = await b2Service.listFileNames(key, 1);
+    const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+
+    if (exists) {
+        return {
+            exists: true,
+            key,
+            filename
+        };
+    }
+
     // Get Native B2 Upload URL/Token
     const { uploadUrl, authorizationToken } = await b2Service.getUploadUrl();
 
     return {
+        exists: false,
         uploadUrl,
         authorizationToken,
         key,

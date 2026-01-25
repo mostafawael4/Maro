@@ -31,6 +31,7 @@ router.post("/prepare-direct-upload", async (req, res) => {
     }
 
     const uploadSlots = [];
+    const duplicates = [];
     for (const file of files) {
         if (!allowedExtensions.images.includes(file.mimetype)) {
              logger.warn(`Blocked gallery upload of unsupported type: ${file.mimetype}`);
@@ -40,17 +41,28 @@ router.post("/prepare-direct-upload", async (req, res) => {
         const context = { type: 'gallery' };
         const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
         
-        uploadSlots.push({
-            originalName: file.originalname,
-            filename: slot.filename,
-            key: slot.key,
-            uploadUrl: slot.uploadUrl,
-            authorizationToken: slot.authorizationToken,
-            mimetype: file.mimetype
-        });
+        if (slot.exists) {
+             duplicates.push({
+                 originalName: file.originalname,
+                 filename: slot.filename,
+                 key: slot.key,
+                 mimetype: file.mimetype,
+                 exists: true
+             });
+             logger.warn(`Duplicate gallery file detected: ${file.originalname}`);
+        } else {
+            uploadSlots.push({
+                originalName: file.originalname,
+                filename: slot.filename,
+                key: slot.key,
+                uploadUrl: slot.uploadUrl,
+                authorizationToken: slot.authorizationToken,
+                mimetype: file.mimetype
+            });
+        }
     }
 
-    res.json({ ok: true, uploadSlots });
+    res.json({ ok: true, uploadSlots, duplicates });
   } catch (err) {
     logger.error("Gallery prepare upload error:", err);
     res.status(500).json({ error: "Failed to prepare upload" });

@@ -35,3 +35,6 @@ add ffmpeg in docker container
 
 1.7.4
 add resend email service
+
+1.8.0
+ready for production and bugless

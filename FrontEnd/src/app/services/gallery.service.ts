@@ -28,7 +28,6 @@ export class GalleryService {
 
   // Get all gallery images
   getAllImages(): Observable<GalleryImage[]> {
-    console.log('[Gallery] Fetching images from API');
     return this.http.get<GalleryImage[]>(this.apiUrl).pipe(
       catchError(error => {
         console.error('Error fetching gallery images:', error);

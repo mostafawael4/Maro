@@ -32,7 +32,6 @@ export class FilmsService {
 
   // Get all films
   getAllFilms(): Observable<Film[]> {
-    console.log('[Films] Fetching films from API');
     return this.http.get<Film[]>(this.apiUrl).pipe(
       catchError(error => {
         console.error('Error fetching films:', error);

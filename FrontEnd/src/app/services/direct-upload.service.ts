@@ -63,6 +63,7 @@ export class DirectUploadService {
       let uploadedBytes = 0;
       let completedUploads = 0;
       const totalUploads = files.length;
+      let allDuplicates: any[] = [];
 
       // Listen to processing status for ALL files
       processingSub = this.websocketService.onProcessingStatus().subscribe((status: any) => {
@@ -94,7 +95,14 @@ export class DirectUploadService {
           }
 
           const { uploadSlots, duplicates } = resp;
+          allDuplicates = duplicates || [];
+          const duplicateCount = allDuplicates.length;
           
+          // Add duplicates to our tracking
+          if (duplicateCount > 0) {
+             completedUploads += duplicateCount;
+          }
+
           if (!uploadSlots || uploadSlots.length === 0) {
             observer.next(new HttpResponse({
               body: { ok: true, type: 'complete', added: [], duplicates: duplicates || [] }
@@ -212,7 +220,7 @@ export class DirectUploadService {
             type: 'complete',
             ok: true,
             added: allVerifiedFiles,
-            duplicates: [],
+            duplicates: allDuplicates,
             failed: allFailedFiles,
             message: `${allVerifiedFiles.length} file(s) processed successfully`
           }
