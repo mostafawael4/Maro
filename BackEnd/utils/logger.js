@@ -58,6 +58,7 @@ if (isDevelopment) {
 else {
     logger = {
         info: console.log,
+        warn: console.log,
         error: console.error
     };
 }
