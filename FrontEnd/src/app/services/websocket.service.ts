@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -17,13 +18,17 @@ export class WebsocketService {
   private maxReconnectAttempts = 1;
   private reconnectInterval = 2000; // 2 seconds
   private reconnectTimer: any = null;
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser: boolean;
 
   // Event streams
   private uploadComplete$ = new Subject<any>();
   private uploadFailure$ = new Subject<any>();
   private processingStatus$ = new Subject<any>();
 
-  constructor() {}
+  constructor() {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   /**
    * Connect to WebSocket server
@@ -34,8 +39,8 @@ export class WebsocketService {
     }
 
     const wsUrl = `${environment.apiUrl}/ws`;
-    
-    
+
+
     try {
       this.socket = new WebSocket(wsUrl);
 

@@ -1,5 +1,5 @@
-import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Observable, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
 import { WebsocketService } from '../../services/websocket.service';
@@ -23,7 +23,7 @@ export class UploadModalComponent implements OnInit, OnDestroy {
   uploadError: string = '';
   isDragging: boolean = false;
   processingStatus: string = '';
-  
+
   // Progress tracking
   uploadProgress: number = 0;
   uploadProgressBytes: number = 0;
@@ -34,17 +34,26 @@ export class UploadModalComponent implements OnInit, OnDestroy {
   private uploadProgressInterval: any = null;
   private uploadProgressSimulator: any = null;
   private wsSubscriptions: Subscription[] = [];
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser: boolean;
 
   constructor(
     private cdr: ChangeDetectorRef,
     private websocketService: WebsocketService
-  ) {}
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
 
   ngOnInit() {
+    // Only initialize WebSocket in browser environment
+    if (!this.isBrowser) {
+      return;
+    }
+
     // Connect to WebSocket when component initializes
     this.websocketService.connect();
-    
+
     // Subscribe to WebSocket events
     const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
       if (data) {
@@ -131,10 +140,10 @@ export class UploadModalComponent implements OnInit, OnDestroy {
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       // Filter to only accept image files
-      const imageFiles = Array.from(files).filter(file => 
+      const imageFiles = Array.from(files).filter(file =>
         file.type.startsWith('image/')
       );
-      
+
       if (imageFiles.length > 0) {
         this.selectedFiles = imageFiles;
         this.uploadError = '';
@@ -162,7 +171,7 @@ export class UploadModalComponent implements OnInit, OnDestroy {
     this.isUploading = true;
     this.uploadError = '';
     this.uploadSuccess = '';
-    
+
     // Calculate total file size
     this.uploadTotalBytes = this.selectedFiles.reduce((total, file) => total + file.size, 0);
     this.uploadProgressBytes = 0;
@@ -170,10 +179,10 @@ export class UploadModalComponent implements OnInit, OnDestroy {
     this.uploadStartTime = Date.now();
     this.uploadElapsedTime = '0s';
     this.uploadSpeed = '0 Bytes';
-    
+
     // Start time tracking
     this.startUploadTimeTracking();
-    
+
     // Start progress simulation as fallback
     this.startProgressSimulation();
 
@@ -196,7 +205,7 @@ export class UploadModalComponent implements OnInit, OnDestroy {
             this.updateUploadSpeed();
             this.cdr.markForCheck();
           }
-        } 
+        }
         // Handle Response event (type 4 = Response)
         else if (event.type === HttpEventType.Response || event.type === 4) {
           // Stop simulation
@@ -206,14 +215,14 @@ export class UploadModalComponent implements OnInit, OnDestroy {
           this.uploadProgressBytes = this.uploadTotalBytes;
           this.updateUploadSpeed();
           this.cdr.markForCheck();
-          
+
           // Small delay to show 100% before closing
           setTimeout(() => {
             this.stopUploadTimeTracking();
             this.isUploading = false;
             this.uploadSuccess = `Successfully uploaded ${this.selectedFiles.length} image(s)!`;
             this.selectedFiles = [];
-            
+
             // Notify parent component and close modal after delay
             setTimeout(() => {
               this.uploadComplete.emit();
@@ -283,13 +292,13 @@ export class UploadModalComponent implements OnInit, OnDestroy {
         this.stopProgressSimulation();
         return;
       }
-      
+
       // Only simulate if we haven't received real progress and haven't reached 95%
       if (this.uploadProgress < 95 && this.isUploading) {
         // Gradually increase progress up to 95% (leave room for completion)
         simulatedProgress += 1.5;
         if (simulatedProgress > 95) simulatedProgress = 95;
-        
+
         // Only update if we haven't received real progress
         if (this.uploadProgress < simulatedProgress) {
           this.uploadProgress = Math.round(simulatedProgress);

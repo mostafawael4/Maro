@@ -1,5 +1,5 @@
-import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
@@ -25,7 +25,7 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
   uploadError: string = '';
   isDragging: boolean = false;
   processingStatus: string = '';
-  
+
   // Progress tracking
   uploadProgress: number = 0;
   uploadProgressBytes: number = 0;
@@ -35,15 +35,24 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
   uploadSpeed: string = '0 Bytes';
   private uploadProgressInterval: any = null;
   private wsSubscriptions: Subscription[] = [];
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser: boolean;
 
   constructor(
     private cdr: ChangeDetectorRef,
     private websocketService: WebsocketService
-  ) {}
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit() {
+    // Only initialize WebSocket in browser environment
+    if (!this.isBrowser) {
+      return;
+    }
+
     this.websocketService.connect();
-    
+
     const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
       if (data && data.context === 'film') {
         console.log('Film upload complete via WebSocket:', data);
@@ -222,14 +231,14 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
           this.uploadProgressBytes = this.uploadTotalBytes;
           this.updateUploadSpeed();
           this.cdr.markForCheck();
-          
+
           setTimeout(() => {
             this.stopUploadTimeTracking();
             this.isUploading = false;
             this.uploadSuccess = 'Film uploaded successfully!';
             this.selectedFile = null;
             this.description = '';
-            
+
             setTimeout(() => {
               this.uploadComplete.emit();
               this.close();
