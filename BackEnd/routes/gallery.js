@@ -9,6 +9,7 @@ import allowedExtensions from "../config/allowed_extensions.js";
 import logger from "../utils/logger.js";
 import { handleMulterErrors } from "../middleware/upload.js";
 import b2 from "../services/b2.service.js";
+import websocketService from "../services/websocket.service.js";
 
 const signGalleryImage = (image, tokenData) => {
     if (!image || !tokenData) return image;
@@ -64,37 +65,31 @@ router.post("/confirm-direct-upload", async (req, res) => {
             return res.status(400).json({ error: "No files to confirm" });
         }
 
-        const results = [];
+        const verifiedFiles = [];
+        const failedFiles = [];
+
         for (const file of uploadedFiles) {
             const context = { type: 'gallery' };
-            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            const { exists } = await uploadService.verifyFileExists(context, file.filename);
             
-            if (!exists) {
+            if (exists) {
+                verifiedFiles.push(file);
+            } else {
                 logger.warn(`Gallery file verification failed: ${file.filename}`);
-                continue;
+                failedFiles.push({ filename: file.filename, error: "File not found in B2" });
             }
-
-            const newImage = await Gallery.create({
-                filename: file.filename,
-                url: url,
-                uploadedAt: new Date(),
-            });
-            logger.info(`Gallery image record created: ${newImage.filename}`);
-            results.push(newImage);
         }
-        
-        const tokenData = await b2.getFolderToken("gallery/");
-        const signedResults = results.map(img => signGalleryImage(img, tokenData));
 
-        res.status(201).json({ 
+        res.json({ 
             ok: true, 
-            added: signedResults,
-            message: `${results.length} file(s) confirmed.` 
+            verified: verifiedFiles,
+            failed: failedFiles,
+            message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.` 
         });
 
     } catch (err) {
         logger.error("Gallery confirm upload error:", err);
-        res.status(500).json({ error: "Failed to confirm upload" });
+        res.status(500).json({ error: "Failed to verify upload" });
     }
 });
 

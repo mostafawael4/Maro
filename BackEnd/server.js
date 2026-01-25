@@ -6,6 +6,7 @@ import bodyParser from "body-parser";
 import path from "path";
 import fs from "fs";
 import morgan from "morgan";
+import { createServer } from "http";
 
 import connectDB from "./config/db.js";
 
@@ -13,6 +14,8 @@ import Credentials from "./config/Credentials.js";
 
 import allRoutes from "./routes/routes.js";
 import roleInjector from "./middleware/roleInjector.js";
+import { initializeWebSocketServer } from "./config/ws-server.js";
+import websocketService from "./services/websocket.service.js";
 
 (async () => {
   try {
@@ -34,7 +37,7 @@ import roleInjector from "./middleware/roleInjector.js";
         ], // your Angular app origin
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true, // if you’re using cookies or auth headers
+        credentials: true, // if you're using cookies or auth headers
       })
     );
 
@@ -52,8 +55,7 @@ import roleInjector from "./middleware/roleInjector.js";
     app.use(morgan("dev", { stream: process.stdout }));
 
     // sessions (using MongoStore)
-    app.use(
-      session({
+    const sessionMiddleware = session({
         secret: Credentials.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
@@ -65,8 +67,9 @@ import roleInjector from "./middleware/roleInjector.js";
           httpOnly: true,
         },
         store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
-      })
-    );
+      });
+    
+    app.use(sessionMiddleware);
 
     // Role injector - attaches session role info to API JSON responses
     app.use(roleInjector);
@@ -91,8 +94,18 @@ import roleInjector from "./middleware/roleInjector.js";
     //const uploadsDir = path.resolve(__dirname, Credentials.UPLOAD_DIR);
     //app.use("/uploads", express.static(uploadsDir));
 
-    app.listen(Credentials.PORT, () => {
-      if(Credentials.NODE_ENV === "development") console.log(`Server listening on http://localhost:${Credentials.PORT}`);
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Initialize WebSocket server
+    const wss = initializeWebSocketServer(httpServer, sessionMiddleware);
+    websocketService.setWebSocketServer(wss);
+
+    httpServer.listen(Credentials.PORT, () => {
+      if(Credentials.NODE_ENV === "development") {
+        console.log(`Server listening on http://localhost:${Credentials.PORT}`);
+        console.log(`WebSocket server is running on ws://localhost:${Credentials.PORT}/ws`);
+      }
       
       console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.5.2`);
     });

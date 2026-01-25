@@ -1,7 +1,8 @@
-import { Component, Output, EventEmitter, Input, ChangeDetectorRef } from '@angular/core';
+import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
+import { WebsocketService } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-upload-modal',
@@ -10,7 +11,7 @@ import { HttpEventType } from '@angular/common/http';
   templateUrl: './upload-modal.component.html',
   styleUrl: './upload-modal.component.scss'
 })
-export class UploadModalComponent {
+export class UploadModalComponent implements OnInit, OnDestroy {
   @Input() show: boolean = false;
   @Input() uploadFunction?: (files: File[]) => Observable<any>;
   @Output() closeModal = new EventEmitter<void>();
@@ -21,6 +22,7 @@ export class UploadModalComponent {
   uploadSuccess: string = '';
   uploadError: string = '';
   isDragging: boolean = false;
+  processingStatus: string = '';
   
   // Progress tracking
   uploadProgress: number = 0;
@@ -31,8 +33,54 @@ export class UploadModalComponent {
   uploadSpeed: string = '0 Bytes';
   private uploadProgressInterval: any = null;
   private uploadProgressSimulator: any = null;
+  private wsSubscriptions: Subscription[] = [];
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private websocketService: WebsocketService
+  ) {}
+
+
+  ngOnInit() {
+    // Connect to WebSocket when component initializes
+    this.websocketService.connect();
+    
+    // Subscribe to WebSocket events
+    const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
+      if (data) {
+        console.log('Upload complete via WebSocket:', data);
+        this.processingStatus = data.message || 'Upload completed!';
+        this.cdr.markForCheck();
+      }
+    });
+
+    const uploadFailureSubscription = this.websocketService.onUploadFailure().subscribe((data) => {
+      if (data) {
+        console.error('Upload failure via WebSocket:', data);
+        this.uploadError = data.error || 'Upload failed';
+        this.cdr.markForCheck();
+      }
+    });
+
+    const processingStatusSubscription = this.websocketService.onProcessingStatus().subscribe((data) => {
+      if (data) {
+        console.log('Processing status via WebSocket:', data);
+        this.processingStatus = data.message || '';
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.wsSubscriptions.push(
+      uploadCompleteSubscription,
+      uploadFailureSubscription,
+      processingStatusSubscription
+    );
+  }
+
+  ngOnDestroy() {
+    // Unsubscribe from all WebSocket subscriptions
+    this.wsSubscriptions.forEach(sub => sub.unsubscribe());
+  }
 
   close() {
     this.closeModal.emit();
@@ -49,6 +97,7 @@ export class UploadModalComponent {
     this.uploadTotalBytes = 0;
     this.uploadElapsedTime = '0s';
     this.uploadSpeed = '0 Bytes';
+    this.processingStatus = '';
     this.stopUploadTimeTracking();
     this.stopProgressSimulation();
   }

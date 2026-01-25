@@ -429,7 +429,7 @@ export class OrdersService {
          `${this.apiUrl}/${orderId}/confirm-direct-upload`,
          files,
          { foldername: folderName },
-         { foldername: folderName }
+         { foldername: folderName, orderId: orderId }
      );
   }
 }

@@ -386,20 +386,7 @@ export class OrdersComponent implements OnInit {
 
           if (event.total) {
             this.uploadProgress = Math.round((event.loaded / event.total) * 100);
-            this.uploadProgressBytes = event.loaded; // This might be percentage-based relative to 100 in DirectUploadService
-            // In DirectUploadService we emit loaded as percent, total as 100.
-            // But let's check: 
-            // observer.next({ type: HttpEventType.UploadProgress, loaded: totalPercent, total: 100 });
-            // So event.loaded IS the percent.
-            
-            // To be safe with display binding which expects percent:
-            // this.uploadProgress = event.loaded; 
-            
-            // But wait, existing code used: 
-            // this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.percent) / 100);
-            
-            // So if event.loaded is percent (0-100):
-            this.uploadProgressBytes = Math.round((this.uploadTotalBytes * event.loaded) / 100);
+            this.uploadProgressBytes = event.loaded; 
           }
            
           // this.uploadChunkInfo = `Uploading: ${event.currentFile}`; // We lost currentFile info in DirectUploadService standard event

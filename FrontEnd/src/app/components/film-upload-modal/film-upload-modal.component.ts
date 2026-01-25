@@ -1,8 +1,9 @@
-import { Component, Output, EventEmitter, Input, ChangeDetectorRef } from '@angular/core';
+import { Component, Output, EventEmitter, Input, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
+import { WebsocketService } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-film-upload-modal',
@@ -11,7 +12,7 @@ import { HttpEventType } from '@angular/common/http';
   templateUrl: './film-upload-modal.component.html',
   styleUrl: './film-upload-modal.component.scss'
 })
-export class FilmUploadModalComponent {
+export class FilmUploadModalComponent implements OnInit, OnDestroy {
   @Input() show: boolean = false;
   @Input() uploadFunction?: (file: File, description: string) => Observable<any>;
   @Output() closeModal = new EventEmitter<void>();
@@ -23,6 +24,7 @@ export class FilmUploadModalComponent {
   uploadSuccess: string = '';
   uploadError: string = '';
   isDragging: boolean = false;
+  processingStatus: string = '';
   
   // Progress tracking
   uploadProgress: number = 0;
@@ -32,8 +34,50 @@ export class FilmUploadModalComponent {
   uploadElapsedTime: string = '0s';
   uploadSpeed: string = '0 Bytes';
   private uploadProgressInterval: any = null;
+  private wsSubscriptions: Subscription[] = [];
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private websocketService: WebsocketService
+  ) {}
+
+  ngOnInit() {
+    this.websocketService.connect();
+    
+    const uploadCompleteSubscription = this.websocketService.onUploadComplete().subscribe((data) => {
+      if (data && data.context === 'film') {
+        console.log('Film upload complete via WebSocket:', data);
+        this.processingStatus = data.message || 'Film uploaded!';
+        this.cdr.markForCheck();
+      }
+    });
+
+    const uploadFailureSubscription = this.websocketService.onUploadFailure().subscribe((data) => {
+      if (data && data.context === 'film') {
+        console.error('Film upload failure via WebSocket:', data);
+        this.uploadError = data.error || 'Upload failed';
+        this.cdr.markForCheck();
+      }
+    });
+
+    const processingStatusSubscription = this.websocketService.onProcessingStatus().subscribe((data) => {
+      if (data && data.context === 'film') {
+        console.log('Film processing status via WebSocket:', data);
+        this.processingStatus = data.message || '';
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.wsSubscriptions.push(
+      uploadCompleteSubscription,
+      uploadFailureSubscription,
+      processingStatusSubscription
+    );
+  }
+
+  ngOnDestroy() {
+    this.wsSubscriptions.forEach(sub => sub.unsubscribe());
+  }
 
   close() {
     this.closeModal.emit();

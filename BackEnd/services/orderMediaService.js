@@ -6,6 +6,7 @@ import path from 'path';
 import allowedExtensions from "../config/allowed_extensions.js";
 import { extractThumbnail } from './videoThumbnail.service.js';
 import logger from '../utils/logger.js';
+import websocketService from './websocket.service.js';
 
 export  async function uploadMediaFiles(orderId, files, foldername) {
   const order = await Order.findById(orderId);

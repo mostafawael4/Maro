@@ -80,6 +80,10 @@
             {{ uploadSpeed }}/s
           </span>
         </div>
+        <div *ngIf="processingStatus" class="processing-status">
+            <div class="mini-spinner"></div>
+            <span>{{ processingStatus }}</span>
+        </div>
       </div>
 
       <!-- Success Message -->

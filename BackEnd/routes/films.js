@@ -11,6 +11,7 @@ import { handleMulterErrors } from "../middleware/upload.js";
 import { requireAdminAuth, requireAdminOrEditorAuth } from "../middleware/auth.js";
 import { extractThumbnailForFilmsService } from '../services/videoService.js';
 import b2 from "../services/b2.service.js";
+import websocketService from "../services/websocket.service.js";
 
 const signFilm = (film, tokenData) => {
     if (!film || !tokenData) return film;
@@ -63,43 +64,36 @@ router.post("/prepare-direct-upload", async (req, res) => {
 // Confirm Direct Upload
 router.post("/confirm-direct-upload", async (req, res) => {
     try {
-        const { uploadedFiles, description } = req.body; 
+        const { uploadedFiles } = req.body; 
         if (!uploadedFiles || !uploadedFiles.length) {
             return res.status(400).json({ error: "No files to confirm" });
         }
 
-        const results = [];
+        const verifiedFiles = [];
+        const failedFiles = [];
+
         for (const file of uploadedFiles) {
             const context = { type: 'film' };
-            const { exists, url } = await uploadService.verifyFileExists(context, file.filename);
+            const { exists } = await uploadService.verifyFileExists(context, file.filename);
             
-            if (!exists) {
+            if (exists) {
+                verifiedFiles.push(file);
+            } else {
                 logger.warn(`Film file verification failed: ${file.filename}`);
-                continue;
+                failedFiles.push({ filename: file.filename, error: "File not found in B2" });
             }
-
-            const newFilm = await Film.create({
-                filename: file.filename,
-                url: url,
-                description: description || '',
-                uploadedAt: new Date()
-            });
-            logger.info(`Film record created: ${newFilm.filename}`);
-            results.push(newFilm);
         }
-        
-        const tokenData = await b2.getFolderToken("films/");
-        const signedResults = results.map(f => signFilm(f, tokenData));
 
-        res.status(201).json({ 
+        res.json({ 
             ok: true, 
-            added: signedResults,
-            message: `${results.length} film(s) confirmed.` 
+            verified: verifiedFiles,
+            failed: failedFiles,
+            message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.` 
         });
 
     } catch (err) {
         logger.error("Film confirm upload error:", err);
-        res.status(500).json({ error: "Failed to confirm upload" });
+        res.status(500).json({ error: "Failed to verify upload" });
     }
 });
 

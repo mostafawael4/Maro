@@ -16,6 +16,7 @@ import fs from "fs";
 import path from "path";
 import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
 import uploadService from "../../services/upload.service.js";
+import websocketService from "../../services/websocket.service.js";
 
 // Helper to sign a list of file objects for a specific order
 // (Removed local implementation to use utility)
@@ -227,15 +228,33 @@ router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res
 router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { uploadedFiles, foldername } = req.body; // uploadedFiles: [{ filename, originalName, mimetype }]
+    const { uploadedFiles, foldername } = req.body; 
     
-    const result = await confirmDirectUploads(orderId, uploadedFiles, foldername);
+    const verifiedFiles = [];
+    const failedFiles = [];
+
+    for (const f of uploadedFiles) {
+        const key = `orders/${orderId}/${f.filename}`;
+        const foundFiles = await b2.listFileNames(key, 1);
+        const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+
+        if (exists) {
+            verifiedFiles.push(f);
+        } else {
+            logger.warn(`File verification failed: ${key} not found.`);
+            failedFiles.push({ filename: f.filename, error: "File not found in B2" });
+        }
+    }
     
-    const signedAdded = await signOrderFiles(orderId, result.added);
-    return res.json({ ok: true, added: signedAdded });
+    return res.json({ 
+        ok: true, 
+        verified: verifiedFiles,
+        failed: failedFiles,
+        message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.` 
+    });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: err.message });
+    return res.status(500).json({ ok: false, message: "Failed to verify upload" });
   }
 });
 
