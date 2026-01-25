@@ -32,3 +32,6 @@ remove order caching
 
 1.7.3
 add ffmpeg in docker container
+
+1.7.4
+add resend email service
