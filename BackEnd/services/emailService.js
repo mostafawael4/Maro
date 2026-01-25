@@ -4,11 +4,14 @@ import Credentials  from '../config/Credentials.js';
 
 const transporter = nodemailer.createTransport({
   host: Credentials.SMTP_HOST,
-  port: Credentials.SMTP_PORT,
-  secure: false, // true for 465, false for 587
+  port: Number(Credentials.SMTP_PORT),
+  secure: false,
   auth: {
     user: Credentials.SMTP_USER,
     pass: Credentials.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
@@ -49,6 +52,7 @@ export async function sendMail({ to, subject, text, html }) {
       to,
       subject
     });
-    throw err;
+    console.log("SMTP connection failed:", err);
+    return false;
   }
 }

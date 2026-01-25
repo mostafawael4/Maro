@@ -20,3 +20,6 @@ add WebSocket server
 
 1.6.1
 add warn to logger on production
+
+1.6.2
+fix email service
