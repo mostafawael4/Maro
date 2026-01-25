@@ -42,13 +42,16 @@ class B2Service {
             await this.authorize();
             if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
 
+            // Encode the key components to ensure valid URL
+            const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+
              const response = await this.b2.getDownloadAuthorization({
                 bucketId: Credentials.B2_BUCKET_ID,
-                fileNamePrefix: key,
+                fileNamePrefix: key, // Authorization is for the raw key name
                 validDurationInSeconds: 86400,
             });
             const authorizationToken = response.data.authorizationToken;
-            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}?Authorization=${authorizationToken}`;
+            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}?Authorization=${authorizationToken}`;
         } catch (err) {
              logger.error(`B2: Presign Error for ${key}: ${err.message}`);
              // Fallback
@@ -100,11 +103,13 @@ class B2Service {
         // e.g. https://f005.backblazeb2.com/file/<bucketName>/<key>
         // We will assume downloadUrl is populated or fallback to a known structure if needed, 
         // but authorize() should have run.
+        const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+
         if (this.downloadUrl) {
-            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${key}`;
+            return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}`;
         }
         // Fallback or if not authorized yet (though caller usually ensures auth)
-        return `https://f005.backblazeb2.com/file/${Credentials.B2_BUCKET_NAME}/${key}`;
+        return `https://f005.backblazeb2.com/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}`;
     }
   
     async upload(fileName, buffer) {

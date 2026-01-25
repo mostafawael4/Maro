@@ -103,9 +103,7 @@ router.get("/", async (req, res) => {
     const tokenData = await b2.getFolderToken("homepage/");
     const signedImages = images.map(img => signHomePageImage(img, tokenData));
 
-    // Add cache headers for Layer 1 caching
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
-    res.setHeader('Vary', 'Authorization');
+
 
     logger.info(`Fetched ${images.length} homePage images.`);
     res.json(signedImages);

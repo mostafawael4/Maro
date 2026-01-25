@@ -106,9 +106,7 @@ router.get("/", async (req, res) => {
     const tokenData = await b2.getFolderToken("films/");
     const signedFilms = films.map(f => signFilm(f, tokenData));
 
-    // Add cache headers for Layer 1 caching (2 hours for video metadata)
-    res.setHeader('Cache-Control', 'public, max-age=7200'); // 2 hours
-    res.setHeader('Vary', 'Authorization');
+
 
     logger.info(`Fetched ${films.length} films.`);
     res.json(signedFilms);
