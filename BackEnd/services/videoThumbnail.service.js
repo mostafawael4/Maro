@@ -188,7 +188,7 @@ export async function extractOrderVideoThumbnail(orderId, videoFilename, timeInS
   try {
     // Video is remote, use streaming approach to avoid downloading entire file
     logger.info(`Using streaming extraction from B2: ${videoKey}`);
-    const streamUrl = await b2.getPresignedUrl(videoKey);
+    const streamUrl = await b2.getNativePresignedUrl(videoKey);
     await streamingExtractThumbnail(streamUrl, tempThumbPath, timeInSeconds);
 
     // Upload extracted thumbnail to B2

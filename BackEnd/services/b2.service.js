@@ -9,6 +9,7 @@ class B2Service {
         this.authPromise = null;
         this.uploadUrlPool = [];
         this.downloadUrl = null;
+        this.nativeDownloadUrl = null;
     }
 
     async authorize() {
@@ -24,12 +25,14 @@ class B2Service {
                 logger.info(`B2: Authorizing with Key ID: ${Credentials.B2_APPLICATION_KEY_ID.substring(0, 8)}...`);
                 const response = await this.b2.authorize();
 
+                this.nativeDownloadUrl = response.data.downloadUrl;
+
                 // Use CDN URL if available, otherwise fall back to B2 download URL
                 if (Credentials.B2_CDN_URL) {
                     this.downloadUrl = Credentials.B2_CDN_URL.replace(/\/$/, ''); // Remove trailing slash if present
-                    logger.info(`B2: Using CDN URL: ${this.downloadUrl}`);
+                    logger.info(`B2: Using CDN URL: ${this.downloadUrl} (Native: ${this.nativeDownloadUrl})`);
                 } else {
-                    this.downloadUrl = response.data.downloadUrl;
+                    this.downloadUrl = this.nativeDownloadUrl;
                     logger.info(`B2: Authorized successfully. Download URL: ${this.downloadUrl}`);
                 }
 
@@ -63,6 +66,32 @@ class B2Service {
         } catch (err) {
             logger.error(`B2: Presign Error for ${key}: ${err.message}`);
             // Fallback
+            return this.getFileUrl(key);
+        }
+    }
+
+    /**
+     * Get a presigned URL using the native B2 domain (bypassing CDN)
+     * Useful for tools like FFmpeg that might be blocked by CDN range request limits.
+     * @param {string} key 
+     * @returns {Promise<string>}
+     */
+    async getNativePresignedUrl(key) {
+        try {
+            await this.authorize();
+            if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
+
+            const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+
+            const response = await this.b2.getDownloadAuthorization({
+                bucketId: Credentials.B2_BUCKET_ID,
+                fileNamePrefix: key,
+                validDurationInSeconds: 86400,
+            });
+            const authorizationToken = response.data.authorizationToken;
+            return `${this.nativeDownloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}?Authorization=${authorizationToken}`;
+        } catch (err) {
+            logger.error(`B2: Native Presign Error for ${key}: ${err.message}`);
             return this.getFileUrl(key);
         }
     }
@@ -116,8 +145,9 @@ class B2Service {
         if (this.downloadUrl) {
             return `${this.downloadUrl}/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}`;
         }
-        // Fallback or if not authorized yet (though caller usually ensures auth)
-        return `https://f005.backblazeb2.com/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}`;
+        // Fallback or if not authorized yet
+        const base = this.nativeDownloadUrl || "https://f005.backblazeb2.com";
+        return `${base}/file/${Credentials.B2_BUCKET_NAME}/${encodedKey}`;
     }
 
     async upload(fileName, buffer) {

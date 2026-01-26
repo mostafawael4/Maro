@@ -18,7 +18,7 @@ export async function getVideoDurationService(orderId, filename) {
   if (!fs.existsSync(videoPath)) {
     // Use B2 signed URL
     const b2Service = (await import('./b2.service.js')).default;
-    ffmpegInput = await b2Service.getPresignedUrl(`orders/${orderId}/${filename}`);
+    ffmpegInput = await b2Service.getNativePresignedUrl(`orders/${orderId}/${filename}`);
   }
 
   return await getVideoDuration(ffmpegInput);
@@ -69,7 +69,7 @@ export async function extractThumbnailForFilmsService(filmId, filename, timeInSe
       // Film is remote, use streaming approach to avoid downloading entire file
       logger.info(`Film not found locally, using streaming extraction from B2: films/${filename}`);
       const b2Service = (await import('./b2.service.js')).default;
-      const streamUrl = await b2Service.getPresignedUrl(`films/${filename}`);
+      const streamUrl = await b2Service.getNativePresignedUrl(`films/${filename}`);
       await streamingExtractThumbnail(streamUrl, tempThumbPath, timeInSeconds);
     }
 
