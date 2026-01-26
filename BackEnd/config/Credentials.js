@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); 
+dotenv.config();
 
 
 const NODE_ENV = process.env.NODE_ENV;
@@ -42,6 +42,7 @@ const B2_APPLICATION_KEY_ID = process.env.B2_APPLICATION_KEY_ID
 const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY
 const B2_BUCKET_ID = process.env.B2_BUCKET_ID
 const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME
+const B2_CDN_URL = process.env.B2_CDN_URL
 
 export default {
   NODE_ENV,
@@ -70,5 +71,6 @@ export default {
   B2_APPLICATION_KEY_ID,
   B2_APPLICATION_KEY,
   B2_BUCKET_ID,
-  B2_BUCKET_NAME
+  B2_BUCKET_NAME,
+  B2_CDN_URL
 };

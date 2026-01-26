@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { GalleryService, GalleryImage } from '../../services/gallery.service';
 import { AuthService } from '../../services/auth.service';
@@ -32,6 +32,12 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
+  // Pagination state
+  currentPage: number = 1;
+  pageSize: number = 8;
+  hasMore: boolean = true;
+  isLoadingMore: boolean = false;
+
   constructor(
     private galleryService: GalleryService,
     private authService: AuthService,
@@ -42,13 +48,13 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.loadGalleryImages();
-    
+
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
       this.isAdmin = this.authService.isAdmin();
     });
-    
+
     // Initialize admin status
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
@@ -65,6 +71,19 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  // Listen for window scroll to trigger load more
+  @HostListener('window:scroll', ['$event'])
+  onScroll() {
+    if (!this.isBrowser || this.isLoading || this.isLoadingMore || !this.hasMore) return;
+
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 500; // Load when within 500px of bottom
+
+    if (scrollPosition >= threshold) {
+      this.loadMoreImages();
+    }
+  }
+
   ngOnDestroy() {
     // Clean up observer
     if (this.intersectionObserver) {
@@ -74,7 +93,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   setupIntersectionObserver() {
     if (!this.isBrowser) return;
-    
+
     const options = {
       root: null,
       rootMargin: '50px', // Start animation slightly before element enters viewport
@@ -107,11 +126,13 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadGalleryImages() {
     this.isLoading = true;
-    this.galleryService.getAllImages().subscribe({
-      next: (images) => {
-        this.images = images;
+    this.galleryService.getAllImages(1, this.pageSize).subscribe({
+      next: (response) => {
+        this.images = response.items;
+        this.hasMore = response.hasMore;
+        this.currentPage = 1;
         this.isLoading = false;
-        
+
         // Re-setup observer after images are loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
@@ -128,9 +149,40 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  loadMoreImages() {
+    if (this.isLoadingMore || !this.hasMore) return;
+
+    this.isLoadingMore = true;
+    const nextPage = this.currentPage + 1;
+
+    this.galleryService.getAllImages(nextPage, this.pageSize).subscribe({
+      next: (response) => {
+        const currentLength = this.images.length;
+        this.images = [...this.images, ...response.items];
+        this.hasMore = response.hasMore;
+        this.currentPage = nextPage;
+        this.isLoadingMore = false;
+
+        // Observe new items
+        if (this.isBrowser) {
+          setTimeout(() => {
+            const allItems = document.querySelectorAll('.photo-item');
+            for (let i = currentLength; i < allItems.length; i++) {
+              this.observeImage(allItems[i] as HTMLElement);
+            }
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading more gallery images:', error);
+        this.isLoadingMore = false;
+      }
+    });
+  }
+
   observeAllImages() {
     if (!this.isBrowser) return;
-    
+
     const photoItems = document.querySelectorAll('.photo-item');
     photoItems.forEach((item) => {
       this.observeImage(item as HTMLElement);
@@ -213,19 +265,19 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   deleteImage(image: GalleryImage): void {
     this.deleteModalLoading = true;
     this.deletingImageId = image._id;
-    
+
     this.galleryService.deleteImage(image.filename).subscribe({
       next: () => {
         // Find the index before deletion
         const index = this.images.findIndex(img => img._id === image._id);
-        
+
         // Remove the image from the array
         this.images = this.images.filter(img => img._id !== image._id);
         this.deletingImageId = null;
         this.imageToDelete = null;
         this.deleteModalLoading = false;
         this.showDeleteModal = false;
-        
+
         // Clean up loaded/visible images tracking
         // Clean up loaded/visible images tracking
         if (index !== -1) {
@@ -245,7 +297,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
           });
           this.visibleImages = newVisible;
         }
-        
+
         // Re-observe images after deletion (browser only)
         if (this.isBrowser) {
           setTimeout(() => {

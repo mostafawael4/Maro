@@ -26,9 +26,9 @@ export class GalleryService {
 
   ) { }
 
-  // Get all gallery images
-  getAllImages(): Observable<GalleryImage[]> {
-    return this.http.get<GalleryImage[]>(this.apiUrl).pipe(
+  // Get all gallery images with pagination
+  getAllImages(page: number = 1, limit: number = 8): Observable<{ items: GalleryImage[], total: number, hasMore: boolean }> {
+    return this.http.get<{ items: GalleryImage[], total: number, hasMore: boolean }>(`${this.apiUrl}?page=${page}&limit=${limit}`).pipe(
       catchError(error => {
         console.error('Error fetching gallery images:', error);
         throw error;
@@ -39,9 +39,9 @@ export class GalleryService {
   // Upload images to gallery
   uploadImages(files: File[]): Observable<any> {
     return this.directUpload.uploadFiles(
-        `${this.apiUrl}/prepare-direct-upload`,
-        `${this.apiUrl}/confirm-direct-upload`,
-        files
+      `${this.apiUrl}/prepare-direct-upload`,
+      `${this.apiUrl}/confirm-direct-upload`,
+      files
     );
   }
 

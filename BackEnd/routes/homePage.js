@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import HomePage from "../models/HomePage.js";
 const router = express.Router();
-import path  from "path";
+import path from "path";
 import Credential from "../config/Credentials.js";
 import uploadService from "../services/upload.service.js";
 import allowedExtensions from "../config/allowed_extensions.js";
@@ -12,12 +12,12 @@ import b2 from "../services/b2.service.js";
 import websocketService from "../services/websocket.service.js";
 
 const signHomePageImage = (image, tokenData) => {
-    if (!image || !tokenData) return image;
-    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
-    const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
-    if (newImage.filename) newImage.url = sign(newImage.filename);
-    return newImage;
+  if (!image || !tokenData) return image;
+  const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
+  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
+  const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
+  if (newImage.filename) newImage.url = sign(newImage.filename);
+  return newImage;
 };
 
 // Upload image to home page
@@ -27,40 +27,40 @@ router.post("/prepare-direct-upload", async (req, res) => {
   try {
     const { files } = req.body; // Expects array of { originalname, mimetype, size }
     if (!files || !files.length) {
-        return res.status(400).json({ error: "No files provided" });
+      return res.status(400).json({ error: "No files provided" });
     }
 
     const uploadSlots = [];
     const duplicates = [];
     for (const file of files) {
-        // Enforce validations (mime type check is good here too)
-        if (!allowedExtensions.images.includes(file.mimetype)) {
-             logger.warn(`Blocked homepage upload of unsupported type: ${file.mimetype}`);
-             continue; 
-        }
+      // Enforce validations (mime type check is good here too)
+      if (!allowedExtensions.images.includes(file.mimetype)) {
+        logger.warn(`Blocked homepage upload of unsupported type: ${file.mimetype}`);
+        continue;
+      }
 
-        const context = { type: 'homepage' };
-        const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
-        
-        if (slot.exists) {
-             duplicates.push({
-                 originalName: file.originalname,
-                 filename: slot.filename,
-                 key: slot.key,
-                 mimetype: file.mimetype,
-                 exists: true
-             });
-             logger.warn(`Duplicate homepage file detected: ${file.originalname}`);
-        } else {
-            uploadSlots.push({
-                originalName: file.originalname,
-                filename: slot.filename,
-                key: slot.key,
-                uploadUrl: slot.uploadUrl,
-                authorizationToken: slot.authorizationToken,
-                mimetype: file.mimetype
-            });
-        }
+      const context = { type: 'homepage' };
+      const slot = await uploadService.prepareDirectUpload(context, { originalName: file.originalname });
+
+      if (slot.exists) {
+        duplicates.push({
+          originalName: file.originalname,
+          filename: slot.filename,
+          key: slot.key,
+          mimetype: file.mimetype,
+          exists: true
+        });
+        logger.warn(`Duplicate homepage file detected: ${file.originalname}`);
+      } else {
+        uploadSlots.push({
+          originalName: file.originalname,
+          filename: slot.filename,
+          key: slot.key,
+          uploadUrl: slot.uploadUrl,
+          authorizationToken: slot.authorizationToken,
+          mimetype: file.mimetype
+        });
+      }
     }
 
     res.json({ ok: true, uploadSlots, duplicates });
@@ -72,55 +72,70 @@ router.post("/prepare-direct-upload", async (req, res) => {
 
 // Confirm Direct Upload
 router.post("/confirm-direct-upload", async (req, res) => {
-    try {
-        const { uploadedFiles } = req.body; 
-        if (!uploadedFiles || !uploadedFiles.length) {
-            return res.status(400).json({ error: "No files to confirm" });
-        }
-
-        const verifiedFiles = [];
-        const failedFiles = [];
-
-        for (const file of uploadedFiles) {
-            const context = { type: 'homepage' };
-            const { exists } = await uploadService.verifyFileExists(context, file.filename);
-            
-            if (exists) {
-                verifiedFiles.push(file);
-            } else {
-                logger.warn(`HomePage file verification failed: ${file.filename}`);
-                failedFiles.push({ filename: file.filename, error: "File not found in B2" });
-            }
-        }
-
-        res.json({ 
-            ok: true, 
-            verified: verifiedFiles,
-            failed: failedFiles,
-            message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.` 
-        });
-
-    } catch (err) {
-        logger.error("HomePage confirm upload error:", err);
-        res.status(500).json({ error: "Failed to verify upload" });
+  try {
+    const { uploadedFiles } = req.body;
+    if (!uploadedFiles || !uploadedFiles.length) {
+      return res.status(400).json({ error: "No files to confirm" });
     }
+
+    const verifiedFiles = [];
+    const failedFiles = [];
+
+    for (const file of uploadedFiles) {
+      const context = { type: 'homepage' };
+      const { exists } = await uploadService.verifyFileExists(context, file.filename);
+
+      if (exists) {
+        verifiedFiles.push(file);
+      } else {
+        logger.warn(`HomePage file verification failed: ${file.filename}`);
+        failedFiles.push({ filename: file.filename, error: "File not found in B2" });
+      }
+    }
+
+    res.json({
+      ok: true,
+      verified: verifiedFiles,
+      failed: failedFiles,
+      message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.`
+    });
+
+  } catch (err) {
+    logger.error("HomePage confirm upload error:", err);
+    res.status(500).json({ error: "Failed to verify upload" });
+  }
 });
 
-// Get all homePage images
+// Get all homePage images with pagination
 router.get("/", async (req, res) => {
-  logger.info("Fetching all homePage images.");
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 8;
+
+  logger.info(`Fetching homePage images. Page: ${page}, Limit: ${limit}`);
+
   try {
-    const images = await HomePage.find().sort({ uploadedAt: -1 });
+    const skip = (page - 1) * limit;
+
+    // Run count and find in parallel for performance
+    const [images, total] = await Promise.all([
+      HomePage.find().sort({ uploadedAt: -1 }).skip(skip).limit(limit),
+      HomePage.countDocuments()
+    ]);
 
     const tokenData = await b2.getFolderToken("homepage/");
     const signedImages = images.map(img => signHomePageImage(img, tokenData));
 
+    logger.info(`Fetched ${images.length} homePage images (Total: ${total}).`);
 
-
-    logger.info(`Fetched ${images.length} homePage images.`);
-    res.json(signedImages);
+    res.json({
+      items: signedImages,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total
+    });
   } catch (err) {
-    logger.error("Error fetching all homePage images:", err);
+    logger.error("Error fetching homePage images:", err);
     res.status(500).json({ error: "Failed to fetch homePage images" });
   }
 });

@@ -1,23 +1,18 @@
 <div class="gallery-container">
   <!-- Delete Confirmation Modal -->
-  <app-delete-modal
-    [isOpen]="showDeleteModal"
-    [isLoading]="deleteModalLoading"
-    title="Delete Image"
-    [message]="'Are you sure you want to delete this image?'"
-    warning="This action cannot be undone."
-    (confirm)="onConfirmDelete()"
-    (cancel)="onCancelDelete()"
-  ></app-delete-modal>
+  <app-delete-modal [isOpen]="showDeleteModal" [isLoading]="deleteModalLoading" title="Delete Image"
+    [message]="'Are you sure you want to delete this image?'" warning="This action cannot be undone."
+    (confirm)="onConfirmDelete()" (cancel)="onCancelDelete()"></app-delete-modal>
 
   <!-- Header Section -->
   <div class="header">
     <h1>Our Gallery</h1>
     <p>"Capturing the magic of love, one frame at a time."</p>
-    
+
     <!-- Upload Button (Admin Only) -->
     <button *ngIf="isAuthenticated && isAdmin" class="upload-btn" (click)="openUploadModal()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="17 8 12 3 7 8"></polyline>
         <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -45,29 +40,17 @@
 
   <!-- Photo Grid -->
   <div *ngIf="!isLoading && !errorMessage && images.length > 0" class="photo-grid">
-    <div 
-      *ngFor="let image of images; let i = index" 
-      class="photo-item"
-      [attr.data-index]="i"
-      [class.animate-in]="isImageVisible(i)"
-      (click)="openImageSlider(i)"
-    >
-      <img 
-        [src]="getImageUrl(image)" 
-        [alt]="image.filename"
-        (load)="onImageLoad(i)"
-        (error)="onImageError(i, image)"
-        [class.loaded]="isImageLoaded(i)"
-      />
+    <div *ngFor="let image of images; let i = index" class="photo-item" [attr.data-index]="i"
+      [class.animate-in]="isImageVisible(i)" (click)="openImageSlider(i)">
+      <img [src]="getImageUrl(image)" [alt]="image.filename" (load)="onImageLoad(i)" (error)="onImageError(i, image)"
+        [class.loaded]="isImageLoaded(i)" [attr.loading]="i > 4 ? 'lazy' : 'eager'"
+        [attr.fetchpriority]="i <= 4 ? 'high' : 'auto'" />
       <!-- Delete Button (Admin Only) -->
-      <button 
-        *ngIf="isAuthenticated && isAdmin"
-        class="delete-btn"
-        (click)="onDeleteClick(image, $event)"
-        [disabled]="isDeleting(image._id)"
-        [attr.aria-label]="'Delete ' + image.filename"
-      >
-        <svg *ngIf="!isDeleting(image._id)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button *ngIf="isAuthenticated && isAdmin" class="delete-btn" (click)="onDeleteClick(image, $event)"
+        [disabled]="isDeleting(image._id)" [attr.aria-label]="'Delete ' + image.filename">
+        <svg *ngIf="!isDeleting(image._id)" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -79,18 +62,17 @@
   </div>
 
   <!-- Upload Modal Component -->
-  <app-upload-modal 
-    [show]="showUploadModal" 
-    [uploadFunction]="uploadGalleryImages.bind(this)"
-    (closeModal)="closeUploadModal()" 
-    (uploadComplete)="onUploadComplete()">
+  <app-upload-modal [show]="showUploadModal" [uploadFunction]="uploadGalleryImages.bind(this)"
+    (closeModal)="closeUploadModal()" (uploadComplete)="onUploadComplete()">
   </app-upload-modal>
 
+  <!-- Infinite Scroll Loading State -->
+  <div *ngIf="isLoadingMore" class="loading-container small">
+    <div class="spinner"></div>
+  </div>
+
   <!-- Image Slider Component -->
-  <app-image-slider
-    [images]="images"
-    [currentIndex]="currentImageIndex"
-    [show]="showImageSlider"
+  <app-image-slider [images]="images" [currentIndex]="currentImageIndex" [show]="showImageSlider"
     (close)="closeImageSlider()">
   </app-image-slider>
 </div>

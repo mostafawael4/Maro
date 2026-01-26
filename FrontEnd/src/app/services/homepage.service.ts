@@ -26,9 +26,9 @@ export class HomePageService {
 
   ) { }
 
-  // Get all homepage images
-  getAllImages(): Observable<HomePageImage[]> {
-    return this.http.get<HomePageImage[]>(this.apiUrl).pipe(
+  // Get all homepage images with pagination
+  getAllImages(page: number = 1, limit: number = 8): Observable<{ items: HomePageImage[], total: number, hasMore: boolean }> {
+    return this.http.get<{ items: HomePageImage[], total: number, hasMore: boolean }>(`${this.apiUrl}?page=${page}&limit=${limit}`).pipe(
       catchError(error => {
         console.error('Error fetching homepage images:', error);
         throw error;
@@ -39,9 +39,9 @@ export class HomePageService {
   // Upload images to homepage
   uploadImages(files: File[]): Observable<any> {
     return this.directUpload.uploadFiles(
-        `${this.apiUrl}/prepare-direct-upload`,
-        `${this.apiUrl}/confirm-direct-upload`,
-        files
+      `${this.apiUrl}/prepare-direct-upload`,
+      `${this.apiUrl}/confirm-direct-upload`,
+      files
     );
   }
 

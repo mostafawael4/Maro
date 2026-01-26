@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FilmsService, Film } from '../../services/films.service';
 import { AuthService } from '../../services/auth.service';
@@ -32,6 +32,12 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
 
+  // Pagination state
+  currentPage: number = 1;
+  pageSize: number = 8;
+  hasMore: boolean = true;
+  isLoadingMore: boolean = false;
+
   constructor(
     private filmsService: FilmsService,
     private authService: AuthService,
@@ -42,13 +48,13 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.loadFilms();
-    
+
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
       this.isAdmin = this.authService.isAdmin();
     });
-    
+
     // Initialize admin status
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
@@ -65,6 +71,19 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  // Listen for window scroll to trigger load more
+  @HostListener('window:scroll', ['$event'])
+  onScroll() {
+    if (!this.isBrowser || this.isLoading || this.isLoadingMore || !this.hasMore) return;
+
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 500; // Load when within 500px of bottom
+
+    if (scrollPosition >= threshold) {
+      this.loadMoreFilms();
+    }
+  }
+
   ngOnDestroy() {
     // Clean up observer
     if (this.intersectionObserver) {
@@ -74,7 +93,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   setupIntersectionObserver() {
     if (!this.isBrowser) return;
-    
+
     const options = {
       root: null,
       rootMargin: '100px', // Start animation earlier (when element is 100px away from viewport)
@@ -90,7 +109,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
           setTimeout(() => {
             this.visibleFilms.add(index);
           }, index * 100); // Stagger each film by 100ms
-          
+
           // Once animated, stop observing this element
           if (this.intersectionObserver) {
             this.intersectionObserver.unobserve(element);
@@ -112,11 +131,13 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadFilms() {
     this.isLoading = true;
-    this.filmsService.getAllFilms().subscribe({
-      next: (films) => {
-        this.films = films;
+    this.filmsService.getAllFilms(1, this.pageSize).subscribe({
+      next: (response) => {
+        this.films = response.items;
+        this.hasMore = response.hasMore;
+        this.currentPage = 1;
         this.isLoading = false;
-        
+
         // Re-setup observer after films are loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
@@ -133,9 +154,41 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  loadMoreFilms() {
+    if (this.isLoadingMore || !this.hasMore) return;
+
+    this.isLoadingMore = true;
+    const nextPage = this.currentPage + 1;
+
+    this.filmsService.getAllFilms(nextPage, this.pageSize).subscribe({
+      next: (response) => {
+        const currentLength = this.films.length;
+        this.films = [...this.films, ...response.items];
+        this.hasMore = response.hasMore;
+        this.currentPage = nextPage;
+        this.isLoadingMore = false;
+
+        // Observe new items - note: films uses unobserve, so we just observe all might be fine or just new ones
+        if (this.isBrowser) {
+          setTimeout(() => {
+            // For simplicity observing all again, or optimize to just new ones
+            const allItems = document.querySelectorAll('.film-item');
+            for (let i = currentLength; i < allItems.length; i++) {
+              this.observeFilm(allItems[i] as HTMLElement);
+            }
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading more films:', error);
+        this.isLoadingMore = false;
+      }
+    });
+  }
+
   observeAllFilms() {
     if (!this.isBrowser) return;
-    
+
     const filmItems = document.querySelectorAll('.film-item');
     filmItems.forEach((item) => {
       this.observeFilm(item as HTMLElement);
@@ -187,20 +240,20 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
   deleteFilm(film: Film): void {
     this.deleteModalLoading = true;
     this.deletingFilmId = film._id;
-    
+
     // Use the film's _id to delete - backend will find the record and use the filename from the database
     this.filmsService.deleteFilm(film._id).subscribe({
       next: () => {
         // Find the index before deletion
         const index = this.films.findIndex(f => f._id === film._id);
-        
+
         // Remove the film from the array
         this.films = this.films.filter(f => f._id !== film._id);
         this.deletingFilmId = null;
         this.filmToDelete = null;
         this.deleteModalLoading = false;
         this.showDeleteModal = false;
-        
+
         // Clean up visible films tracking
         if (index !== -1) {
           // Shift indices for visible films
@@ -211,7 +264,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
           });
           this.visibleFilms = newVisible;
         }
-        
+
         // Re-observe films after deletion (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
@@ -262,7 +315,7 @@ export class FilmsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
     if (!this.selectedFilmForThumbnail) return;
-    
+
     // Update the film in the local array
     const filmIndex = this.films.findIndex(f => f._id === this.selectedFilmForThumbnail?._id);
     if (filmIndex !== -1) {

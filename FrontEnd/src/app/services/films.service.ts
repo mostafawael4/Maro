@@ -30,9 +30,9 @@ export class FilmsService {
 
   ) { }
 
-  // Get all films
-  getAllFilms(): Observable<Film[]> {
-    return this.http.get<Film[]>(this.apiUrl).pipe(
+  // Get all films with pagination
+  getAllFilms(page: number = 1, limit: number = 8): Observable<{ items: Film[], total: number, hasMore: boolean }> {
+    return this.http.get<{ items: Film[], total: number, hasMore: boolean }>(`${this.apiUrl}?page=${page}&limit=${limit}`).pipe(
       catchError(error => {
         console.error('Error fetching films:', error);
         throw error;
@@ -43,11 +43,11 @@ export class FilmsService {
   // Upload a film
   uploadFilm(file: File, description: string): Observable<any> {
     return this.directUpload.uploadFiles(
-        `${this.apiUrl}/prepare-direct-upload`,
-        `${this.apiUrl}/confirm-direct-upload`,
-        [file],
-        {}, // No extra prepare data
-        { description } // Pass description to confirm
+      `${this.apiUrl}/prepare-direct-upload`,
+      `${this.apiUrl}/confirm-direct-upload`,
+      [file],
+      {}, // No extra prepare data
+      { description } // Pass description to confirm
     );
   }
 

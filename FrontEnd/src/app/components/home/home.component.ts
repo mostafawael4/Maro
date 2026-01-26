@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HomePageService, HomePageImage } from '../../services/homepage.service';
@@ -26,18 +26,24 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   currentImageIndex: number = 0;
   isAuthenticated: any = false;
   isAdmin: boolean = false;
-  
+
   // Admin upload/delete states
   showUploadModal: boolean = false;
   showDeleteModal: boolean = false;
   imageToDelete: HomePageImage | null = null;
   deletingImageId: string | null = null;
   deleteModalLoading = false;
-  
+
   private intersectionObserver?: IntersectionObserver;
   private storyObserver?: IntersectionObserver;
   private aboutObserver?: IntersectionObserver;
   private isBrowser: boolean;
+
+  // Pagination state
+  currentPage: number = 1;
+  pageSize: number = 8;
+  hasMore: boolean = true;
+  isLoadingMore: boolean = false;
 
   constructor(
     private homepageService: HomePageService,
@@ -50,15 +56,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated  = isAuth;
+      this.isAuthenticated = isAuth;
       this.isAdmin = this.authService.isAdmin();
     });
-    
+
     // Initialize admin status
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
     }
-    
+
     // Load homepage images
     this.loadHomePageImages();
   }
@@ -72,6 +78,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.setupStoryObserver();
         this.setupAboutObserver();
       }, 50);
+    }
+  }
+
+  // Listen for window scroll to trigger load more
+  @HostListener('window:scroll', ['$event'])
+  onScroll() {
+    if (!this.isBrowser || this.isLoading || this.isLoadingMore || !this.hasMore) return;
+
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 500; // Load when within 500px of bottom
+
+    if (scrollPosition >= threshold) {
+      this.loadMoreImages();
     }
   }
 
@@ -90,7 +109,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   setupIntersectionObserver() {
     if (!this.isBrowser) return;
-    
+
     const options = {
       root: null,
       rootMargin: '50px',
@@ -122,7 +141,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   observeAllImages() {
     if (!this.isBrowser) return;
-    
+
     const photoItems = document.querySelectorAll('.home-container .photo-item');
     photoItems.forEach((item) => {
       this.observeImage(item as HTMLElement);
@@ -131,7 +150,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   setupStoryObserver() {
     if (!this.isBrowser) return;
-    
+
     const options = {
       root: null,
       rootMargin: '0px',
@@ -154,7 +173,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   setupAboutObserver() {
     if (!this.isBrowser) return;
-    
+
     const options = {
       root: null,
       rootMargin: '0px',
@@ -177,11 +196,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadHomePageImages() {
     this.isLoading = true;
-    this.homepageService.getAllImages().subscribe({
-      next: (images) => {
-        this.images = images;
+    this.homepageService.getAllImages(1, this.pageSize).subscribe({
+      next: (response) => {
+        this.images = response.items;
+        this.hasMore = response.hasMore;
+        this.currentPage = 1;
         this.isLoading = false;
-        
+
         // Re-setup observers after images are loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
@@ -195,6 +216,38 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (error) => {
         console.error('Error loading homepage images:', error);
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadMoreImages() {
+    if (this.isLoadingMore || !this.hasMore) return;
+
+    this.isLoadingMore = true;
+    const nextPage = this.currentPage + 1;
+
+    this.homepageService.getAllImages(nextPage, this.pageSize).subscribe({
+      next: (response) => {
+        const currentLength = this.images.length;
+        this.images = [...this.images, ...response.items];
+        this.hasMore = response.hasMore;
+        this.currentPage = nextPage;
+        this.isLoadingMore = false;
+
+        // Observe new items
+        if (this.isBrowser) {
+          setTimeout(() => {
+            // Only observe newly added items to avoid performance hit
+            const allItems = document.querySelectorAll('.home-container .photo-item');
+            for (let i = currentLength; i < allItems.length; i++) {
+              this.observeImage(allItems[i] as HTMLElement);
+            }
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading more homepage images:', error);
+        this.isLoadingMore = false;
       }
     });
   }
@@ -235,7 +288,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onUploadComplete() {
-    // Reload homepage images after successful upload
+    // Reload homepage images after successful upload - reset to page 1
     this.loadHomePageImages();
   }
 
@@ -274,14 +327,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       next: () => {
         // Find the index before deletion
         const index = this.images.findIndex(img => img._id === image._id);
-        
+
         // Remove the image from the array
         this.images = this.images.filter(img => img._id !== image._id);
         this.deletingImageId = null;
         this.imageToDelete = null;
         this.deleteModalLoading = false;
         this.showDeleteModal = false;
-        
+
         // Clean up loaded/visible images tracking
         if (index !== -1) {
           // Shift indices for loaded images
@@ -300,7 +353,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           });
           this.visibleImages = newVisible;
         }
-        
+
         // Re-observe images after deletion (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
