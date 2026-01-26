@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, HostListener } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser, NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HomePageService, HomePageImage } from '../../services/homepage.service';
 import { AuthService } from '../../services/auth.service';
@@ -11,14 +11,13 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageSliderComponent, UploadModalComponent, DeleteModalComponent],
+  imports: [CommonModule, FormsModule, ImageSliderComponent, UploadModalComponent, DeleteModalComponent, NgOptimizedImage],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   images: HomePageImage[] = [];
   loadedImages: Set<number> = new Set();
-  visibleImages: Set<number> = new Set();
   isLoading: boolean = true;
   isStoryVisible: boolean = false;
   isAboutVisible: boolean = false;
@@ -34,7 +33,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   deletingImageId: string | null = null;
   deleteModalLoading = false;
 
-  private intersectionObserver?: IntersectionObserver;
   private storyObserver?: IntersectionObserver;
   private aboutObserver?: IntersectionObserver;
   private isBrowser: boolean;
@@ -73,8 +71,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     // Setup Intersection Observer for scroll animations (browser only)
     if (this.isBrowser) {
       setTimeout(() => {
-        this.setupIntersectionObserver();
-        this.observeAllImages();
         this.setupStoryObserver();
         this.setupAboutObserver();
       }, 50);
@@ -96,9 +92,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy() {
     // Clean up observers
-    if (this.intersectionObserver) {
-      this.intersectionObserver.disconnect();
-    }
     if (this.storyObserver) {
       this.storyObserver.disconnect();
     }
@@ -107,45 +100,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  setupIntersectionObserver() {
-    if (!this.isBrowser) return;
-
-    const options = {
-      root: null,
-      rootMargin: '50px',
-      threshold: 0.1
-    };
-
-    this.intersectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const element = entry.target as HTMLElement;
-          const index = parseInt(element.getAttribute('data-index') || '0', 10);
-          setTimeout(() => {
-            this.visibleImages.add(index);
-          }, 0);
-        }
-      });
-    }, options);
-  }
-
-  observeImage(element: HTMLElement) {
-    if (this.intersectionObserver && element) {
-      this.intersectionObserver.observe(element);
-    }
-  }
-
   isImageVisible(index: number): boolean {
-    return this.visibleImages.has(index);
-  }
-
-  observeAllImages() {
-    if (!this.isBrowser) return;
-
-    const photoItems = document.querySelectorAll('.home-container .photo-item');
-    photoItems.forEach((item) => {
-      this.observeImage(item as HTMLElement);
-    });
+    return true; // Simplified for animations since it's not strictly needed for perf now
   }
 
   setupStoryObserver() {
@@ -206,8 +162,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         // Re-setup observers after images are loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
-            this.setupIntersectionObserver();
-            this.observeAllImages();
             this.setupStoryObserver();
             this.setupAboutObserver();
           }, 100);
@@ -233,17 +187,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.hasMore = response.hasMore;
         this.currentPage = nextPage;
         this.isLoadingMore = false;
-
-        // Observe new items
-        if (this.isBrowser) {
-          setTimeout(() => {
-            // Only observe newly added items to avoid performance hit
-            const allItems = document.querySelectorAll('.home-container .photo-item');
-            for (let i = currentLength; i < allItems.length; i++) {
-              this.observeImage(allItems[i] as HTMLElement);
-            }
-          }, 100);
-        }
       },
       error: (error) => {
         console.error('Error loading more homepage images:', error);
@@ -345,19 +288,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           });
           this.loadedImages = newLoaded;
 
-          // Shift indices for visible images
-          const newVisible = new Set<number>();
-          this.visibleImages.forEach(i => {
-            if (i < index) newVisible.add(i);
-            else if (i > index) newVisible.add(i - 1);
-          });
-          this.visibleImages = newVisible;
         }
 
         // Re-observe images after deletion (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
-            this.observeAllImages();
+            this.setupStoryObserver();
+            this.setupAboutObserver();
           }, 100);
         }
       },
