@@ -107,7 +107,7 @@ import websocketService from "./services/websocket.service.js";
         console.log(`WebSocket server is running on ws://localhost:${Credentials.PORT}/ws`);
       }
       
-      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.8.0`);
+      console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.8.1`);
     });
   } catch (err) {
     console.error("Startup error:", err);
