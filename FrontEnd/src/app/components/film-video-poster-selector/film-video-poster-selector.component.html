@@ -14,7 +14,7 @@
       <div class="video-container">
         <video
           #videoPlayer
-          [src]="baseUrl + videoUrl"
+          [src]="videoUrl"
           controls
           (loadedmetadata)="onLoadedMetadata()"
           (loadeddata)="onVideoLoaded()"

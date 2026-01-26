@@ -29,10 +29,10 @@ export class DirectUploadService {
    * 3. Confirm (Verify and Save in Backend)
    */
   uploadFiles(
-    prepareUrl: string, 
-    confirmUrl: string, 
-    files: File[], 
-    extraPrepareData: any = {}, 
+    prepareUrl: string,
+    confirmUrl: string,
+    files: File[],
+    extraPrepareData: any = {},
     extraConfirmData: any = {}
   ): Observable<any> {
     return new Observable(observer => {
@@ -43,7 +43,7 @@ export class DirectUploadService {
       const prepareBody = { files: fileInfos, ...extraPrepareData };
       const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
       const uploadId = `upload-${Date.now()}`;
-      
+
       // Track subscriptions for cleanup
       const subscriptions: any[] = [];
       let prepareSub: any = null;
@@ -70,7 +70,7 @@ export class DirectUploadService {
         if (status && status.context === context && pendingProcessingFiles.has(status.filename)) {
           if (status.status === 'completed' || status.status === 'failed') {
             pendingProcessingFiles.delete(status.filename);
-            
+
             // Check if everything is done
             if (completedUploads === totalUploads && pendingProcessingFiles.size === 0) {
               finalizeObserver();
@@ -97,10 +97,10 @@ export class DirectUploadService {
           const { uploadSlots, duplicates } = resp;
           allDuplicates = duplicates || [];
           const duplicateCount = allDuplicates.length;
-          
+
           // Add duplicates to our tracking
           if (duplicateCount > 0) {
-             completedUploads += duplicateCount;
+            completedUploads += duplicateCount;
           }
 
           if (!uploadSlots || uploadSlots.length === 0) {
@@ -126,11 +126,11 @@ export class DirectUploadService {
               await this.uploadToB2(slot.uploadUrl, slot.authorizationToken, b2FileName, file, (progress) => {
                 const currentFileBytes = Math.round((progress / 100) * file.size);
                 const totalLoadedBytes = uploadedBytes + currentFileBytes;
-                
-                observer.next({ 
-                  type: HttpEventType.UploadProgress, 
-                  loaded: totalLoadedBytes, 
-                  total: totalBytes 
+
+                observer.next({
+                  type: HttpEventType.UploadProgress,
+                  loaded: totalLoadedBytes,
+                  total: totalBytes
                 });
 
                 this.websocketService.reportUploadProgress(uploadId, Math.round((totalLoadedBytes / totalBytes) * 100), 'upload');
@@ -143,7 +143,8 @@ export class DirectUploadService {
                 originalName: slot.originalName,
                 mimetype: slot.mimetype,
                 size: file.size,
-                foldername: extraConfirmData.foldername || null
+                foldername: extraConfirmData.foldername || null,
+                description: extraConfirmData.description || null
               };
 
               // 3. Immediately confirm THIS file
@@ -151,10 +152,10 @@ export class DirectUploadService {
               const confirmSub = this.http.post<any>(confirmUrl, confirmBody, { withCredentials: true }).subscribe({
                 next: (confirmResp) => {
                   const verifiedFiles = confirmResp.verified || [];
-                  
+
                   if (verifiedFiles.length > 0) {
                     allVerifiedFiles.push(...verifiedFiles);
-                    
+
                     // Add to pending processing
                     verifiedFiles.forEach((f: any) => pendingProcessingFiles.add(f.filename));
 
@@ -170,7 +171,7 @@ export class DirectUploadService {
                   }
 
                   completedUploads++;
-                  
+
                   // Check if all uploads complete and processing done
                   if (completedUploads === totalUploads && pendingProcessingFiles.size === 0) {
                     finalizeObserver();
@@ -180,20 +181,20 @@ export class DirectUploadService {
                   allFailedFiles.push({ ...fileData, error: err.message || 'Verification failed' });
                   this.websocketService.reportUploadFailure(`${uploadId}-${fileData.filename}`, 'upload', err.message);
                   completedUploads++;
-                  
+
                   if (completedUploads === totalUploads && pendingProcessingFiles.size === 0) {
                     finalizeObserver();
                   }
                 }
               });
-              
+
               subscriptions.push(confirmSub);
 
             } catch (err: any) {
               allFailedFiles.push({ originalName: file.name, reason: err.message || 'Upload failed' });
               this.websocketService.reportUploadFailure(`${uploadId}-${file.name}`, 'upload', err.message);
               completedUploads++;
-              
+
               if (completedUploads === totalUploads && pendingProcessingFiles.size === 0) {
                 finalizeObserver();
               }
@@ -214,7 +215,7 @@ export class DirectUploadService {
       function finalizeObserver() {
         if (processingSub) processingSub.unsubscribe();
         subscriptions.forEach(sub => sub?.unsubscribe());
-        
+
         observer.next(new HttpResponse({
           body: {
             type: 'complete',
@@ -241,12 +242,12 @@ export class DirectUploadService {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', uploadUrl);
-      
+
       xhr.setRequestHeader('Authorization', token);
       xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
-      
+
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const percent = (event.loaded / event.total) * 100;
@@ -256,7 +257,7 @@ export class DirectUploadService {
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(true); 
+          resolve(true);
         } else {
           reject(new Error(`B2 Upload failed with status ${xhr.status}: ${xhr.responseText}`));
         }
