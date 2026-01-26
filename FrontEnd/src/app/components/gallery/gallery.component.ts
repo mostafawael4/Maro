@@ -34,7 +34,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Pagination state
   currentPage: number = 1;
-  pageSize: number = 8;
+  pageSize: number = 10;
   hasMore: boolean = true;
   isLoadingMore: boolean = false;
 

@@ -32,7 +32,7 @@
       [class.animate-in]="isImageVisible(i)" [class.deleting]="deletingImageId === image._id"
       (click)="openImageSlider(i)">
       <img [src]="getImageUrl(image)" [alt]="image.filename" (load)="onImageLoad(i)" [class.loaded]="isImageLoaded(i)"
-        [attr.loading]="i > 4 ? 'lazy' : 'eager'" [attr.fetchpriority]="i <= 4 ? 'high' : 'auto'" />
+        [attr.loading]="i > 9 ? 'lazy' : 'eager'" [attr.fetchpriority]="i <= 9 ? 'high' : 'auto'" />
 
       <!-- Admin Delete Button -->
       <button *ngIf="isAuthenticated && isAdmin" class="admin-delete-btn" (click)="onDeleteClick(image, $event)"
