@@ -16,7 +16,7 @@ import websocketService from "../services/websocket.service.js";
 const signFilm = (film, tokenData) => {
   if (!film || !tokenData) return film;
   const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${filename}?Authorization=${authorizationToken}`;
+  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
   const newFilm = (typeof film.toObject === 'function') ? film.toObject() : { ...film };
   if (newFilm.filename) newFilm.url = sign(newFilm.filename);
   if (newFilm.thumbnailFilename) newFilm.thumbnail = sign(newFilm.thumbnailFilename);

@@ -12,7 +12,7 @@ export const signOrderFiles = async (orderId, files) => {
     const tokenData = await b2.getFolderToken(prefix);
     if (!tokenData) return files;
     const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${filename}?Authorization=${authorizationToken}`;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
 
     return files.map(f => {
         const newF = (typeof f.toObject === 'function') ? f.toObject() : { ...f };
@@ -42,7 +42,7 @@ export const signOrderMedia = async (orderOrDoc, sharedTokenData = null) => {
     if (!tokenData) return order;
 
     const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${filename}?Authorization=${authorizationToken}`;
+    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
 
     if (order.media && order.media.length > 0) {
         order.media = order.media.map(m => {

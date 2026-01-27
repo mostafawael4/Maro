@@ -14,7 +14,7 @@ import websocketService from "../services/websocket.service.js";
 const signHomePageImage = (image, tokenData) => {
   if (!image || !tokenData) return image;
   const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${filename}?Authorization=${authorizationToken}`;
+  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
   const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
   if (newImage.filename) newImage.url = sign(newImage.filename);
   return newImage;

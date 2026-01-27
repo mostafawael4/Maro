@@ -199,7 +199,7 @@ export async function extractOrderVideoThumbnail(orderId, videoFilename, timeInS
     await b2.upload(thumbKey, thumbBuffer);
 
     // Construct B2 URL for the thumbnail
-    const thumbnailUrl = `https://${Credentials.B2_BUCKET_NAME}.s3.us-east-005.backblazeb2.com/${thumbKey}`;
+    const thumbnailUrl = b2.getFileUrl(thumbKey);
 
     return {
       thumbnailPath: tempThumbPath,
