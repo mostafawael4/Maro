@@ -1,6 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Meta, Title } from '@angular/platform-browser';
 import { PackagesService, PackageCollection, PackageExtra, Package } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
 import { CurrencyService } from '../../services/currency.service';
@@ -44,15 +43,12 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     private packagesService: PackagesService,
     private authService: AuthService,
     public currencyService: CurrencyService,
-    private meta: Meta,
-    private title: Title,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   ngOnInit(): void {
-    this.updateMetaTags();
     this.loadAllPackages();
 
     // Check authentication status
@@ -67,29 +63,7 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  updateMetaTags(): void {
-    const title = 'Pricing & Packages | Maro Weddings';
-    const description = 'Discover our carefully crafted packages designed to capture every precious moment of your special day. Cinematography, Photography, and more.';
-    const imageUrl = 'https://maroweddings.com/assets/images/packages.png';
 
-    this.title.setTitle(title);
-
-    this.meta.updateTag({ name: 'description', content: description });
-
-    // Facebook / Open Graph
-    this.meta.updateTag({ property: 'og:type', content: 'website' });
-    this.meta.updateTag({ property: 'og:url', content: 'https://maroweddings.com/packages' });
-    this.meta.updateTag({ property: 'og:title', content: title });
-    this.meta.updateTag({ property: 'og:description', content: description });
-    this.meta.updateTag({ property: 'og:image', content: imageUrl });
-
-    // Twitter
-    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-    this.meta.updateTag({ name: 'twitter:url', content: 'https://maroweddings.com/packages' });
-    this.meta.updateTag({ name: 'twitter:title', content: title });
-    this.meta.updateTag({ name: 'twitter:description', content: description });
-    this.meta.updateTag({ name: 'twitter:image', content: imageUrl });
-  }
 
   ngAfterViewInit(): void {
     // Setup Intersection Observer for scroll animations (browser only)
