@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject, HostListener } from '@angular/core';
-import { CommonModule, isPlatformBrowser, NgOptimizedImage } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HomePageService, HomePageImage } from '../../services/homepage.service';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +11,7 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageSliderComponent, UploadModalComponent, DeleteModalComponent, NgOptimizedImage],
+  imports: [CommonModule, FormsModule, ImageSliderComponent, UploadModalComponent, DeleteModalComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })

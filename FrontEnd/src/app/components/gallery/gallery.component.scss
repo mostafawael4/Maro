@@ -151,33 +151,48 @@
 .photo-grid {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 120px;
+  padding: 40px 120px;
   column-count: 4;
-  column-gap: 20px;
+  column-gap: 25px;
+
+  @media (max-width: 1200px) {
+    column-count: 3;
+    padding: 30px 60px;
+  }
+
+  @media (max-width: 768px) {
+    column-count: 2;
+    padding: 20px 15px;
+    column-gap: 15px;
+  }
+
+  @media (max-width: 480px) {
+    column-count: 1;
+  }
 }
 
 .photo-item {
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   cursor: pointer;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   break-inside: avoid;
   display: inline-block;
   width: 100%;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
 
   // Initial state before animation
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(40px) scale(0.98);
 
   // Smooth animation when scrolling into view
   &.animate-in {
-    animation: fadeInUp 0.6s ease-out forwards;
+    animation: fadeInUpPremium 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
 
-    // Stagger animation for each item (smaller delay for smoother effect)
+    // Stagger animation for each item
     @for $i from 1 through 50 {
       &:nth-child(#{$i}) {
         animation-delay: #{$i * 0.05}s;
@@ -186,8 +201,12 @@
   }
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+
+    img {
+      transform: scale(1.05);
+    }
 
     .delete-btn {
       opacity: 1;
@@ -200,81 +219,82 @@
     height: auto;
     display: block;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 
     &.loaded {
       opacity: 1;
     }
   }
+}
 
-  // Delete Button
-  .delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(220, 38, 38, 0.9);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 0;
-    transform: scale(0.8);
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+// Delete Button
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: scale(0.8);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    &:hover {
-      background: rgba(220, 38, 38, 1);
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    // Show delete button on touch devices
-    @media (hover: none) {
-      opacity: 0.8;
-    }
-  }
-
-  // Delete spinner
-  .delete-spinner {
+  svg {
     width: 18px;
     height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+  }
+
+  &:hover {
+    background: rgba(220, 38, 38, 1);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  // Show delete button on touch devices
+  @media (hover: none) {
+    opacity: 0.8;
   }
 }
 
+// Delete spinner
+.delete-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+
 // Fade in and slide up animation
-@keyframes fadeInUp {
+@keyframes fadeInUpPremium {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 

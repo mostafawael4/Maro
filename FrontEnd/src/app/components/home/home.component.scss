@@ -73,43 +73,62 @@
 .photo-grid {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 120px;
+  padding: 40px 120px;
   column-count: 4;
-  column-gap: 20px;
+  column-gap: 25px;
+
+  @media (max-width: 1200px) {
+    column-count: 3;
+    padding: 30px 60px;
+  }
+
+  @media (max-width: 768px) {
+    column-count: 2;
+    padding: 20px 15px;
+    column-gap: 15px;
+  }
+
+  @media (max-width: 480px) {
+    column-count: 1;
+  }
 }
 
 .photo-item {
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   cursor: pointer;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   break-inside: avoid;
   display: inline-block;
   width: 100%;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
 
   // Initial state before animation
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(40px) scale(0.98);
 
   // Smooth animation when scrolling into view
   &.animate-in {
-    animation: fadeInUp 0.6s ease-out forwards;
+    animation: fadeInUpPremium 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
 
     // Stagger animation for each item
     @for $i from 1 through 20 {
       &:nth-child(#{$i}) {
-        animation-delay: #{$i * 0.05}s;
+        animation-delay: #{$i * 0.1}s;
       }
     }
   }
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+
+    img {
+      transform: scale(1.05);
+    }
   }
 
   img {
@@ -117,7 +136,7 @@
     height: auto;
     display: block;
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
 
     &.loaded {
       opacity: 1;
@@ -126,15 +145,15 @@
 }
 
 // Fade in and slide up animation
-@keyframes fadeInUp {
+@keyframes fadeInUpPremium {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
