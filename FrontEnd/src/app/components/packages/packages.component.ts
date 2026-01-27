@@ -1,4 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Meta, Title } from '@angular/platform-browser';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PackagesService, PackageCollection, PackageExtra, Package } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
@@ -43,20 +44,23 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     private packagesService: PackagesService,
     private authService: AuthService,
     public currencyService: CurrencyService,
+    private meta: Meta,
+    private titleService: Title,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   ngOnInit(): void {
+    this.setMetaTags();
     this.loadAllPackages();
-    
+
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
       this.isAdmin = this.authService.isAdmin();
     });
-    
+
     // Initialize admin status
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
@@ -155,9 +159,9 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cinematographyPackage = packages.find(pkg => pkg.packageName === 'cinematography') || null;
         this.photographyPackage = packages.find(pkg => pkg.packageName === 'photography') || null;
         this.fullRecordingPackage = packages.find(pkg => pkg.packageName === 'fullRecording') || null;
-        
+
         this.isLoading = false;
-        
+
         // Re-setup observer after data is loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {
@@ -224,5 +228,23 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   // Format price using currency service
   formatPrice(price: string | null | undefined): string {
     return this.currencyService.formatPriceString(price);
+  }
+
+  private setMetaTags(): void {
+    const title = 'PRICING & PACKAGES | MARO WEDDINGS';
+    const description = 'Explore our exclusive wedding photography and videography packages. We offer customized services to capture your special day perfectly.';
+    const url = 'https://maroweddings.com/packages';
+    const image = 'https://maroweddings.com/assets/images/packages.png';
+
+    this.titleService.setTitle(title);
+
+    // Standard Meta Tags
+    this.meta.updateTag({ name: 'description', content: description });
+
+    // Open Graph / Facebook
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.meta.updateTag({ property: 'og:image', content: image });
   }
 }

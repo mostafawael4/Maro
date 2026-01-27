@@ -39,9 +39,9 @@ export class HomePageService {
   // Upload images to homepage
   uploadImages(files: File[]): Observable<any> {
     return this.directUpload.uploadFiles(
-        `${this.apiUrl}/prepare-direct-upload`,
-        `${this.apiUrl}/confirm-direct-upload`,
-        files
+      `${this.apiUrl}/prepare-direct-upload`,
+      `${this.apiUrl}/confirm-direct-upload`,
+      files
     );
   }
 

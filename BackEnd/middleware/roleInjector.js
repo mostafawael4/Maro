@@ -2,8 +2,7 @@
 export default function roleInjector(req, res, next) {
   const oldJson = res.json;
   res.json = function (body) {
-    if (req.session) {
-      body = body || {};
+    if (req.session && body && typeof body === 'object' && !Array.isArray(body)) {
       body.session = body.session || {};
       if (typeof req.session.isAdmin !== 'undefined') {
         body.session.isAdmin = req.session.isAdmin;
