@@ -150,27 +150,27 @@ export class CreateOrderComponent implements OnInit {
       eventType: this.fb.array([], Validators.required),
       eventTypeOther: [''],
       eventVenue: ['', Validators.required],
-      timelineOfDay: ['', Validators.required],
+      timelineOfDay: [''],
       shootersStartTime: ['', Validators.required],
       shootersEndTime: ['', Validators.required],
-      coupleDescription: ['', Validators.required],
-      moodBoardLinks: ['', Validators.required],
-      favoriteSongs: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
-      specialMoments: ['', Validators.required],
-      excludeShots: ['', Validators.required],
+      coupleDescription: [''],
+      moodBoardLinks: [''],
+      favoriteSongs: this.fb.array([this.fb.control('')]),
+      specialMoments: [''],
+      excludeShots: [''],
 
       // Vendors
       vendors: this.fb.group({
-        photographers: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
-        cinematographers: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
-        makeupArtist: ['', Validators.required],
-        hairStylist: ['', Validators.required],
-        dressDesigner: ['', Validators.required],
-        eventPlanner: ['', Validators.required],
-        dj: ['', Validators.required],
-        lighting: ['', Validators.required],
-        entertainment: ['', Validators.required],
-        others: ['', Validators.required]
+        photographers: this.fb.array([this.fb.control('')]),
+        cinematographers: this.fb.array([this.fb.control('')]),
+        makeupArtist: [''],
+        hairStylist: [''],
+        dressDesigner: [''],
+        eventPlanner: [''],
+        dj: [''],
+        lighting: [''],
+        entertainment: [''],
+        others: ['']
       }),
 
       // Film editing
@@ -187,8 +187,8 @@ export class CreateOrderComponent implements OnInit {
       }),
 
       // Social media
-      socialMediaInspiration: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
-      tiktokIdeas: this.fb.array([this.fb.control('', Validators.required)], Validators.required),
+      socialMediaInspiration: this.fb.array([this.fb.control('')]),
+      tiktokIdeas: this.fb.array([this.fb.control('')]),
       pricing: this.fb.group({
         promoCode: [''],
         depositPaid: [0, [Validators.min(0)]]
@@ -639,7 +639,7 @@ export class CreateOrderComponent implements OnInit {
 
 
   addPhotographer(): void {
-    this.photographersArray.push(this.fb.control('', Validators.required));
+    this.photographersArray.push(this.fb.control(''));
   }
 
   removePhotographer(index: number): void {
@@ -650,7 +650,7 @@ export class CreateOrderComponent implements OnInit {
   }
 
   addCinematographer(): void {
-    this.cinematographersArray.push(this.fb.control('', Validators.required));
+    this.cinematographersArray.push(this.fb.control(''));
   }
 
   removeCinematographer(index: number): void {
@@ -669,7 +669,7 @@ export class CreateOrderComponent implements OnInit {
   }
 
   addSocialMediaInspiration(): void {
-    this.socialMediaInspirationArray.push(this.fb.control('', Validators.required));
+    this.socialMediaInspirationArray.push(this.fb.control(''));
   }
 
   removeSocialMediaInspiration(index: number): void {
@@ -680,7 +680,7 @@ export class CreateOrderComponent implements OnInit {
   }
 
   addTiktokIdea(): void {
-    this.tiktokIdeasArray.push(this.fb.control('', Validators.required));
+    this.tiktokIdeasArray.push(this.fb.control(''));
   }
 
   removeTiktokIdea(index: number): void {
@@ -691,7 +691,7 @@ export class CreateOrderComponent implements OnInit {
   }
 
   addFavoriteSong(): void {
-    this.favoriteSongsArray.push(this.fb.control('', Validators.required));
+    this.favoriteSongsArray.push(this.fb.control(''));
   }
 
   removeFavoriteSong(index: number): void {

@@ -50,18 +50,20 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadAllPackages();
-    
+
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAuthenticated = isAuth ?? false;
       this.isAdmin = this.authService.isAdmin();
     });
-    
+
     // Initialize admin status
     if (this.isBrowser) {
       this.isAdmin = this.authService.isAdmin();
     }
   }
+
+
 
   ngAfterViewInit(): void {
     // Setup Intersection Observer for scroll animations (browser only)
@@ -155,9 +157,9 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cinematographyPackage = packages.find(pkg => pkg.packageName === 'cinematography') || null;
         this.photographyPackage = packages.find(pkg => pkg.packageName === 'photography') || null;
         this.fullRecordingPackage = packages.find(pkg => pkg.packageName === 'fullRecording') || null;
-        
+
         this.isLoading = false;
-        
+
         // Re-setup observer after data is loaded (browser only)
         if (this.isBrowser) {
           setTimeout(() => {

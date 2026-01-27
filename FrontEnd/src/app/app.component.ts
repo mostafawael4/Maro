@@ -8,7 +8,7 @@ import { AuthService } from './services/auth.service';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
-import { Title } from '@angular/platform-browser';
+import { Title, Meta } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-root',
@@ -26,8 +26,9 @@ export class AppComponent implements OnInit, OnDestroy {
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private titleService: Title,
+    private metaService: Meta,
     @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -36,14 +37,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.authService.isAuthenticated$
-    .pipe(takeUntil(this.destroy$))
-    .subscribe(isAuth => {
-      if (isAuth !== null) {
-        setTimeout(() => {
-          this.showOverlay = false;
-        }, 2000);
-      }
-    });
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuth => {
+        if (isAuth !== null) {
+          setTimeout(() => {
+            this.showOverlay = false;
+          }, 2000);
+        }
+      });
 
     this.router.events
       .pipe(
@@ -52,8 +53,24 @@ export class AppComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => {
         const deepestChild = this.getDeepestChild(this.activatedRoute);
-        const pageTitle = deepestChild.snapshot.data['title'];
-        this.titleService.setTitle(pageTitle ? `${pageTitle} | MARO WEDDING` : 'MARO WEDDING');
+        const data = deepestChild.snapshot.data;
+        const pageTitle = data['title'];
+        const description = data['description'] || 'Maro Weddings - Capture your special moments with cinematic excellence.';
+
+        const fullTitle = pageTitle ? `${pageTitle} | MARO WEDDING` : 'MARO WEDDING';
+        this.titleService.setTitle(fullTitle);
+
+        // Update Open Graph tags for social sharing
+        this.metaService.updateTag({ property: 'og:title', content: fullTitle });
+        this.metaService.updateTag({ property: 'og:description', content: description });
+        this.metaService.updateTag({ property: 'og:url', content: `https://maroweddings.com${this.router.url}` });
+
+        // Update Twitter cards
+        this.metaService.updateTag({ name: 'twitter:title', content: fullTitle });
+        this.metaService.updateTag({ name: 'twitter:description', content: description });
+
+        // General description
+        this.metaService.updateTag({ name: 'description', content: description });
       });
   }
 

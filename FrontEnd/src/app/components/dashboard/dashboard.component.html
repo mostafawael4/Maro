@@ -1,40 +1,36 @@
 <div class="dashboard-container">
   <!-- Delete Confirmation Modal -->
-  <app-delete-modal
-    [isOpen]="showDeleteModal"
-    [isLoading]="isDeletingOrder"
-    (confirm)="onConfirmDelete()"
-    (cancel)="onCancelDelete()"
-  ></app-delete-modal>
+  <app-delete-modal [isOpen]="showDeleteModal" [isLoading]="isDeletingOrder" (confirm)="onConfirmDelete()"
+    (cancel)="onCancelDelete()"></app-delete-modal>
 
   <div class="header">
     <h1>Orders Dashboard</h1>
     <p>Manage and track all client orders</p>
   </div>
 
-  <div 
-    class="dashboard-toolbar" 
-    *ngIf="!loading && orders.length > 0"
-  >
-    <div class="search-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <input 
-        type="text"
-        placeholder="Search by couple names..."
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchTermChange($event)"
-      />
-      <button 
-        type="button"
-        class="clear-btn"
-        *ngIf="searchTerm"
-        (click)="onSearchTermChange('')"
-      >
-        Clear
+  <div class="dashboard-toolbar" *ngIf="!loading">
+    <div class="toolbar-actions">
+      <button class="create-order-btn" [routerLink]="['/create-order']">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Create New Order
       </button>
+
+      <div class="search-box" *ngIf="orders.length > 0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" placeholder="Search by couple names..." [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchTermChange($event)" />
+        <button type="button" class="clear-btn" *ngIf="searchTerm" (click)="onSearchTermChange('')">
+          Clear
+        </button>
+      </div>
     </div>
   </div>
 
@@ -46,10 +42,11 @@
 
   <!-- Error State -->
   <div *ngIf="error && !loading" class="error-message">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
     {{ error }}
   </div>
@@ -92,93 +89,63 @@
             <div class="action-buttons">
               <!-- Status Change Buttons -->
               <div class="status-buttons">
-                <button 
-                  *ngIf="order.status !== 'pending'"
-                  (click)="updateStatus(order._id, 'pending')"
-                  [disabled]="updatingOrderId === order._id"
-                  class="status-btn pending-btn"
-                  title="Set as Pending"
-                >
+                <button *ngIf="order.status !== 'pending'" (click)="updateStatus(order._id, 'pending')"
+                  [disabled]="updatingOrderId === order._id" class="status-btn pending-btn" title="Set as Pending">
                   Pending
                 </button>
-                <button 
-                  *ngIf="order.status !== 'in-progress'"
-                  (click)="updateStatus(order._id, 'in-progress')"
-                  [disabled]="updatingOrderId === order._id"
-                  class="status-btn progress-btn"
-                  title="Set as In Progress"
-                >
+                <button *ngIf="order.status !== 'in-progress'" (click)="updateStatus(order._id, 'in-progress')"
+                  [disabled]="updatingOrderId === order._id" class="status-btn progress-btn" title="Set as In Progress">
                   In Progress
                 </button>
-                <button 
-                  *ngIf="order.status !== 'done'"
-                  (click)="updateStatus(order._id, 'done')"
-                  [disabled]="updatingOrderId === order._id"
-                  class="status-btn completed-btn"
-                  title="Set as Done"
-                >
+                <button *ngIf="order.status !== 'done'" (click)="updateStatus(order._id, 'done')"
+                  [disabled]="updatingOrderId === order._id" class="status-btn completed-btn" title="Set as Done">
                   Done
                 </button>
               </div>
-              
+
               <!-- View Buttons -->
               <div class="view-buttons">
-                <button 
-                  (click)="viewOrderInfo(order._id)"
-                  class="view-btn info-btn"
-                  title="View Order Info"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                <button (click)="viewOrderInfo(order._id)" class="view-btn info-btn" title="View Order Info">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
                   </svg>
                   Info
                 </button>
-                <button 
-                  (click)="openEditOrder(order, $event)"
-                  class="view-btn edit-btn"
-                  title="Edit order form"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                <button (click)="openEditOrder(order, $event)" class="view-btn edit-btn" title="Edit order form">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
                   </svg>
                   Edit
                 </button>
-                <button 
-                  (click)="viewOrderImages(order._id)"
-                  class="view-btn images-btn"
-                  title="View Order Images"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
+                <button (click)="viewOrderImages(order._id)" class="view-btn images-btn" title="View Order Images">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
                   </svg>
                   Images
                 </button>
-                <button 
-                  (click)="onDeleteClick(order._id)"
-                  class="view-btn delete-btn"
-                  title="Delete Order"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    <line x1="10" y1="11" x2="10" y2="17"/>
-                    <line x1="14" y1="11" x2="14" y2="17"/>
+                <button (click)="onDeleteClick(order._id)" class="view-btn delete-btn" title="Delete Order">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
                   </svg>
                   Delete
                 </button>
-                <button 
-                  (click)="sendOrderCompletionEmail(order)"
-                  class="view-btn email-btn"
-                  title="Send ready email to client"
-                  [disabled]="sendingEmail[order._id] || order.status !== 'done'"
-                >
+                <button (click)="sendOrderCompletionEmail(order)" class="view-btn email-btn"
+                  title="Send ready email to client" [disabled]="sendingEmail[order._id] || order.status !== 'done'">
                   <ng-container *ngIf="!sendingEmail[order._id]; else sendingState">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
                       <rect x="3" y="5" width="18" height="14" rx="2"></rect>
                       <polyline points="3 5 12 13 21 5"></polyline>
                     </svg>
@@ -192,7 +159,7 @@
               </div>
               <div class="email-status" *ngIf="emailStatus[order._id]">
                 <span [class.success]="emailStatus[order._id].type === 'success'"
-                      [class.error]="emailStatus[order._id].type === 'error'">
+                  [class.error]="emailStatus[order._id].type === 'error'">
                   {{ emailStatus[order._id].message }}
                 </span>
               </div>
@@ -203,31 +170,26 @@
     </table>
   </div>
 
-  <div 
-    *ngIf="!loading && orders.length > 0 && filteredOrders.length === 0" 
-    class="empty-state search-empty"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <div *ngIf="!loading && orders.length > 0 && filteredOrders.length === 0" class="empty-state search-empty">
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
       <circle cx="11" cy="11" r="8"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
     <h3>No matching orders</h3>
     <p>We couldn’t find a couple whose names contain “{{ searchTerm }}”. Try another spelling or clear the search.</p>
-    <button 
-      class="btn-retry" 
-      type="button" 
-      (click)="onSearchTermChange('')"
-    >
+    <button class="btn-retry" type="button" (click)="onSearchTermChange('')">
       Clear Search
     </button>
   </div>
 
   <!-- Empty State -->
   <div *ngIf="!loading && orders.length === 0" class="empty-state">
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="3" width="18" height="18" rx="2"/>
-      <circle cx="8.5" cy="8.5" r="1.5"/>
-      <path d="M21 15l-5-5L5 21"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
     </svg>
     <h3>No Orders Yet</h3>
     <p>Orders will appear here once clients start submitting requests.</p>

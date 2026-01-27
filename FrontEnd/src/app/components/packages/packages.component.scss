@@ -125,10 +125,30 @@
 // Section Header
 .section-header {
   text-align: center;
-  max-width: 700px;
+  max-width: 900px;
   margin: 0 auto 4rem;
+  padding: 3rem 2rem;
   position: relative;
   animation: fadeIn 0.8s ease-out;
+
+  // New Header Styling
+  background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(88, 1, 17, 0.4) 100%);
+  border: 1px solid rgba(255, 218, 185, 0.15);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+  // Decorative top accent
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ffdab9, transparent);
+    opacity: 0.5;
+  }
 }
 
 .header-decoration {
@@ -138,6 +158,8 @@
   margin: 0 auto 1.5rem;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(107, 31, 31, 0.25);
+  // Hide the old decoration if we want a cleaner look, or keep it. keeping for now but maybe making it subtler.
+  opacity: 0.8;
 }
 
 .section-title {
