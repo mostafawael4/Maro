@@ -80,6 +80,7 @@ export class CreateOrderComponent implements OnInit {
   loadingOrderData = false;
   loadOrderError = '';
   isAdminUser = false;
+  isStrictAdmin = false;
   formLockedForDate = false;
   editSource: 'dashboard' | 'orders' | null = null;
   private readonly editCachePrefix = 'maro_edit_order_';
@@ -99,6 +100,7 @@ export class CreateOrderComponent implements OnInit {
     this.updateVendorControlStates();
 
     this.isAdminUser = this.authService.isAuthenticatedValue;
+    this.isStrictAdmin = this.authService.isAdmin();
 
     const orderId = this.route.snapshot.paramMap.get('id');
     this.clientEmailForFetch = this.route.snapshot.queryParamMap.get('email');
@@ -116,14 +118,9 @@ export class CreateOrderComponent implements OnInit {
     this.loadPackages();
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAdminUser = isAuth ?? false;
+      this.isStrictAdmin = this.authService.isAdmin();
       if (this.isEditMode && this.editingOrder) {
-        this.applyFieldPermissions();
-      }
-    });
-
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAdminUser = isAuth ?? false;
-      if (this.isEditMode && this.editingOrder) {
+        this.applyDateLock(this.editingOrder);
         this.applyFieldPermissions();
       }
       if (!this.initialHydrationAttempted && this.isEditMode && this.editingOrderId) {
@@ -132,8 +129,17 @@ export class CreateOrderComponent implements OnInit {
       }
     });
 
+    this.authService.role$.subscribe(() => {
+      this.isStrictAdmin = this.authService.isAdmin();
+      if (this.isEditMode && this.editingOrder) {
+        this.applyDateLock(this.editingOrder);
+        this.applyFieldPermissions();
+      }
+    });
+
     if (!this.authService.isBrowserEnv) {
       this.isAdminUser = false;
+      this.isStrictAdmin = false;
     }
   }
 
@@ -534,10 +540,21 @@ export class CreateOrderComponent implements OnInit {
     rootFields.forEach(field => {
       const control = this.orderForm.get(field);
       if (!control) return;
-      if (this.isAdminUser) {
-        control.enable({ emitEvent: false });
+
+      if (field === 'email') {
+        // Only strict admins can edit email
+        if (this.isStrictAdmin) {
+          control.enable({ emitEvent: false });
+        } else {
+          control.disable({ emitEvent: false });
+        }
       } else {
-        control.disable({ emitEvent: false });
+        // clientName and notes can be edited by any internal user (admin/editor)
+        if (this.isAdminUser) {
+          control.enable({ emitEvent: false });
+        } else {
+          control.disable({ emitEvent: false });
+        }
       }
     });
   }
@@ -557,8 +574,15 @@ export class CreateOrderComponent implements OnInit {
     eventDate.setHours(0, 0, 0, 0);
     now.setHours(0, 0, 0, 0);
     this.formLockedForDate = eventDate <= now;
-    if (this.formLockedForDate) {
+
+    // Administrators can override the date lock
+    if (this.formLockedForDate && !this.isStrictAdmin) {
       this.orderForm.disable({ emitEvent: false });
+    } else {
+      // If it's not strictly locked for the user, ensure the form is enabled 
+      // (specific fields will still be handled by applyFieldPermissions)
+      this.orderForm.enable({ emitEvent: false });
+      this.applyFieldPermissions();
     }
   }
 

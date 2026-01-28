@@ -11,9 +11,14 @@
       </p>
     </div>
 
-    <div class="info-banner" *ngIf="isEditMode && !isAdminUser && !loadingOrderData && !loadOrderError">
-      Some account details (like email and client name) are locked because you are editing this form from the client
-      portal.
+    <div class="info-banner" *ngIf="isEditMode && !isStrictAdmin && !loadingOrderData && !loadOrderError">
+      <ng-container *ngIf="!isAdminUser">
+        Some account details (like email and client name) are locked because you are editing this form from the client
+        portal.
+      </ng-container>
+      <ng-container *ngIf="isAdminUser">
+        The email address field is locked. Only administrators have permission to edit the client's email.
+      </ng-container>
     </div>
 
     <!-- Success Modal -->
@@ -41,7 +46,7 @@
       </div>
     </div>
 
-    <div class="date-lock-banner" *ngIf="formLockedForDate">
+    <div class="date-lock-banner" *ngIf="formLockedForDate && !isStrictAdmin">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10" />
@@ -662,8 +667,8 @@
 
       <!-- Submit Button -->
       <div class="form-actions">
-        <button type="submit" class="btn-submit" [disabled]="isSubmitting || formLockedForDate"
-          *ngIf="!formLockedForDate">
+        <button type="submit" class="btn-submit" [disabled]="isSubmitting || (formLockedForDate && !isStrictAdmin)"
+          *ngIf="!formLockedForDate || isStrictAdmin">
           <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Create Order' }}</span>
           <span *ngIf="isSubmitting">{{ isEditMode ? 'Saving Changes...' : 'Creating Order...' }}</span>
         </button>
