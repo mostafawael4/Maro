@@ -34,7 +34,7 @@ export class FolderMediaViewComponent {
   selectionMode: boolean = false;
   selectedItems: Set<string> = new Set();
   downloadingItems: Set<string> = new Set();
-  sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-desc';
+  sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-asc';
   readonly sortOptions = [
     { value: 'name-asc' as const, label: 'Name (A → Z)' },
     { value: 'name-desc' as const, label: 'Name (Z → A)' },
@@ -43,7 +43,7 @@ export class FolderMediaViewComponent {
   ];
   showSortOptions = false;
 
-  constructor(private ordersService: OrdersService) {}
+  constructor(private ordersService: OrdersService) { }
 
   get hasMedia(): boolean {
     return !!this.media && this.media.length > 0;
@@ -54,11 +54,11 @@ export class FolderMediaViewComponent {
     const filtered = !trimmedSearch
       ? this.media
       : this.media.filter(item => {
-          const searchLower = trimmedSearch.toLowerCase();
-          const displayName = this.getDisplayName(item).toLowerCase();
-          const filename = item.filename?.toLowerCase() || '';
-          return displayName.includes(searchLower) || filename.includes(searchLower);
-        });
+        const searchLower = trimmedSearch.toLowerCase();
+        const displayName = this.getDisplayName(item).toLowerCase();
+        const filename = item.filename?.toLowerCase() || '';
+        return displayName.includes(searchLower) || filename.includes(searchLower);
+      });
 
     return this.sortMedia(filtered);
   }
@@ -75,7 +75,7 @@ export class FolderMediaViewComponent {
       this.toggleSelection(mediaItem);
       return;
     }
-    
+
     // Get the actual index in the original media array
     const mediaItem = this.filteredMedia[index];
     const actualIndex = this.media.findIndex(m => m.filename === mediaItem.filename);
@@ -94,12 +94,12 @@ export class FolderMediaViewComponent {
     this.downloadingItems.add(media.filename);
     try {
       const downloadUrl = this.getDownloadUrl(media);
-      
+
       // Fetch as blob to handle progress and UI state
       const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
-      
+
       // Create temporary download link
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -239,7 +239,7 @@ export class FolderMediaViewComponent {
 
   get currentSortLabel(): string {
     const match = this.sortOptions.find(option => option.value === this.sortOption);
-    return match?.label || 'Date (Newest first)';
+    return match?.label || 'Date (Oldest first)';
   }
 
   toggleSortOptions(event: Event): void {
