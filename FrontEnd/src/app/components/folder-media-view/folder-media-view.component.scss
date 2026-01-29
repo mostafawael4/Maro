@@ -1,5 +1,11 @@
 .images-gallery {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0;
+  margin: 0;
+
   .gallery-header {
+    padding: 0 20px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -428,13 +434,24 @@
 }
 
 .gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  width: 100% !important;
+  max-width: 100% !important;
+  column-count: 4;
+  column-gap: 1.5rem;
   margin-bottom: 2rem;
+  padding: 0 10px;
+
+  @media (max-width: 1200px) {
+    column-count: 3;
+  }
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    column-count: 2;
+    column-gap: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    column-count: 1;
   }
 
   &.selection-mode {
@@ -461,9 +478,15 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(107, 31, 31, 0.1);
   background: rgba(26, 1, 5, 0.3);
-  aspect-ratio: 1;
+  display: inline-block;
+  vertical-align: top;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
   border: 3px solid transparent;
   transition: all 0.2s ease;
+  min-height: 200px;
+  animation: fadeInProgressive 0.5s ease-out forwards;
 
   .selection-checkbox {
     position: absolute;
@@ -505,9 +528,21 @@
   img,
   video {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
     display: block;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+
+    &.loaded {
+      opacity: 1;
+    }
+  }
+
+  // Fallback for browsers/cases where [class.loaded] isn't used yet
+  img:not([class]),
+  video:not([class]) {
+    opacity: 1;
   }
 
   .video-wrapper {
@@ -606,6 +641,49 @@
 @keyframes rotate {
   100% {
     transform: rotate(360deg);
+  }
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 3rem 0;
+  width: 100%;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 2.5rem;
+  background: rgba(107, 31, 31, 0.1);
+  border: 2px solid rgba(255, 218, 185, 0.3);
+  border-radius: 999px;
+  color: #ffdab9;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  svg {
+    transition: transform 0.3s ease;
+  }
+
+  &:hover {
+    background: rgba(107, 31, 31, 0.15);
+    border-color: #ffdab9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(107, 31, 31, 0.2);
+
+    svg {
+      transform: translateY(2px);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 

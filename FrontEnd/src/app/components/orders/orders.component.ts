@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,8 @@ import { OrdersService, Order } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
+import { Subject } from 'rxjs';
+import { takeUntil, filter, distinctUntilChanged, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-orders',
@@ -15,7 +17,7 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.scss'
 })
-export class OrdersComponent implements OnInit {
+export class OrdersComponent implements OnInit, OnDestroy {
   orders: Order[] = [];
   filteredOrders: Order[] = [];
   loading = true;
@@ -67,6 +69,7 @@ export class OrdersComponent implements OnInit {
   sendingEmail: { [orderId: string]: boolean } = {};
   emailStatus: { [orderId: string]: { type: 'success' | 'error'; message: string } } = {};
   private readonly editCachePrefix = 'maro_edit_order_';
+  private destroy$ = new Subject<void>();
 
   constructor(
     private ordersService: OrdersService,
@@ -76,30 +79,58 @@ export class OrdersComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // debugger;
-    // Check authentication status
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth;
-      this.isAdmin = this.authService.isAdmin();
-
-      if (this.isAuthenticated === true) {
-        // If admin, load all orders; if editor, show email modal like client
-        if (this.isAdmin) {
-          this.loadOrders();
-        } else {
-          // Editor: show email modal like client mode
-          this.loading = false;
-          this.showEmailModal = true;
-        }
-      } else if (this.isAuthenticated === false) {
-        this.loading = false;
-        this.showEmailModal = true;
+    // Check for persisted email - browser only
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const savedEmail = window.localStorage.getItem('maro_client_email');
+      if (savedEmail) {
+        this.userEmail = savedEmail;
       }
-      // If null, UI will not show either yet
-    });
+    }
+
+    // Check authentication status
+    this.authService.isAuthenticated$
+      .pipe(
+        filter((isAuth): isAuth is boolean => isAuth !== null),
+        map(isAuth => !!isAuth),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((isAuth: boolean) => {
+        this.isAuthenticated = !!isAuth;
+        this.isAdmin = this.authService.isAdmin();
+
+        if (this.isAuthenticated === true) {
+          // If admin, load all orders; if editor, show email modal like client
+          if (this.isAdmin) {
+            this.loadOrders();
+          } else {
+            // Editor mode: handle email persistence
+            this.loading = false;
+            if (this.userEmail) {
+              this.submitEmail();
+            } else {
+              this.showEmailModal = true;
+            }
+          }
+        } else if (this.isAuthenticated === false) {
+          this.loading = false;
+          // Public client: handle email persistence
+          if (this.userEmail) {
+            this.submitEmail();
+          } else {
+            this.showEmailModal = true;
+          }
+        }
+        this.cdr.markForCheck();
+      });
 
     // Initialize admin status
     this.isAdmin = this.authService.isAdmin();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadOrders(): void {
@@ -119,13 +150,15 @@ export class OrdersComponent implements OnInit {
   }
 
   filterByEmail(): void {
-    if (!this.searchEmail.trim()) {
+    const search = this.searchEmail.trim().toLowerCase();
+    if (!search) {
       this.filteredOrders = this.orders;
       return;
     }
     this.filteredOrders = this.orders.filter(order =>
-      order.email.toLowerCase().includes(this.searchEmail.toLowerCase())
+      order.email.toLowerCase().includes(search)
     );
+    this.cdr.markForCheck();
   }
 
   getFirstImage(order: Order): string {
@@ -386,20 +419,20 @@ export class OrdersComponent implements OnInit {
 
           if (event.total) {
             this.uploadProgress = Math.round((event.loaded / event.total) * 100);
-            this.uploadProgressBytes = event.loaded; 
+            this.uploadProgressBytes = event.loaded;
           }
-           
+
           // this.uploadChunkInfo = `Uploading: ${event.currentFile}`; // We lost currentFile info in DirectUploadService standard event
           this.uploadChunkInfo = 'Uploading files...';
           this.updateUploadSpeed();
           this.cdr.markForCheck();
         }
-        
+
         // Handle completion event
         if (event.type === HttpEventType.Response) {
           const body = event.body;
           if (body && body.type === 'complete') {
-             // Stop simulation
+            // Stop simulation
             this.stopProgressSimulation();
             // Upload complete - ensure progress shows 100%
             this.uploadProgress = 100;
@@ -415,7 +448,7 @@ export class OrdersComponent implements OnInit {
             // Small delay to show 100% before closing
             setTimeout(() => {
               this.stopUploadTimeTracking();
-              const response = body; 
+              const response = body;
               const successCount = response?.added?.length || 0;
               const duplicateCount = response?.duplicates?.length || 0;
 
@@ -445,23 +478,23 @@ export class OrdersComponent implements OnInit {
                 messageParts.push(`Failed to upload ${failedCount} file(s).`);
                 // Optionally list names if few
                 if (failedCount <= 3) {
-                   const names = response.failed.map((f: any) => f.originalName).join(', ');
-                   messageParts.push(`(${names})`);
+                  const names = response.failed.map((f: any) => f.originalName).join(', ');
+                  messageParts.push(`(${names})`);
                 }
               }
 
               // Determine result type and message
               if (failedCount > 0) {
-                 this.uploadResultType = 'error';
+                this.uploadResultType = 'error';
               } else if (successCount === 0 && duplicateCount > 0) {
                 this.uploadResultType = 'error'; // Treat all duplicates as a "warning/error" requiring attention
                 this.uploadResultMessage = `All ${duplicateCount} file(s) are already uploaded in this folder.`;
               } else {
                 this.uploadResultType = 'success';
               }
-              
+
               if (!(successCount === 0 && duplicateCount > 0 && failedCount === 0)) {
-                   this.uploadResultMessage = messageParts.join('\n\n');
+                this.uploadResultMessage = messageParts.join('\n\n');
               }
 
               this.showUploadResultModal = true;
@@ -575,35 +608,60 @@ export class OrdersComponent implements OnInit {
   // Email Modal Methods for Normal Users
   submitEmail(): void {
     this.emailError = '';
+    const email = this.userEmail.trim().toLowerCase();
 
     // Validate email
-    if (!this.userEmail.trim()) {
+    if (!email) {
       this.emailError = 'Please enter your email address';
       return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(this.userEmail)) {
+    if (!emailPattern.test(email)) {
       this.emailError = 'Please enter a valid email address';
       return;
+    }
+
+    this.userEmail = email; // Update bound value to show sanitized version
+
+    // Persist email
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('maro_client_email', email);
     }
 
     // Load orders by email
     this.loading = true;
     this.showEmailModal = false;
 
-    this.ordersService.getOrdersByEmail(this.userEmail).subscribe({
+    console.log('Fetching orders for email:', email);
+
+    this.ordersService.getOrdersByEmail(email).subscribe({
       next: (response) => {
-        // Backend returns multiple orders
-        this.orders = response.orders || [];
-        this.filteredOrders = this.orders;
-        this.loading = false;
+        console.log('Orders received:', response);
+        const foundOrders = response.orders || [];
+
+        if (foundOrders.length === 0) {
+          this.emailError = 'No orders found for this email address. Please check and try again.';
+          this.showEmailModal = true;
+          this.loading = false;
+        } else {
+          this.orders = foundOrders;
+          this.filteredOrders = this.orders;
+          this.showEmailModal = false;
+          this.loading = false;
+        }
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        this.error = 'Failed to load orders. Please try again.';
+        console.error('Error loading orders by email:', err);
+        if (err.status === 404) {
+          this.emailError = 'No orders found for this email address. Please check and try again.';
+        } else {
+          this.emailError = err.error?.message || 'Failed to load orders. Please check your connection and try again.';
+        }
         this.loading = false;
         this.showEmailModal = true;
-        console.error('Error loading orders by email:', err);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -619,6 +677,13 @@ export class OrdersComponent implements OnInit {
     this.orders = [];
     this.filteredOrders = [];
     this.showEmailModal = true;
+
+    // Clear persisted email
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('maro_client_email');
+    }
+
+    this.cdr.markForCheck();
   }
 
   onDeleteClick(event: Event, orderId: string): void {

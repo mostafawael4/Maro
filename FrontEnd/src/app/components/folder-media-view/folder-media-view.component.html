@@ -2,13 +2,15 @@
   <div *ngIf="showStepper && folderName" class="folder-stepper">
     <div class="steps">
       <span class="step completed">Folders</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
         <polyline points="9 18 15 12 9 6"></polyline>
       </svg>
       <span class="step active">{{ folderName | titlecase }}</span>
     </div>
     <button *ngIf="canGoBack" class="folder-back-btn" (click)="back.emit()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
         <polyline points="15 18 9 12 15 6"></polyline>
         <line x1="9" y1="12" x2="21" y2="12"></line>
       </svg>
@@ -32,39 +34,30 @@
         </p>
       </div>
       <div class="header-actions">
-        <button 
-          class="select-mode-btn"
-          [class.active]="selectionMode"
-          (click)="toggleSelectionMode()"
-          title="Select multiple items to download"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="select-mode-btn" [class.active]="selectionMode" (click)="toggleSelectionMode()"
+          title="Select multiple items to download">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline *ngIf="!selectionMode" points="9 11 12 14 22 4"></polyline>
             <path *ngIf="selectionMode" d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             <polyline *ngIf="selectionMode" points="9 11 12 14 22 4"></polyline>
           </svg>
           {{ selectionMode ? 'Cancel Selection' : 'Select' }}
         </button>
-        <button 
-          *ngIf="selectionMode && getSelectedCount() > 0"
-          class="download-selected-btn"
-          (click)="onDownloadSelected()"
-          [title]="'Download ' + getSelectedCount() + ' selected item(s)'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button *ngIf="selectionMode && getSelectedCount() > 0" class="download-selected-btn"
+          (click)="onDownloadSelected()" [title]="'Download ' + getSelectedCount() + ' selected item(s)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
           Download Selected ({{ getSelectedCount() }})
         </button>
-        <button 
-          *ngIf="isAuthenticated && canSelectBackground"
-          class="select-background-btn"
-          (click)="selectBackground.emit()"
-          title="Select background image for this order"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button *ngIf="isAuthenticated && canSelectBackground" class="select-background-btn"
+          (click)="selectBackground.emit()" title="Select background image for this order">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
@@ -73,7 +66,7 @@
         </button>
       </div>
     </div>
-    
+
     <!-- Selection Actions Bar -->
     <div *ngIf="selectionMode && hasFilteredMedia" class="selection-actions-bar">
       <div class="selection-info">
@@ -93,25 +86,17 @@
     <div class="filters-toolbar" *ngIf="hasMedia">
       <div class="search-container">
         <div class="search-input-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" class="search-icon">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
           </svg>
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm"
-            placeholder="Search media by name..."
-            class="search-input"
-          />
-          <button 
-            *ngIf="searchTerm.trim()" 
-            class="clear-search-btn"
-            (click)="searchTerm = ''"
-            title="Clear search"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+          <input type="text" [(ngModel)]="searchTerm" placeholder="Search media by name..." class="search-input" />
+          <button *ngIf="searchTerm.trim()" class="clear-search-btn" (click)="searchTerm = ''" title="Clear search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
@@ -119,16 +104,11 @@
 
       <div class="sort-container">
         <label for="sortOption">Sort</label>
-        <button 
-          class="sort-toggle" 
-          type="button" 
-          (click)="toggleSortOptions($event)"
-          [class.active]="showSortOptions"
-          aria-haspopup="listbox"
-          [attr.aria-expanded]="showSortOptions"
-        >
+        <button class="sort-toggle" type="button" (click)="toggleSortOptions($event)" [class.active]="showSortOptions"
+          aria-haspopup="listbox" [attr.aria-expanded]="showSortOptions">
           <span class="sort-label">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sort-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" class="sort-icon">
               <path d="M3 6h13"></path>
               <path d="M3 12h9"></path>
               <path d="M3 18h5"></path>
@@ -137,27 +117,18 @@
             </svg>
             {{ currentSortLabel }}
           </span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" class="chevron-icon">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
-        <div 
-          class="sort-dropdown" 
-          *ngIf="showSortOptions" 
-          role="listbox" 
-          aria-label="Sort media"
-        >
-          <button 
-            *ngFor="let option of sortOptions" 
-            type="button"
-            class="sort-option"
-            [class.active]="option.value === sortOption"
-            (click)="selectSortOption($event, option.value)"
-            role="option"
-            [attr.aria-selected]="option.value === sortOption"
-          >
+        <div class="sort-dropdown" *ngIf="showSortOptions" role="listbox" aria-label="Sort media">
+          <button *ngFor="let option of sortOptions" type="button" class="sort-option"
+            [class.active]="option.value === sortOption" (click)="selectSortOption($event, option.value)" role="option"
+            [attr.aria-selected]="option.value === sortOption">
             <span>{{ option.label }}</span>
-            <svg *ngIf="option.value === sortOption" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg *ngIf="option.value === sortOption" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </button>
@@ -172,7 +143,8 @@
   </div>
 
   <div *ngIf="!loading && error" class="folder-state error">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" y1="8" x2="12" y2="12"></line>
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -181,42 +153,31 @@
   </div>
 
   <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia" [class.selection-mode]="selectionMode">
-    <div 
-      *ngFor="let mediaItem of filteredMedia; let i = index" 
-      class="gallery-item" 
-      [class.selected]="isSelected(mediaItem)"
-      (click)="selectionMode && toggleSelection(mediaItem)"
-    >
+    <div *ngFor="let entry of masonryOrderedMedia" class="gallery-item" [class.selected]="isSelected(entry.item)"
+      (click)="selectionMode && toggleSelection(entry.item)">
       <!-- Selection Checkbox -->
-      <div *ngIf="selectionMode" class="selection-checkbox" (click)="toggleSelection(mediaItem); $event.stopPropagation()">
-        <input 
-          type="checkbox" 
-          [checked]="isSelected(mediaItem)"
-          (change)="toggleSelection(mediaItem); $event.stopPropagation()"
-          (click)="$event.stopPropagation()"
-        />
-        <svg *ngIf="isSelected(mediaItem)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <div *ngIf="selectionMode" class="selection-checkbox"
+        (click)="toggleSelection(entry.item); $event.stopPropagation()">
+        <input type="checkbox" [checked]="isSelected(entry.item)"
+          (change)="toggleSelection(entry.item); $event.stopPropagation()" (click)="$event.stopPropagation()" />
+        <svg *ngIf="isSelected(entry.item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+          stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
-      
-      <div *ngIf="isVideo(mediaItem)" class="video-wrapper">
-        <video 
-          [src]="getImageUrl(mediaItem)"
-          [poster]="getVideoThumbnailUrl(mediaItem)"
-          [controls]="!selectionMode"
-          preload="metadata"
-          (click)="onOpenMedia(i, $event)"
-          [style.pointer-events]="selectionMode ? 'none' : 'auto'"
-          class="media-video">
+
+      <div *ngIf="isVideo(entry.item)" class="video-wrapper">
+        <video [src]="getImageUrl(entry.item)" [poster]="getVideoThumbnailUrl(entry.item)" [controls]="!selectionMode"
+          preload="metadata" (click)="onOpenMedia(entry.actualIndex, $event)"
+          (loadedmetadata)="onMediaLoad(entry.item.filename)" [class.loaded]="isMediaLoaded(entry.item.filename)"
+          [style.pointer-events]="selectionMode ? 'none' : 'auto'" class="media-video">
           Your browser does not support the video tag.
         </video>
-        <button 
-          *ngIf="isAuthenticated"
-          class="thumbnail-selector-btn" 
-          (click)="onSelectThumbnail(mediaItem, $event)"
+        <button *ngIf="isAuthenticated" class="thumbnail-selector-btn" (click)="onSelectThumbnail(entry.item, $event)"
           title="Select video thumbnail">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
@@ -224,51 +185,41 @@
         </button>
       </div>
 
-      <img 
-        *ngIf="!isVideo(mediaItem)"
-        [src]="getImageUrl(mediaItem)" 
-        [alt]="getDisplayName(mediaItem)" 
-        loading="lazy" 
-        (click)="onOpenMedia(i, $event); $event.stopPropagation()"
+      <img *ngIf="!isVideo(entry.item)" [src]="getImageUrl(entry.item)" [alt]="getDisplayName(entry.item)"
+        loading="lazy" (load)="onMediaLoad(entry.item.filename)" [class.loaded]="isMediaLoaded(entry.item.filename)"
+        (click)="onOpenMedia(entry.actualIndex, $event); $event.stopPropagation()"
         [style.pointer-events]="selectionMode ? 'none' : 'auto'">
 
       <div class="image-overlay">
-        <span class="image-filename">{{ getDisplayName(mediaItem) }}</span>
-        <span class="image-date">{{ mediaItem.uploadedAt | date: 'short' }}</span>
+        <span class="image-filename">{{ getDisplayName(entry.item) }}</span>
+        <span class="image-date">{{ entry.item.uploadedAt | date: 'short' }}</span>
       </div>
-      <!-- (click)="onDownload(mediaItem, $event)"  -->
 
-      <button
-        *ngIf="!selectionMode"
-        class="download-btn"
-        [disabled]="isDownloading(mediaItem)"
-        [title]="isDownloading(mediaItem) ? 'Downloading...' : (isVideo(mediaItem) ? 'Download video' : 'Download image')"
-        (click)="onDownload(mediaItem, $event)"
-      >
-        <svg *ngIf="!isDownloading(mediaItem)" xmlns="http://www.w3.org/2000/svg"
-            width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button *ngIf="!selectionMode" class="download-btn" [disabled]="isDownloading(entry.item)"
+        [title]="isDownloading(entry.item) ? 'Downloading...' : (isVideo(entry.item) ? 'Download video' : 'Download image')"
+        (click)="onDownload(entry.item, $event)">
+        <svg *ngIf="!isDownloading(entry.item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        
+
         <!-- Loading Spinner -->
-        <svg *ngIf="isDownloading(mediaItem)" class="spinner-svg" 
-            width="20" height="20" viewBox="0 0 24 24" 
-            xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
+        <svg *ngIf="isDownloading(entry.item)" class="spinner-svg" width="20" height="20" viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+          </path>
         </svg>
       </button>
 
-      <button 
-        *ngIf="isAuthenticated"
-        class="delete-btn" 
-        (click)="onDelete(mediaItem, $event)" 
-        [title]="'Delete ' + (isVideo(mediaItem) ? 'video' : 'image')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button *ngIf="isAuthenticated" class="delete-btn" (click)="onDelete(entry.item, $event)"
+        [title]="'Delete ' + (isVideo(entry.item) ? 'video' : 'image')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -278,8 +229,20 @@
     </div>
   </div>
 
+  <!-- Load More Button -->
+  <div *ngIf="hasMoreItems" class="load-more-container">
+    <button (click)="loadMore()" class="load-more-btn">
+      Load More
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+  </div>
+
   <div *ngIf="!loading && !error && !hasMedia" class="empty-images">
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
       <rect x="3" y="3" width="18" height="18" rx="2"></rect>
       <circle cx="8.5" cy="8.5" r="1.5"></circle>
       <path d="M21 15l-5-5L5 21"></path>
@@ -289,18 +252,19 @@
       We're currently processing the media for this folder. Your photos and videos will be available here soon!
     </p>
     <ng-template #noFolder>
-      <p>We're still working on your event! Your beautiful photos and videos will be added here soon. Thank you for your patience!</p>
+      <p>We're still working on your event! Your beautiful photos and videos will be added here soon. Thank you for your
+        patience!</p>
     </ng-template>
   </div>
 
   <div *ngIf="!loading && !error && hasMedia && !hasFilteredMedia" class="empty-images">
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.35-4.35"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
     </svg>
     <h3>No Results Found</h3>
     <p>No media found matching "{{ searchTerm }}"</p>
     <button class="clear-search-link" (click)="searchTerm = ''">Clear search</button>
   </div>
 </div>
-

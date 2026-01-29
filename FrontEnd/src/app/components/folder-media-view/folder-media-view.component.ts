@@ -11,7 +11,13 @@ import { OrderImage, OrdersService } from '../../services/orders.service';
   styleUrl: './folder-media-view.component.scss'
 })
 export class FolderMediaViewComponent {
-  @Input() media: OrderImage[] = [];
+  private _media: OrderImage[] = [];
+  @Input()
+  get media(): OrderImage[] { return this._media; }
+  set media(value: OrderImage[]) {
+    this._media = value;
+    this.resetItemsToShow(); // Reset when media changes
+  }
   @Input() loading: boolean = false;
   @Input() error: string = '';
   @Input() folderName: string | null = null;
@@ -30,10 +36,16 @@ export class FolderMediaViewComponent {
   @Output() selectVideoThumbnail = new EventEmitter<OrderImage>();
   @Output() selectBackground = new EventEmitter<void>();
 
-  searchTerm: string = '';
+  private _searchTerm: string = '';
+  get searchTerm(): string { return this._searchTerm; }
+  set searchTerm(value: string) {
+    this._searchTerm = value;
+    this.resetItemsToShow(); // Reset when searching
+  }
   selectionMode: boolean = false;
   selectedItems: Set<string> = new Set();
   downloadingItems: Set<string> = new Set();
+  loadedMedia: Set<string> = new Set();
   sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-asc';
   readonly sortOptions = [
     { value: 'name-asc' as const, label: 'Name (A → Z)' },
@@ -42,6 +54,7 @@ export class FolderMediaViewComponent {
     { value: 'date-asc' as const, label: 'Date (Oldest first)' },
   ];
   showSortOptions = false;
+  itemsToShow: number = 12;
 
   constructor(private ordersService: OrdersService) { }
 
@@ -61,6 +74,58 @@ export class FolderMediaViewComponent {
       });
 
     return this.sortMedia(filtered);
+  }
+
+  get visibleMedia(): OrderImage[] {
+    return this.filteredMedia.slice(0, this.itemsToShow);
+  }
+
+  get masonryOrderedMedia(): { item: OrderImage, actualIndex: number }[] {
+    const items = this.visibleMedia;
+    const cols = this.columns;
+    if (cols <= 1) return items.map((item, i) => ({ item, actualIndex: i }));
+
+    const rowCount = Math.ceil(items.length / cols);
+    const result: { item: OrderImage, actualIndex: number }[] = [];
+
+    // Construct the array column-by-column so CSS column-count renders them row-by-row
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rowCount; r++) {
+        const index = r * cols + c;
+        if (index < items.length) {
+          result.push({ item: items[index], actualIndex: index });
+        }
+      }
+    }
+    return result;
+  }
+
+  get hasMoreItems(): boolean {
+    return this.filteredMedia.length > this.itemsToShow;
+  }
+
+  get columns(): number {
+    if (typeof window === 'undefined') return 4;
+    const width = window.innerWidth;
+    if (width <= 480) return 1; // Matches SCSS: column-count: 1
+    if (width <= 768) return 2; // Matches SCSS: column-count: 2
+    if (width <= 1200) return 3; // Matches SCSS: column-count: 3
+    return 4; // Default: column-count: 4
+  }
+
+  get pageSize(): number {
+    // Return a multiple of columns to fill rows exactly
+    // We'll load roughly 12-16 items but adjusted to the columns
+    const multiplier = this.columns === 1 ? 12 : 3; // 4*3=12, 3*3=9, 2*3=6
+    return this.columns * multiplier;
+  }
+
+  loadMore(): void {
+    this.itemsToShow += this.pageSize;
+  }
+
+  private resetItemsToShow(): void {
+    this.itemsToShow = this.pageSize * 2; // Show 2 pages initially
   }
 
   get hasFilteredMedia(): boolean {
@@ -146,6 +211,14 @@ export class FolderMediaViewComponent {
     return this.downloadingItems.has(media.filename);
   }
 
+  onMediaLoad(filename: string): void {
+    this.loadedMedia.add(filename);
+  }
+
+  isMediaLoaded(filename: string): boolean {
+    return this.loadedMedia.has(filename);
+  }
+
   getSelectedCount(): number {
     return this.selectedItems.size;
   }
@@ -176,6 +249,7 @@ export class FolderMediaViewComponent {
   onSortOptionChange(option: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'): void {
     this.sortOption = option;
     this.showSortOptions = false;
+    this.resetItemsToShow(); // Reset visible count on sort change
   }
 
   onDelete(media: OrderImage, event: Event): void {

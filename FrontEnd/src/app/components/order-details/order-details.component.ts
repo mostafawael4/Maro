@@ -5,7 +5,7 @@ import { OrdersService, Order, OrderImage } from '../../services/orders.service'
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { combineLatest, Subject } from 'rxjs';
-import { takeUntil, filter } from 'rxjs/operators';
+import { takeUntil, filter, distinctUntilChanged } from 'rxjs/operators';
 import { ImageSliderComponent } from '../image-slider/image-slider.component';
 import { GalleryImage } from '../../services/gallery.service';
 import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
@@ -36,6 +36,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   error = '';
   baseUrl = environment.apiUrl;
   isAuthenticated = false;
+  isAdmin = false;
   showImageSlider = false;
   currentImageIndex = 0;
   showDeleteModal = false;
@@ -71,37 +72,37 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to auth changes
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      this.isAuthenticated = isAuth ?? false;
-      
-      // Load order data immediately (localStorage auth is already set)
-      const orderId = this.route.snapshot.paramMap.get('id');
-      const userEmail = this.route.snapshot.queryParamMap.get('email');
-      
-      if (isAuth === null) {
-        return;
-      }
-  
-      if (!orderId) {
-        this.error = 'Order ID not found';
-        this.loading = false;
-        return;
-      }
-      // Admin users: use getOrderById
-      if (this.isAuthenticated === true) {
-        this.loadOrderById(orderId);
-      } 
-      // Normal users: use getOrdersByEmail
-      else if (userEmail) {
-        this.loadOrderByEmail(userEmail, orderId);
-      }
-      else{
-        this.error = 'Access denied';
-        this.loading = false;
-      }
-    });
+    this.authService.isAuthenticated$
+      .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(isAuth => {
+        if (isAuth === null) return;
 
-  } 
+        this.isAuthenticated = !!isAuth;
+        this.isAdmin = this.authService.isAdmin();
+
+        const orderId = this.route.snapshot.paramMap.get('id');
+        const userEmail = this.route.snapshot.queryParamMap.get('email');
+
+        console.log('OrderDetails Init:', { orderId, userEmail, isAuthenticated: this.isAuthenticated });
+
+        if (!orderId) {
+          this.error = 'Order ID not found';
+          this.loading = false;
+          return;
+        }
+
+        // Load order data
+        if (this.isAuthenticated) {
+          this.loadOrderById(orderId);
+        } else if (userEmail) {
+          this.loadOrderByEmail(userEmail, orderId);
+        } else {
+          this.error = 'Access denied';
+          this.loading = false;
+        }
+      });
+
+  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -122,24 +123,23 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     // Don't clear error here - let it persist if it was set by a previous operation
     this.ordersService.getOrderById(orderId).subscribe({
       next: (response: any) => {
-        // Handle if response is wrapped in an object with 'order' property
         this.order = response.order || response;
-        this.loading = false;
 
         if (this.isAuthenticated && this.order?._id) {
           this.loadFolders(this.order._id);
+          this.loading = false;
         } else {
           this.selectedFolder = null;
-          this.folderMedia = this.order?.media || [];
           this.foldersLoading = false;
           this.folderMediaLoading = false;
           this.buildClientFoldersFromMedia();
+          this.loading = false; // Only stop loading after folders/media decided
         }
       },
       error: (err) => {
         if (err.status === 401) {
           this.error = 'Authentication required. Please log in as admin.';
-          setTimeout(() => this.router.navigate(['/orders']), 2000);
+          this.router.navigate(['/login']);
         } else {
           this.error = 'Failed to load order details';
         }
@@ -150,13 +150,12 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   loadOrderByEmail(email: string, orderId: string): void {
+    this.loading = true;
     this.ordersService.getOrdersByEmail(email).subscribe({
       next: (response) => {
-        // Find the specific order by ID from the array of orders
         const foundOrder = response.orders?.find(order => order._id === orderId);
         if (foundOrder) {
           this.order = foundOrder;
-          this.folderMedia = this.order.media || [];
           this.buildClientFoldersFromMedia();
         } else {
           this.error = 'Order not found or access denied';
@@ -228,11 +227,11 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   async downloadImage(media: OrderImage, event?: Event) {
     event?.stopPropagation(); // Prevent opening the slider
-    
+
     if (!this.order?._id) return;
-    
+
     const downloadUrl = this.ordersService.getDownloadUrl(this.order._id, media.filename);
-    
+
     // Simple way to trigger download via backend
     const link = document.createElement('a');
     link.href = downloadUrl;
@@ -251,17 +250,17 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       for (let i = 0; i < mediaArray.length; i++) {
         const media = mediaArray[i];
         const downloadUrl = this.ordersService.getDownloadUrl(this.order._id, media.filename);
-        
+
         // Create a temporary anchor element to trigger download
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = media.originalName || media.filename;
-        
+
         // Trigger download
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Small delay between downloads to prevent browser from blocking
         if (i < mediaArray.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -284,7 +283,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onConfirmDeleteMedia(): void {
     if (!this.mediaToDelete || !this.order || this.deletingMedia) return;
-    
+
     const orderId = this.order._id;
     this.deletingMedia = true;
     this.ordersService.deleteOrderMedia(orderId, [this.mediaToDelete.filename]).subscribe({
@@ -334,12 +333,12 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onThumbnailSelected(data: { thumbnail: string; thumbnailFilename: string }): void {
     if (!this.order || !this.selectedVideoForThumbnail) return;
-    
+
     if (this.order.media) {
-    const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
+      const mediaIndex = this.order.media.findIndex(m => m.filename === this.selectedVideoForThumbnail?.filename);
       if (mediaIndex !== -1) {
-      this.order.media[mediaIndex].thumbnail = data.thumbnail;
-      this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
+        this.order.media[mediaIndex].thumbnail = data.thumbnail;
+        this.order.media[mediaIndex].thumbnailFilename = data.thumbnailFilename;
       }
     }
 
@@ -504,8 +503,16 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
     if (this.folders.length === 0) {
       this.folderMedia = media;
+      this.selectedFolder = null;
     } else {
-      this.folderMedia = [];
+      // If folders exist, we don't show media directly anymore
+      // Unless they come back from a folder
+      if (!this.selectedFolder) {
+        this.folderMedia = [];
+      } else {
+        // Re-filter if they were in a folder (unlikely on initial load but good for stability)
+        this.folderMedia = media.filter(item => item.foldername === this.selectedFolder);
+      }
     }
 
     this.foldersInitialized = true;
@@ -521,7 +528,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onConfirmDeleteFolder(): void {
     if (!this.folderToDelete || !this.order?._id || this.deletingFolder) return;
-    
+
     const orderId = this.order._id;
     this.deletingFolder = true;
     this.error = ''; // Clear any previous errors
@@ -543,12 +550,12 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
         if (response.ok) {
           // Clear error on success
           this.error = '';
-          
+
           // If the deleted folder was selected, exit folder view
           if (this.selectedFolder === this.folderToDelete) {
             this.exitFolderView();
           }
-          
+
           // Reload folders to update the list
           if (this.isAuthenticated && this.order?._id) {
             this.loadFolders(this.order._id);
@@ -556,7 +563,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
             // For clients, rebuild from media
             this.buildClientFoldersFromMedia();
           }
-          
+
           // Reload order to get updated media (including background image)
           if (this.order?._id) {
             this.loadOrderById(this.order._id, false);
@@ -572,7 +579,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
           }, 8000);
           return;
         }
-        
+
         this.showDeleteFolderModal = false;
         this.folderToDelete = null;
         this.deletingFolder = false;
@@ -609,11 +616,11 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.zippingFolder = true;
     try {
       // Show loading state (you can add a loading variable if needed)
-      
+
 
       // Fetch folder media
       let mediaToDownload: OrderImage[] = [];
-      
+
       if (this.isAuthenticated) {
         // For admin, fetch from API
         const response = await this.ordersService.getFolderMedia(this.order._id, folderName).toPromise();
@@ -661,16 +668,16 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = `${folderName}.zip`;
-      
+
       // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       window.URL.revokeObjectURL(downloadUrl);
 
-      
+
     } catch (error) {
       console.error('Error downloading folder:', error);
       alert('Failed to download folder. Please try again.');

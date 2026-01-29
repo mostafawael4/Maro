@@ -17,8 +17,9 @@ export class ImageSliderComponent {
   @Input() images: ImageType[] = [];
   @Input() currentIndex: number = 0;
   @Input() show: boolean = false;
+  @Input() variant: 'gallery' | 'folder' = 'gallery';
   @Output() close = new EventEmitter<void>();
-  
+
   private isBrowser: boolean;
 
   constructor(@Inject(PLATFORM_ID) platformId: Object) {

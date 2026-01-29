@@ -1,7 +1,9 @@
 .order-details-container {
   background: #580111; // Dark burgundy
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 40px 10px; // Removed horizontal padding for full width
+  width: 100%;
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -157,7 +159,7 @@
 
 // Order Content
 .order-content {
-  max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -165,8 +167,10 @@
 .order-header {
   background: linear-gradient(135deg, rgba(26, 1, 5, 0.8) 0%, rgba(26, 1, 5, 0.9) 100%);
   border-radius: 16px;
-  padding: 2.5rem;
+  padding: 2.5rem 2rem;
   margin-bottom: 3rem;
+  margin-left: 10px;
+  margin-right: 10px;
   border: 2px solid rgba(255, 218, 185, 0.3);
   box-shadow: 0 4px 16px rgba(107, 31, 31, 0.08);
 

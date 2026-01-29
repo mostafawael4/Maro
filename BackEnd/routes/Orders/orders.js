@@ -63,16 +63,15 @@ router.post("/", async (req, res) => {
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
-    
+
     // Optimize: fetch one token for the whole bucket to sign the list
     const sharedToken = await b2.getFolderToken("");
     const signedList = await Promise.all(list.map(o => signOrderMedia(o, sharedToken)));
 
     logger.info(
-      `Listed all orders by ${
-        req.session && req.session.adminId
-          ? req.session.adminId
-          : "unknown admin"
+      `Listed all orders by ${req.session && req.session.adminId
+        ? req.session.adminId
+        : "unknown admin"
       }`
     );
     return res.json({ ok: true, orders: signedList });
@@ -81,6 +80,76 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+
+
+// Route definitions move to move specific first (Done below)
+
+
+// GET /order/view?email=...  (public) - returns order images if email found
+router.get("/view/by-email", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      logger.warn("Order view by email attempted without providing email.");
+      return res.status(400).json({ ok: false, message: "Email required" });
+    }
+
+    // find orders by email. If multiple, you may decide how to handle; here we return most recent
+    const sanitizedEmail = email.trim();
+    // Case-insensitive and whitespace-tolerant search
+    const emailRegex = new RegExp(`^\\s*${sanitizedEmail}\\s*$`, 'i');
+    const order = await Order.findOne({ email: emailRegex }).sort({ createdAt: -1 }).lean();
+
+    if (!order) {
+      console.error('!!! CLIENT SEARCH FAILED (Single) !!!');
+      console.error('Target Email:', `'${sanitizedEmail}'`);
+      console.error('Regex Used:', emailRegex);
+      const recent = await Order.find({}).sort({ createdAt: -1 }).limit(10).select('email clientName').lean();
+      console.error('RECENT ORDERS IN DB:', recent.map(o => ({ id: o._id, email: `'${o.email}'`, name: o.clientName })));
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+    const signedOrder = await signOrderMedia(order);
+    logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
+    return res.json({ ok: true, order: signedOrder });
+  } catch (err) {
+    logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+// GET /orders/by-email?email=... (public) - returns ALL orders for a given email
+router.get("/view/orders-by-email",
+  async (req, res) => {
+    try {
+      const { email } = req.query;
+      if (!email) {
+        return res.status(400).json({ ok: false, message: "Email required" });
+      }
+      const sanitizedEmail = email.trim();
+      // Case-insensitive and whitespace-tolerant search
+      const emailRegex = new RegExp(`^\\s*${sanitizedEmail}\\s*$`, 'i');
+      const orders = await Order.find({ email: emailRegex }).sort({ createdAt: -1 }).lean();
+
+      if (!orders || orders.length === 0) {
+        console.error('!!! CLIENT SEARCH FAILED (All) !!!');
+        console.error('Target Email:', `'${sanitizedEmail}'`);
+        console.error('Regex Used:', emailRegex);
+        const recent = await Order.find({}).sort({ createdAt: -1 }).limit(10).select('email clientName').lean();
+        console.error('RECENT ORDERS IN DB:', recent.map(o => ({ id: o._id, email: `'${o.email}'`, name: o.clientName })));
+        return res.status(404).json({ ok: false, message: "No orders found for email" });
+      }
+      const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
+      logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
+      return res.json({ ok: true, orders: signedOrders });
+    } catch (err) {
+      logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
+      return res.status(500).json({ ok: false, message: "Server error" });
+    }
+  }
+);
+
+
+// --- PARAMETERIZED ROUTES (Move to bottom to prevent shadowing) ---
 
 // GET /orders/:orderId - admin only: fetch specific order
 router.get("/:orderId", requireAdminAuth, async (req, res) => {
@@ -159,7 +228,7 @@ router.put("/:orderId", async (req, res) => {
       deepMerge(order.orderForm, updateFields.orderForm);
       order.markModified("orderForm");
     }
-    
+
     // Update root fields (clientName, notes, status, etc.)
     for (const key of Object.keys(updateFields)) {
       if (key !== "orderForm") {
@@ -174,7 +243,7 @@ router.put("/:orderId", async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
-    
+
     const signedOrder = await signOrderMedia(updatedOrder);
 
     logger.info(`Order ${orderId} updated by admin.`);
@@ -215,7 +284,7 @@ router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res
   try {
     const { orderId } = req.params;
     const { files, foldername } = req.body; // files: [{ originalname, mimetype }]
-    
+
     const result = await prepareDirectUploads(orderId, files, foldername);
     return res.json({ ok: true, ...result });
   } catch (err) {
@@ -228,29 +297,29 @@ router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res
 router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { uploadedFiles, foldername } = req.body; 
-    
+    const { uploadedFiles, foldername } = req.body;
+
     const verifiedFiles = [];
     const failedFiles = [];
 
     for (const f of uploadedFiles) {
-        const key = `orders/${orderId}/${f.filename}`;
-        const foundFiles = await b2.listFileNames(key, 1);
-        const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+      const key = `orders/${orderId}/${f.filename}`;
+      const foundFiles = await b2.listFileNames(key, 1);
+      const exists = foundFiles && foundFiles.some(file => file.fileName === key);
 
-        if (exists) {
-            verifiedFiles.push(f);
-        } else {
-            logger.warn(`File verification failed: ${key} not found.`);
-            failedFiles.push({ filename: f.filename, error: "File not found in B2" });
-        }
+      if (exists) {
+        verifiedFiles.push(f);
+      } else {
+        logger.warn(`File verification failed: ${key} not found.`);
+        failedFiles.push({ filename: f.filename, error: "File not found in B2" });
+      }
     }
-    
-    return res.json({ 
-        ok: true, 
-        verified: verifiedFiles,
-        failed: failedFiles,
-        message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.` 
+
+    return res.json({
+      ok: true,
+      verified: verifiedFiles,
+      failed: failedFiles,
+      message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.`
     });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
@@ -258,61 +327,15 @@ router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res
   }
 });
 
-// GET /order/view?email=...  (public) - returns order images if email found
-router.get("/view/by-email", async (req, res) => {
-  try {
-    const { email } = req.query;
-    if (!email) {
-      logger.warn("Order view by email attempted without providing email.");
-      return res.status(400).json({ ok: false, message: "Email required" });
-    }
-
-    // find orders by email. If multiple, you may decide how to handle; here we return most recent
-    const order = await Order.findOne({ email }).sort({ createdAt: -1 }).lean();
-    if (!order) {
-      logger.warn(`Order view attempted for non-existent email: ${email}`);
-      return res.status(404).json({ ok: false, message: "Order not found" });
-    }
-    const signedOrder = await signOrderMedia(order);
-    logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
-    return res.json({ ok: true, order: signedOrder });
-  } catch (err) {
-    logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error" });
-  }
-});
-
-// GET /orders/by-email?email=... (public) - returns ALL orders for a given email
-router.get("/view/orders-by-email",
-  async (req, res) => {
-    try {
-      const { email } = req.query;
-      if (!email) {
-        return res.status(400).json({ ok: false, message: "Email required" });
-      }
-      const orders = await Order.find({ email }).sort({ createdAt: -1 }).lean();
-      if (!orders || orders.length === 0) {
-        return res.status(404).json({ ok: false, message: "No orders found for email" });
-      }
-      const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
-      logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders: signedOrders });
-    } catch (err) {
-      logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
-      return res.status(500).json({ ok: false, message: "Server error" });
-    }
-  }
-);
-
 // DELETE /:orderId (admin only) - delete order folder from the server and delete the order from db
-router.delete("/:orderId", requireAdminAuth, 
+router.delete("/:orderId", requireAdminAuth,
   async (req, res) => {
     try {
       const { orderId } = req.params;
       if (!orderId) {
         return res.status(400).json({ ok: false, message: "orderId is required" });
       }
-      
+
       // Use deleteOrderFiles service to remove folder
       try {
         await orderService.deleteOrderfolder(orderId);
@@ -337,7 +360,7 @@ router.delete("/:orderId", requireAdminAuth,
 );
 
 // DELETE /deletemedia/:orderId (admin only) - delete order files[] from the server and from db by file name
-router.delete("/:orderId/deletemedia", requireAdminAuth, 
+router.delete("/:orderId/deletemedia", requireAdminAuth,
   async (req, res) => {
     try {
       const { orderId } = req.params;
@@ -345,7 +368,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       if (!orderId) {
         return res.status(400).json({ ok: false, message: "orderId is required" });
       }
-      if (filenames.length <= 0){
+      if (filenames.length <= 0) {
         return res.status(400).json({ ok: false, message: "filenames array is required" });
       }
 
@@ -362,7 +385,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       const missingFiles = filenames.filter(filename => !filePaths.includes(filename));
       if (missingFiles.length > 0) {
         logger.error(`Files not found for orderId ${orderId}: ${missingFiles.join(", ")}`);
-        return res.status(400).json({ ok: false, message: `Files do not exist for order id ${orderId}: ${missingFiles.join(", ")}`});
+        return res.status(400).json({ ok: false, message: `Files do not exist for order id ${orderId}: ${missingFiles.join(", ")}` });
       }
 
       // Attempt to delete each requested file, collect failed deletions
@@ -377,10 +400,10 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
       }
 
       if (failedDeletions.length > 0) {
-        return res.status(500).json({ 
-          ok: false, 
-          message: `Failed to delete some files for order id ${orderId}`, 
-          failedFiles: failedDeletions 
+        return res.status(500).json({
+          ok: false,
+          message: `Failed to delete some files for order id ${orderId}`,
+          failedFiles: failedDeletions
         });
       }
 
@@ -396,10 +419,7 @@ router.delete("/:orderId/deletemedia", requireAdminAuth,
 router.get("/:orderId/video/:filename/duration", requireAdminAuth, async (req, res) => {
   try {
     const { orderId, filename } = req.params;
-    const order = await Order.findById(orderId);
-    
     const duration = await getVideoDurationService(orderId, filename);
-
     return res.json({ ok: true, duration });
   } catch (err) {
     logger.error(`GET /orders/:orderId/video/:filename/duration failed: ${err.stack || err}`);
@@ -425,13 +445,13 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     if (mediaIndex !== -1) {
       // Delete old thumbnail if exists
       if (order.media[mediaIndex].thumbnailFilename) {
-          const oldFilename = order.media[mediaIndex].thumbnailFilename;
-          try {
-              await uploadService.deleteFile(orderId, oldFilename);
-              logger.info(`Deleted old thumbnail ${oldFilename} from B2 for order ${orderId}`);
-          } catch (err) {
-              logger.warn(`Failed to delete old thumbnail ${oldFilename} from B2: ${err.message}`);
-          }
+        const oldFilename = order.media[mediaIndex].thumbnailFilename;
+        try {
+          await uploadService.deleteFile(orderId, oldFilename);
+          logger.info(`Deleted old thumbnail ${oldFilename} from B2 for order ${orderId}`);
+        } catch (err) {
+          logger.warn(`Failed to delete old thumbnail ${oldFilename} from B2: ${err.message}`);
+        }
       }
 
       order.media[mediaIndex].thumbnail = thumbnailResult.thumbnailUrl;
@@ -440,11 +460,11 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
     }
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
-    
+
     const signedThumbnail = await b2.getPresignedUrl(`orders/${orderId}/${thumbnailResult.thumbnailFilename}`);
 
-    return res.json({ 
-      ok: true, 
+    return res.json({
+      ok: true,
       thumbnail: signedThumbnail,
       thumbnailFilename: thumbnailResult.thumbnailFilename
     });
@@ -473,9 +493,7 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    const orderMedia = order.media
-
-    const mediaItem = orderMedia.find(item => item.filename === filename);
+    const mediaItem = order.media.find(item => item.filename === filename);
     if (!mediaItem) {
       logger.warn(`Filename "${filename}" not found in media for order ${orderId}`);
       return res.status(404).json({ ok: false, message: "Media file not found in this order" });
@@ -489,11 +507,11 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     const signedBackground = await b2.getPresignedUrl(`orders/${orderId}/${filename}`);
 
     logger.info(`Background image set for order ${orderId}: ${filename}`);
-    return res.json({ 
-      ok: true, 
+    return res.json({
+      ok: true,
       orderBackground: {
-          ...order.orderBackground,
-          image: signedBackground
+        ...order.orderBackground,
+        image: signedBackground
       }
     });
   } catch (err) {
@@ -506,22 +524,21 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
 router.get("/:orderId/download/:filename", async (req, res) => {
   try {
     const { orderId, filename } = req.params;
-    
+
     // Construct the B2 key
     const key = `orders/${orderId}/${filename}`;
-    
+
     logger.info(`Download requested for: ${key}`);
-    
 
     const startTime = Date.now();
     // Get file from B2
     const fileBuffer = await b2.downloadFileByName(key);
-    
+
     logger.info(`Downloaded ${key} in ${Date.now() - startTime}ms`);
     // Set appropriate headers
     res.type(filename);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
+
     return res.send(Buffer.from(fileBuffer));
   } catch (err) {
     logger.error(`Download failed for ${req.params.filename}: ${err.message}`);

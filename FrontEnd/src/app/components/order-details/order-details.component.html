@@ -1,28 +1,21 @@
 <div class="order-details-container">
   <!-- Delete Media Confirmation Modal -->
-  <app-delete-modal
-    [isOpen]="showDeleteModal"
-    [isLoading]="deletingMedia"
-    title="Delete Media"
+  <app-delete-modal [isOpen]="showDeleteModal" [isLoading]="deletingMedia" title="Delete Media"
     [message]="'Are you sure you want to delete ' + (mediaToDelete?.filename || 'this media') + '?'"
-    (confirm)="onConfirmDeleteMedia()"
-    (cancel)="onCancelDeleteMedia()" />
+    (confirm)="onConfirmDeleteMedia()" (cancel)="onCancelDeleteMedia()" />
 
   <!-- Delete Folder Confirmation Modal -->
-  <app-delete-modal
-    [isOpen]="showDeleteFolderModal"
-    [isLoading]="deletingFolder"
-    title="Delete Folder"
+  <app-delete-modal [isOpen]="showDeleteFolderModal" [isLoading]="deletingFolder" title="Delete Folder"
     [message]="getDeleteFolderMessage()"
     warning="This action cannot be undone. All media in this folder will be permanently deleted."
-    (confirm)="onConfirmDeleteFolder()"
-    (cancel)="onCancelDeleteFolder()" />
+    (confirm)="onConfirmDeleteFolder()" (cancel)="onCancelDeleteFolder()" />
 
   <!-- Back Button -->
   <button class="back-btn" (click)="goBack()">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="19" y1="12" x2="5" y2="12"/>
-      <polyline points="12 19 5 12 12 5"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
     </svg>
     Back to Orders
   </button>
@@ -35,10 +28,11 @@
 
   <!-- Error State -->
   <div *ngIf="error" class="error-container" [class.show-error]="error">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
     <p>{{ error }}</p>
     <button class="error-close-btn" (click)="error = ''" aria-label="Close error">×</button>
@@ -62,7 +56,8 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">Event Date:</span>
-          <span class="meta-value">{{ order.orderForm?.eventDate ? (order.orderForm?.eventDate | date: 'MMM dd, yyyy') : 'N/A' }}</span>
+          <span class="meta-value">{{ order.orderForm?.eventDate ? (order.orderForm?.eventDate | date: 'MMM dd, yyyy') :
+            'N/A' }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Total Media:</span>
@@ -71,87 +66,47 @@
       </div>
     </div>
 
-    <app-order-folder-panel
-      *ngIf="(folders.length > 0 || foldersLoading) && !selectedFolder"
-      [folders]="folders"
-      [loading]="foldersLoading"
-      [error]="foldersError"
-      [selectedFolder]="selectedFolder"
-      [isAuthenticated]="isAuthenticated"
-      (folderSelected)="selectFolder($event)"
-      (folderDeleted)="onDeleteFolder($event)"
-      (folderDownload)="onDownloadFolder($event)"
+    <app-order-folder-panel *ngIf="(folders.length > 0 || foldersLoading) && !selectedFolder" [folders]="folders"
+      [loading]="foldersLoading" [error]="foldersError" [selectedFolder]="selectedFolder"
+      [isAuthenticated]="isAuthenticated" (folderSelected)="selectFolder($event)"
+      (folderDeleted)="onDeleteFolder($event)" (folderDownload)="onDownloadFolder($event)"
       [zippingFolder]="zippingFolder">
     </app-order-folder-panel>
 
-    <app-folder-media-view
-      *ngIf="selectedFolder"
-      [media]="currentMedia"
-      [loading]="folderMediaLoading"
-      [error]="folderMediaError"
-      [folderName]="selectedFolder"
-      [showStepper]="true"
-      [canGoBack]="folders.length > 0"
-      [isAuthenticated]="isAuthenticated"
-      [baseUrl]="baseUrl"
-      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
-      [orderId]="order._id"
-      (back)="exitFolderView()"
-      (openMedia)="openImageSlider($event)"
-      (downloadMedia)="downloadImage($event)"
-      (downloadSelectedMedia)="downloadSelectedImages($event)"
-      (deleteMedia)="onDeleteMediaClick($event)"
-      (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
-      (selectBackground)="onSelectBackgroundImage()">
+    <app-folder-media-view *ngIf="selectedFolder" [media]="currentMedia" [loading]="folderMediaLoading"
+      [error]="folderMediaError" [folderName]="selectedFolder" [showStepper]="true" [canGoBack]="folders.length > 0"
+      [isAuthenticated]="isAuthenticated" [baseUrl]="baseUrl"
+      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
+      (back)="exitFolderView()" (openMedia)="openImageSlider($event)" (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)" (deleteMedia)="onDeleteMediaClick($event)"
+      (selectVideoThumbnail)="onSelectVideoThumbnail($event)" (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
 
-    <app-folder-media-view
-      *ngIf="!selectedFolder && folders.length === 0"
-      [media]="currentMedia"
-      [loading]="loading && !isAuthenticated"
-      [error]="!isAuthenticated ? error : ''"
-      [canGoBack]="false"
-      [showStepper]="false"
-      [folderName]="null"
-      [baseUrl]="baseUrl"
-      [isAuthenticated]="isAuthenticated"
-      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0"
-      [orderId]="order._id"
-      (openMedia)="openImageSlider($event)"
-      (downloadMedia)="downloadImage($event)"
-      (downloadSelectedMedia)="downloadSelectedImages($event)"
-      (deleteMedia)="onDeleteMediaClick($event)"
-      (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
-      (selectBackground)="onSelectBackgroundImage()">
+    <app-folder-media-view *ngIf="!selectedFolder && folders.length === 0" [media]="currentMedia"
+      [loading]="loading && !isAuthenticated" [error]="!isAuthenticated ? error : ''" [canGoBack]="false"
+      [showStepper]="false" [folderName]="null" [baseUrl]="baseUrl" [isAuthenticated]="isAuthenticated"
+      [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
+      (openMedia)="openImageSlider($event)" (downloadMedia)="downloadImage($event)"
+      (downloadSelectedMedia)="downloadSelectedImages($event)" (deleteMedia)="onDeleteMediaClick($event)"
+      (selectVideoThumbnail)="onSelectVideoThumbnail($event)" (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
   </div>
 
   <!-- Image Slider -->
-  <app-image-slider
-    [images]="getSliderImages()"
-    [currentIndex]="currentImageIndex"
-    [show]="showImageSlider"
+  <app-image-slider [images]="getSliderImages()" [currentIndex]="currentImageIndex" [show]="showImageSlider"
     (close)="closeImageSlider()">
   </app-image-slider>
 
   <!-- Video Poster Selector Modal -->
-  <app-video-poster-selector
-    *ngIf="showVideoPosterSelector && selectedVideoForThumbnail"
-    [orderId]="order!._id"
-    [videoFilename]="selectedVideoForThumbnail.filename"
-    [videoUrl]="selectedVideoForThumbnail.url"
-    [currentThumbnail]="selectedVideoForThumbnail.thumbnail"
-    (thumbnailSelected)="onThumbnailSelected($event)"
+  <app-video-poster-selector *ngIf="showVideoPosterSelector && selectedVideoForThumbnail" [orderId]="order!._id"
+    [videoFilename]="selectedVideoForThumbnail.filename" [videoUrl]="selectedVideoForThumbnail.url"
+    [currentThumbnail]="selectedVideoForThumbnail.thumbnail" (thumbnailSelected)="onThumbnailSelected($event)"
     (close)="onCloseVideoPosterSelector()">
   </app-video-poster-selector>
 
   <!-- Background Image Selector Modal -->
-  <app-background-image-selector
-    *ngIf="showBackgroundImageSelector && order"
-    [orderId]="order._id"
-    [images]="getImageOnlyMedia()"
-    [currentBackgroundImage]="order.orderBackground?.image"
-    (imageSelected)="onBackgroundImageSelected($event)"
-    (close)="onCloseBackgroundImageSelector()">
+  <app-background-image-selector *ngIf="showBackgroundImageSelector && order" [orderId]="order._id"
+    [images]="getImageOnlyMedia()" [currentBackgroundImage]="order.orderBackground?.image"
+    (imageSelected)="onBackgroundImageSelected($event)" (close)="onCloseBackgroundImageSelector()">
   </app-background-image-selector>
 </div>

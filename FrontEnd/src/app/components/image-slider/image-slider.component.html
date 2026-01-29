@@ -1,24 +1,18 @@
-<div *ngIf="show" class="slider-overlay" (click)="closeSlider()">
-  <div class="slider-container">
+<div *ngIf="show" class="slider-overlay" [ngClass]="'variant-' + variant" (click)="closeSlider()">
+  <div class="slider-container" [ngClass]="'variant-' + variant">
     <!-- Close Button -->
-    <button 
-      class="close-btn" 
-      (click)="onButtonClick($event, 'close')"
-      aria-label="Close slider"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="close-btn" (click)="onButtonClick($event, 'close')" aria-label="Close slider">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
       </svg>
     </button>
 
     <!-- Previous Button -->
-    <button 
-      class="nav-btn prev-btn" 
-      (click)="onButtonClick($event, 'previous')"
-      aria-label="Previous image"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="nav-btn prev-btn" (click)="onButtonClick($event, 'previous')" aria-label="Previous image">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"></polyline>
       </svg>
     </button>
@@ -26,24 +20,15 @@
     <!-- Media Display -->
     <div class="image-wrapper" (click)="onImageClick($event)">
       <!-- Video Player -->
-      <video 
-        *ngIf="getCurrentImage() && isVideo(getCurrentImage()!)"
-        [src]="getImageUrl(getCurrentImage()!)"
-        controls
-        preload="metadata"
-        class="slider-video"
-        (click)="$event.stopPropagation()">
+      <video *ngIf="getCurrentImage() && isVideo(getCurrentImage()!)" [src]="getImageUrl(getCurrentImage()!)" controls
+        preload="metadata" class="slider-video" (click)="$event.stopPropagation()">
         Your browser does not support the video tag.
       </video>
-      
+
       <!-- Image -->
-      <img 
-        *ngIf="getCurrentImage() && !isVideo(getCurrentImage()!)" 
-        [src]="getImageUrl(getCurrentImage()!)" 
-        [alt]="getCurrentImage()!.filename"
-        class="slider-image"
-      />
-      
+      <img *ngIf="getCurrentImage() && !isVideo(getCurrentImage()!)" [src]="getImageUrl(getCurrentImage()!)"
+        [alt]="getCurrentImage()!.filename" class="slider-image" />
+
       <!-- Media Counter -->
       <div class="image-counter">
         {{ currentIndex + 1 }} / {{ images.length }}
@@ -51,15 +36,11 @@
     </div>
 
     <!-- Next Button -->
-    <button 
-      class="nav-btn next-btn" 
-      (click)="onButtonClick($event, 'next')"
-      aria-label="Next image"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button class="nav-btn next-btn" (click)="onButtonClick($event, 'next')" aria-label="Next image">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="9 18 15 12 9 6"></polyline>
       </svg>
     </button>
   </div>
 </div>
-
