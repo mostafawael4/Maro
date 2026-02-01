@@ -436,22 +436,23 @@
 .gallery-grid {
   width: 100% !important;
   max-width: 100% !important;
-  column-count: 4;
-  column-gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 0 10px;
 
   @media (max-width: 1200px) {
-    column-count: 3;
+    grid-template-columns: repeat(3, 1fr);
   }
 
   @media (max-width: 768px) {
-    column-count: 2;
-    column-gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   @media (max-width: 480px) {
-    column-count: 1;
+    grid-template-columns: repeat(1, 1fr);
   }
 
   &.selection-mode {
@@ -478,10 +479,7 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(107, 31, 31, 0.1);
   background: rgba(26, 1, 5, 0.3);
-  display: inline-block;
-  vertical-align: top;
   width: 100%;
-  margin-bottom: 1.5rem;
   break-inside: avoid;
   border: 3px solid transparent;
   transition: all 0.2s ease;

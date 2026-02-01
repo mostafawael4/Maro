@@ -80,25 +80,7 @@ export class FolderMediaViewComponent {
     return this.filteredMedia.slice(0, this.itemsToShow);
   }
 
-  get masonryOrderedMedia(): { item: OrderImage, actualIndex: number }[] {
-    const items = this.visibleMedia;
-    const cols = this.columns;
-    if (cols <= 1) return items.map((item, i) => ({ item, actualIndex: i }));
 
-    const rowCount = Math.ceil(items.length / cols);
-    const result: { item: OrderImage, actualIndex: number }[] = [];
-
-    // Construct the array column-by-column so CSS column-count renders them row-by-row
-    for (let c = 0; c < cols; c++) {
-      for (let r = 0; r < rowCount; r++) {
-        const index = r * cols + c;
-        if (index < items.length) {
-          result.push({ item: items[index], actualIndex: index });
-        }
-      }
-    }
-    return result;
-  }
 
   get hasMoreItems(): boolean {
     return this.filteredMedia.length > this.itemsToShow;
@@ -136,15 +118,17 @@ export class FolderMediaViewComponent {
     // If in selection mode, toggle selection instead of opening slider
     if (this.selectionMode) {
       event?.stopPropagation();
-      const mediaItem = this.filteredMedia[index];
-      this.toggleSelection(mediaItem);
+      const mediaItem = this.visibleMedia[index];
+      if (mediaItem) {
+        this.toggleSelection(mediaItem);
+      }
       return;
     }
 
-    // Get the actual index in the original media array
-    const mediaItem = this.filteredMedia[index];
-    const actualIndex = this.media.findIndex(m => m.filename === mediaItem.filename);
-    this.openMedia.emit(actualIndex >= 0 ? actualIndex : index);
+    // Since visibleMedia is a slice of filteredMedia (from index 0),
+    // the index in visibleMedia is the same as index in filteredMedia
+    // Just emit it directly like gallery/home components do
+    this.openMedia.emit(index);
   }
 
   async onDownload(media: OrderImage, event: Event): Promise<void> {

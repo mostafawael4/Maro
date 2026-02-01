@@ -153,28 +153,27 @@
   </div>
 
   <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia" [class.selection-mode]="selectionMode">
-    <div *ngFor="let entry of masonryOrderedMedia" class="gallery-item" [class.selected]="isSelected(entry.item)"
-      (click)="selectionMode && toggleSelection(entry.item)">
+    <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item" [class.selected]="isSelected(item)"
+      (click)="selectionMode && toggleSelection(item)">
       <!-- Selection Checkbox -->
       <div *ngIf="selectionMode" class="selection-checkbox"
         (click)="toggleSelection(entry.item); $event.stopPropagation()">
-        <input type="checkbox" [checked]="isSelected(entry.item)"
-          (change)="toggleSelection(entry.item); $event.stopPropagation()" (click)="$event.stopPropagation()" />
-        <svg *ngIf="isSelected(entry.item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-          stroke-linejoin="round">
+        <input type="checkbox" [checked]="isSelected(item)" (change)="toggleSelection(item); $event.stopPropagation()"
+          (click)="$event.stopPropagation()" />
+        <svg *ngIf="isSelected(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
 
-      <div *ngIf="isVideo(entry.item)" class="video-wrapper">
-        <video [src]="getImageUrl(entry.item)" [poster]="getVideoThumbnailUrl(entry.item)" [controls]="!selectionMode"
-          preload="metadata" (click)="onOpenMedia(entry.actualIndex, $event)"
-          (loadedmetadata)="onMediaLoad(entry.item.filename)" [class.loaded]="isMediaLoaded(entry.item.filename)"
-          [style.pointer-events]="selectionMode ? 'none' : 'auto'" class="media-video">
+      <div *ngIf="isVideo(item)" class="video-wrapper">
+        <video [src]="getImageUrl(item)" [poster]="getVideoThumbnailUrl(item)" [controls]="!selectionMode"
+          preload="metadata" (click)="onOpenMedia(i, $event)" (loadedmetadata)="onMediaLoad(item.filename)"
+          [class.loaded]="isMediaLoaded(item.filename)" [style.pointer-events]="selectionMode ? 'none' : 'auto'"
+          class="media-video">
           Your browser does not support the video tag.
         </video>
-        <button *ngIf="isAuthenticated" class="thumbnail-selector-btn" (click)="onSelectThumbnail(entry.item, $event)"
+        <button *ngIf="isAuthenticated" class="thumbnail-selector-btn" (click)="onSelectThumbnail(item, $event)"
           title="Select video thumbnail">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -185,29 +184,28 @@
         </button>
       </div>
 
-      <img *ngIf="!isVideo(entry.item)" [src]="getImageUrl(entry.item)" [alt]="getDisplayName(entry.item)"
-        loading="lazy" (load)="onMediaLoad(entry.item.filename)" [class.loaded]="isMediaLoaded(entry.item.filename)"
-        (click)="onOpenMedia(entry.actualIndex, $event); $event.stopPropagation()"
+      <img *ngIf="!isVideo(item)" [src]="getImageUrl(item)" [alt]="getDisplayName(item)" loading="lazy"
+        (load)="onMediaLoad(item.filename)" [class.loaded]="isMediaLoaded(item.filename)"
+        (click)="onOpenMedia(i, $event); $event.stopPropagation()"
         [style.pointer-events]="selectionMode ? 'none' : 'auto'">
 
       <div class="image-overlay">
-        <span class="image-filename">{{ getDisplayName(entry.item) }}</span>
-        <span class="image-date">{{ entry.item.uploadedAt | date: 'short' }}</span>
+        <span class="image-filename">{{ getDisplayName(item) }}</span>
+        <span class="image-date">{{ item.uploadedAt | date: 'short' }}</span>
       </div>
 
-      <button *ngIf="!selectionMode" class="download-btn" [disabled]="isDownloading(entry.item)"
-        [title]="isDownloading(entry.item) ? 'Downloading...' : (isVideo(entry.item) ? 'Download video' : 'Download image')"
-        (click)="onDownload(entry.item, $event)">
-        <svg *ngIf="!isDownloading(entry.item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
+      <button *ngIf="!selectionMode" class="download-btn" [disabled]="isDownloading(item)"
+        [title]="isDownloading(item) ? 'Downloading...' : (isVideo(item) ? 'Download video' : 'Download image')"
+        (click)="onDownload(item, $event)">
+        <svg *ngIf="!isDownloading(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
 
         <!-- Loading Spinner -->
-        <svg *ngIf="isDownloading(entry.item)" class="spinner-svg" width="20" height="20" viewBox="0 0 24 24"
+        <svg *ngIf="isDownloading(item)" class="spinner-svg" width="20" height="20" viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor"
@@ -216,8 +214,8 @@
         </svg>
       </button>
 
-      <button *ngIf="isAuthenticated" class="delete-btn" (click)="onDelete(entry.item, $event)"
-        [title]="'Delete ' + (isVideo(entry.item) ? 'video' : 'image')">
+      <button *ngIf="isAuthenticated" class="delete-btn" (click)="onDelete(item, $event)"
+        [title]="'Delete ' + (isVideo(item) ? 'video' : 'image')">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
