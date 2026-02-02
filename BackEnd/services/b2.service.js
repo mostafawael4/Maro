@@ -13,39 +13,45 @@ class B2Service {
     }
 
     async authorize() {
-        if (this.authPromise) return this.authPromise;
+        try {
+            if (this.authPromise) return this.authPromise;
 
-        if (!Credentials.B2_APPLICATION_KEY_ID || !Credentials.B2_APPLICATION_KEY) {
-            logger.error("B2_APPLICATION_KEY_ID or B2_APPLICATION_KEY is missing in environment variables.");
-            return Promise.reject(new Error("Missing B2 Credentials"));
-        }
-
-        this.authPromise = (async () => {
-            try {
-                logger.info(`B2: Authorizing with Key ID: ${Credentials.B2_APPLICATION_KEY_ID.substring(0, 8)}...`);
-                const response = await this.b2.authorize();
-
-                this.nativeDownloadUrl = response.data.downloadUrl;
-
-                // Use CDN URL if available, otherwise fall back to B2 download URL
-                if (Credentials.B2_CDN_URL) {
-                    this.downloadUrl = Credentials.B2_CDN_URL.replace(/\/$/, ''); // Remove trailing slash if present
-                    logger.info(`B2: Using CDN URL: ${this.downloadUrl} (Native: ${this.nativeDownloadUrl})`);
-                } else {
-                    this.downloadUrl = this.nativeDownloadUrl;
-                    logger.info(`B2: Authorized successfully. Download URL: ${this.downloadUrl}`);
-                }
-
-                // Clear pool on re-auth as old tokens might be invalid
-                this.uploadUrlPool = [];
-            } catch (err) {
-                logger.error(`B2: Authorization failed: ${err.message}`);
-                this.authPromise = null; // Reset on failure so we can retry
-                throw err;
+            if (!Credentials.B2_APPLICATION_KEY_ID || !Credentials.B2_APPLICATION_KEY) {
+                logger.error("B2_APPLICATION_KEY_ID or B2_APPLICATION_KEY is missing in environment variables.");
+                return Promise.reject(new Error("Missing B2 Credentials"));
             }
-        })();
 
-        return this.authPromise;
+            this.authPromise = (async () => {
+                try {
+                    logger.info(`B2: Authorizing with Key ID: ${Credentials.B2_APPLICATION_KEY_ID.substring(0, 8)}...`);
+                    const response = await this.b2.authorize();
+
+                    this.nativeDownloadUrl = response.data.downloadUrl;
+
+                    // Use CDN URL if available, otherwise fall back to B2 download URL
+                    if (Credentials.B2_CDN_URL) {
+                        this.downloadUrl = Credentials.B2_CDN_URL.replace(/\/$/, ''); // Remove trailing slash if present
+                        logger.info(`B2: Using CDN URL: ${this.downloadUrl} (Native: ${this.nativeDownloadUrl})`);
+                    } else {
+                        this.downloadUrl = this.nativeDownloadUrl;
+                        logger.info(`B2: Authorized successfully. Download URL: ${this.downloadUrl}`);
+                    }
+
+                    // Clear pool on re-auth as old tokens might be invalid
+                    this.uploadUrlPool = [];
+                } catch (err) {
+                    logger.error(`B2: Authorization failed: ${err.message}`);
+                    this.authPromise = null; // Reset on failure so we can retry
+                    throw err;
+                }
+            })();
+
+            return this.authPromise;
+        } catch (error) {
+            logger.error(`B2: Authorization failed: ${error.message}`);
+            this.authPromise = null; // Reset on failure so we can retry
+            // throw error;
+        }
     }
 
     async getPresignedUrl(key) {
@@ -212,7 +218,7 @@ class B2Service {
     async downloadFileByName(fileName) {
         const startTime = Date.now();
         await this.authorize();
-        logger.info(`authorized in ${Date.now() - startTime}ms`);
+        logger.info(`authorized in ${Date.now() - startTime}ms for ${fileName}`);
         try {
             const downloadStartTime = Date.now();
             const response = await this.b2.downloadFileByName({
@@ -220,11 +226,32 @@ class B2Service {
                 fileName: fileName,
                 responseType: 'arraybuffer'
             });
-            logger.info(`get response in ${Date.now() - downloadStartTime}ms`);
+            logger.info(`get response in ${Date.now() - downloadStartTime}ms for ${fileName}`);
 
             return response.data;
         } catch (err) {
             logger.error(`B2 Download Error for ${fileName}: ${err.message}`);
+            throw err;
+        }
+    }
+
+    /**
+     * Stream a file from B2 without loading it into memory
+     * This is memory-efficient for creating zip files
+     * @param {string} fileName - The file path in B2
+     * @returns {Promise<NodeJS.ReadableStream>} - A readable stream
+     */
+    async downloadFileStream(fileName) {
+        await this.authorize();
+        try {
+            const response = await this.b2.downloadFileByName({
+                bucketName: Credentials.B2_BUCKET_NAME,
+                fileName: fileName,
+                responseType: 'stream'
+            });
+            return response.data;
+        } catch (err) {
+            logger.error(`B2 Stream Download Error for ${fileName}: ${err.message}`);
             throw err;
         }
     }

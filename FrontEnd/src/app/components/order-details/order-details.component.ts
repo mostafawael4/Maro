@@ -13,7 +13,6 @@ import { VideoPosterSelectorComponent } from '../video-poster-selector/video-pos
 import { BackgroundImageSelectorComponent } from '../background-image-selector/background-image-selector.component';
 import { OrderFolderPanelComponent } from '../order-folder-panel/order-folder-panel.component';
 import { FolderMediaViewComponent } from '../folder-media-view/folder-media-view.component';
-import JSZip from 'jszip';
 
 @Component({
   selector: 'app-order-details',
@@ -57,6 +56,10 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   deletingFolder = false;
   batchDownloading = false;
   zippingFolder = false;
+  downloadStatus = 'Preparing download...';
+  downloadProgress = 0; // 0-100 percentage
+  downloadedBytes = 0;
+  totalBytes = 0;
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -239,39 +242,6 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }
-
-  async downloadSelectedImages(mediaArray: OrderImage[]) {
-    if (!mediaArray || mediaArray.length === 0 || !this.order?._id) return;
-
-    this.batchDownloading = true;
-    try {
-      // Download files sequentially to avoid browser blocking multiple downloads
-      for (let i = 0; i < mediaArray.length; i++) {
-        const media = mediaArray[i];
-        const downloadUrl = this.ordersService.getDownloadUrl(this.order._id, media.filename);
-
-        // Create a temporary anchor element to trigger download
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = media.originalName || media.filename;
-
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Small delay between downloads to prevent browser from blocking
-        if (i < mediaArray.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-    } catch (error) {
-      console.error('Error downloading selected media:', error);
-      alert('Failed to download some files. Please try again.');
-    } finally {
-      this.batchDownloading = false;
-    }
   }
 
   onDeleteMediaClick(media: OrderImage, event?: Event): void {
@@ -613,76 +583,101 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   async onDownloadFolder(folderName: string): Promise<void> {
     if (!this.order?._id) return;
 
+    // Reset and show progress
     this.zippingFolder = true;
+    this.downloadProgress = 0;
+    this.downloadedBytes = 0;
+    this.totalBytes = 0;
+    this.downloadStatus = 'Connecting to server...';
+
     try {
-      // Show loading state (you can add a loading variable if needed)
-
-
-      // Fetch folder media
-      let mediaToDownload: OrderImage[] = [];
-
-      if (this.isAuthenticated) {
-        // For admin, fetch from API
-        const response = await this.ordersService.getFolderMedia(this.order._id, folderName).toPromise();
-        mediaToDownload = response?.media || [];
-      } else {
-        // For clients, filter from existing media
-        mediaToDownload = (this.order?.media || []).filter(item => item.foldername === folderName);
-      }
-
-      if (mediaToDownload.length === 0) {
-        alert('No media found in this folder');
-        return;
-      }
-
-      // Create a new JSZip instance
-      const zip = new JSZip();
-      const folder = zip.folder(folderName);
-
-      if (!folder) {
-        throw new Error('Failed to create folder in zip');
-      }
-
-      // Download each file and add to zip
-      const downloadPromises = mediaToDownload.map(async (media) => {
-        try {
-          const downloadUrl = this.ordersService.getDownloadUrl(this.order!._id, media.filename);
-          const response = await fetch(downloadUrl);
-          const blob = await response.blob();
-          const filename = media.originalName || media.filename;
-          folder.file(filename, blob);
-        } catch (error) {
-          console.error(`Failed to download ${media.filename}:`, error);
-          // Continue with other files even if one fails
-        }
+      const downloadUrl = this.ordersService.getFolderDownloadUrl(this.order._id, folderName);
+      
+      // Use fetch to get real progress
+      const response = await fetch(downloadUrl, {
+        credentials: 'include' // Important for auth cookies
       });
 
-      // Wait for all downloads to complete
-      await Promise.all(downloadPromises);
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
 
-      // Generate the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      // Get total size from Content-Length header
+      const contentLength = response.headers.get('Content-Length');
+      this.totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
+
+      // Get the response body as a stream
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get response stream');
+      }
+
+      this.downloadStatus = 'Downloading files...';
+      const chunks: Uint8Array[] = [];
+
+      // Read the stream
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        chunks.push(value);
+        this.downloadedBytes += value.length;
+
+        // Update progress
+        if (this.totalBytes > 0) {
+          this.downloadProgress = Math.round((this.downloadedBytes / this.totalBytes) * 100);
+          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)} / ${this.formatBytes(this.totalBytes)}`;
+        } else {
+          // If we don't know total size, just show downloaded amount
+          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)}`;
+        }
+      }
+
+      // Combine chunks into a single blob
+      const blob = new Blob(chunks as BlobPart[], { type: 'application/zip' });
+      
+      this.downloadStatus = 'Saving file...';
+      this.downloadProgress = 100;
 
       // Create download link
-      const downloadUrl = window.URL.createObjectURL(zipBlob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = blobUrl;
       link.download = `${folderName}.zip`;
-
-      // Trigger download
+      link.style.display = 'none';
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
+      
       // Clean up
-      window.URL.revokeObjectURL(downloadUrl);
-
+      window.URL.revokeObjectURL(blobUrl);
+      
+      // Show completion briefly
+      this.downloadStatus = 'Download complete!';
+      await this.delay(1000);
+      
+      this.zippingFolder = false;
 
     } catch (error) {
       console.error('Error downloading folder:', error);
       alert('Failed to download folder. Please try again.');
-    } finally {
       this.zippingFolder = false;
     }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

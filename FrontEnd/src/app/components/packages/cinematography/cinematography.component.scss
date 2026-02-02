@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  
+
   .spinner {
     width: 50px;
     height: 50px;
@@ -21,7 +21,7 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
-  
+
   p {
     margin-top: 20px;
     color: #6B1F1F;
@@ -30,14 +30,16 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-container {
   text-align: center;
   padding: 60px 20px;
   min-height: 300px;
-  
+
   p {
     color: #dc2626;
     font-size: 1.1em;
@@ -58,6 +60,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -81,7 +84,7 @@
   margin-bottom: 0.75rem;
   letter-spacing: 1px;
   // font-style: italic;
-  
+
   @media (max-width: 768px) {
     font-size: 2rem;
   }
@@ -155,11 +158,11 @@
   border: 2px solid rgba(139, 58, 58, 0.15);
   box-shadow: 0 8px 24px rgba(139, 58, 58, 0.08);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(30px);
-  
+
   // Top accent border
   &::before {
     content: '';
@@ -172,11 +175,11 @@
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.6s ease-out forwards;
-    
+
     // Stagger animation for each card
     @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
@@ -189,7 +192,7 @@
     transform: translateY(-8px);
     box-shadow: 0 16px 40px rgba(139, 58, 58, 0.12);
     border-color: rgba(139, 58, 58, 0.3);
-    
+
     &::before {
       opacity: 1;
     }
@@ -198,7 +201,7 @@
   &.popular {
     border-color: #8B3A3A;
     border-width: 2.5px;
-    
+
     &::before {
       opacity: 1;
     }
@@ -283,7 +286,7 @@
   text-align: center;
   margin-bottom: 2.5rem;
   position: relative;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -314,15 +317,15 @@
   align-items: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(139, 58, 58, 0.06);
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(20px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.5s ease-out forwards;
-    
+
     // Stagger animation for each extra
     @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
@@ -360,11 +363,11 @@
   background: rgba(255, 252, 248, 0.6);
   border-radius: 16px;
   border: 2px solid rgba(139, 58, 58, 0.1);
-  
+
   // Initial state before animation
   opacity: 0;
   transform: translateY(30px);
-  
+
   // Smooth animation when scrolling into view
   &.animate-in {
     animation: fadeInUp 0.7s ease-out forwards;
@@ -428,6 +431,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -448,11 +452,11 @@
   .package-card {
     padding: 0;
   }
-  
+
   .package-header {
     padding: 1.5rem 1.5rem;
   }
-  
+
   .package-features {
     padding: 1.5rem;
   }

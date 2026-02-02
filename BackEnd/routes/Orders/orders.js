@@ -538,13 +538,117 @@ router.get("/:orderId/download/:filename", async (req, res) => {
     // Set appropriate headers
     res.type(filename);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-    return res.send(Buffer.from(fileBuffer));
+    return res.send(fileBuffer);
   } catch (err) {
     logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
     return res.status(500).json({ ok: false, message: "Download failed" });
   }
 });
+
+// POST /orders/:orderId/download-selected - download multiple selected files as zip
+router.post("/:orderId/download-selected", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filenames } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ ok: false, message: "orderId is required" });
+    }
+
+    if (!filenames || !Array.isArray(filenames) || filenames.length === 0) {
+      return res.status(400).json({ ok: false, message: "filenames array is required" });
+    }
+
+    // Get the order to validate files
+    const order = await Order.findById(orderId).lean();
+    if (!order) {
+      logger.warn(`Order not found for batch download: ${orderId}`);
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    // Validate all filenames exist in the order
+    const orderFilenames = order.media ? order.media.map(m => m.filename) : [];
+    const invalidFiles = filenames.filter(f => !orderFilenames.includes(f));
+    
+    if (invalidFiles.length > 0) {
+      logger.warn(`Invalid files requested for download in order ${orderId}: ${invalidFiles.join(', ')}`);
+      return res.status(400).json({ 
+        ok: false, 
+        message: "Some files do not exist in this order",
+        invalidFiles 
+      });
+    }
+
+    // Get media items for the requested files
+    const mediaToDownload = order.media.filter(m => filenames.includes(m.filename));
+
+    logger.info(`Starting batch download for order ${orderId} (${mediaToDownload.length} files)`);
+
+    // Set response headers for zip download
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="selected-files.zip"`);
+
+    // Create archiver instance
+    const archiver = await import('archiver');
+    const archive = archiver.default('zip', {
+      zlib: { level: 6 }, // Balanced compression
+      store: true
+    });
+
+    // Pipe archive to response
+    archive.pipe(res);
+
+    // Handle archiver errors
+    archive.on('error', (err) => {
+      logger.error(`Archiver error for batch download in order ${orderId}: ${err.message}`);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, message: 'Failed to create zip file' });
+      }
+    });
+
+    // Track progress
+    let processedFiles = 0;
+    const concurrency = 5; // Process 5 files in parallel
+
+    // Process files in parallel batches
+    for (let i = 0; i < mediaToDownload.length; i += concurrency) {
+      const batch = mediaToDownload.slice(i, Math.min(i + concurrency, mediaToDownload.length));
+      
+      // Process batch in parallel
+      await Promise.all(batch.map(async (media) => {
+        try {
+          const key = `orders/${orderId}/${media.filename}`;
+          const fileName = media.originalName || media.filename;
+          
+          logger.info(`Streaming file ${processedFiles + 1}/${mediaToDownload.length}: ${fileName}`);
+          
+          // Get stream from B2
+          const fileStream = await b2.downloadFileStream(key);
+          
+          // Add stream to archive
+          archive.append(fileStream, { name: fileName });
+          
+          processedFiles++;
+        } catch (error) {
+          logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
+          // Continue with other files even if one fails
+        }
+      }));
+    }
+
+    // Finalize the archive
+    await archive.finalize();
+    
+    logger.info(`Successfully created batch download zip for order ${orderId} (${processedFiles}/${mediaToDownload.length} files)`);
+    
+  } catch (err) {
+    logger.error(`POST /orders/:orderId/download-selected failed: ${err.stack || err}`);
+    if (!res.headersSent) {
+      return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+    }
+  }
+});
+
 
 import orderFolderRoutes from './orderFolders.js';
 router.use("/folders", orderFolderRoutes);

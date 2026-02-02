@@ -421,6 +421,15 @@ export class OrdersService {
     return `${this.apiUrl}/${orderId}/download/${filename}`;
   }
 
+  getFolderDownloadUrl(orderId: string, folderName: string): string {
+    return `${this.apiUrl}/folders/${orderId}/${folderName}/download`;
+  }
+
+  getSelectedFilesDownloadUrl(orderId: string): string {
+    return `${this.apiUrl}/${orderId}/download-selected`;
+  }
+
+
   /**
    * 1. Get upload tokens and check for duplicates from Backend
    * 2. Upload bytes directly to B2 (fastest)
