@@ -156,8 +156,7 @@
     <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item" [class.selected]="isSelected(item)"
       (click)="selectionMode && toggleSelection(item)">
       <!-- Selection Checkbox -->
-      <div *ngIf="selectionMode" class="selection-checkbox"
-        (click)="toggleSelection(entry.item); $event.stopPropagation()">
+      <div *ngIf="selectionMode" class="selection-checkbox" (click)="toggleSelection(item); $event.stopPropagation()">
         <input type="checkbox" [checked]="isSelected(item)" (change)="toggleSelection(item); $event.stopPropagation()"
           (click)="$event.stopPropagation()" />
         <svg *ngIf="isSelected(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
