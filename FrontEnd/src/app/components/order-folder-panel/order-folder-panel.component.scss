@@ -204,6 +204,14 @@
   opacity: 1;
 }
 
+@media (max-width: 768px) {
+
+  .folder-download-btn,
+  .folder-delete-btn {
+    opacity: 1;
+  }
+}
+
 .folder-state {
   margin-top: 1.5rem;
   padding: 1rem 1.25rem;

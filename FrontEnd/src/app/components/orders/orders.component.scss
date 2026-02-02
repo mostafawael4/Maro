@@ -498,6 +498,13 @@
   transform: scale(1);
 }
 
+@media (max-width: 768px) {
+  .action-icon {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 // Delete Icon
 .delete-icon {
   top: 12px;
@@ -739,7 +746,7 @@
 
   &:hover {
     background: rgba(0, 0, 0, 0.1);
-    
+
     svg {
       color: #333;
     }
