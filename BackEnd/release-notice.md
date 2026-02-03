@@ -38,3 +38,6 @@ add resend email service
 
 1.8.0
 ready for production and bugless
+
+1.8.7
+fix order folders api speed

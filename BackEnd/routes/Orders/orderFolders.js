@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router();
+import mongoose from "mongoose";
 import Order from "../../models/order.js";
 import { requireAdminAuth } from "../../middleware/auth.js";
 import uploadService from "../../services/upload.service.js";
@@ -23,21 +24,8 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
       return res.status(400).json({ ok: false, message: "orderId is required" });
     }
 
-    const order = await Order.findById(orderId).lean();
-    if (!order) {
-      return res.status(404).json({ ok: false, message: "Order not found" });
-    }
-
-    // Extract unique folder names from order.media
-    const foldersSet = new Set();
-    if (Array.isArray(order.media)) {
-      order.media.forEach(item => {
-        if (item.foldername) {
-          foldersSet.add(item.foldername);
-        }
-      });
-    }
-    const folders = Array.from(foldersSet);
+    // Use distinct to get unique folder names directly from MongoDB
+    const folders = await Order.distinct("media.foldername", { _id: orderId });
 
     return res.json({
       ok: true,
@@ -58,16 +46,25 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
       return res.status(400).json({ ok: false, message: "orderId is required" });
     }
 
-    const order = await Order.findById(orderId).lean();
-    if (!order) {
+    // Use aggregation to fetch only media items belonging to this folder
+    const result = await Order.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
+      { $project: {
+          media: {
+            $filter: {
+              input: "$media",
+              as: "m",
+              cond: { $eq: ["$$m.foldername", foldername] }
+            }
+          }
+      }}
+    ]);
+
+    if (!result || result.length === 0) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    // Get the media in this order where foldername equals foldername param
-    const filteredMedia = Array.isArray(order.media)
-      ? order.media.filter(item => item.foldername === foldername)
-      : [];
-
+    const filteredMedia = result[0].media || [];
     const signedMedia = await signOrderFiles(orderId, filteredMedia);
 
     return res.json({
@@ -92,15 +89,25 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
   }
 
   try {
-    const order = await Order.findById(orderId).lean();
-    if (!order) {
+    // Use aggregation to fetch only media items belonging to this folder
+    const result = await Order.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
+      { $project: {
+          media: {
+            $filter: {
+              input: "$media",
+              as: "m",
+              cond: { $eq: ["$$m.foldername", foldername] }
+            }
+          }
+      }}
+    ]);
+
+    if (!result || result.length === 0) {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    // Find filenames belonging to the folder
-    const mediaInFolder = Array.isArray(order.media)
-      ? order.media.filter(item => item.foldername === foldername)
-      : [];
+    const mediaInFolder = result[0].media || [];
     if (mediaInFolder.length === 0) {
       return res.status(404).json({ ok: false, message: `No media found in folder '${foldername}' for order ${orderId}` });
     }
@@ -143,16 +150,26 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
   }
 
   try {
-    const order = await Order.findById(orderId).lean();
-    if (!order) {
+    // Use aggregation to fetch only media items belonging to this folder
+    const result = await Order.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
+      { $project: {
+          media: {
+            $filter: {
+              input: "$media",
+              as: "m",
+              cond: { $eq: ["$$m.foldername", foldername] }
+            }
+          }
+      }}
+    ]);
+
+    if (!result || result.length === 0) {
       logger.warn(`Order not found for folder download: ${orderId}`);
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
-    // Filter media for this folder
-    const mediaInFolder = Array.isArray(order.media)
-      ? order.media.filter(item => item.foldername === foldername)
-      : [];
+    const mediaInFolder = result[0].media || [];
 
     if (mediaInFolder.length === 0) {
       logger.warn(`No media found in folder '${foldername}' for order ${orderId}`);

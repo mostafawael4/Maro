@@ -10,6 +10,7 @@ class B2Service {
         this.uploadUrlPool = [];
         this.downloadUrl = null;
         this.nativeDownloadUrl = null;
+        this.tokenCache = new Map(); // Cache for folder tokens
     }
 
     async authorize() {
@@ -104,6 +105,14 @@ class B2Service {
 
     async getFolderToken(prefix) {
         try {
+            const now = Date.now();
+            const cached = this.tokenCache.get(prefix);
+
+            // Tokens are valid for 24h, we'll cache for 23h to be safe
+            if (cached && (now - cached.timestamp < 23 * 60 * 60 * 1000)) {
+                return cached.data;
+            }
+
             await this.authorize();
             if (!Credentials.B2_BUCKET_ID) throw new Error("B2_BUCKET_ID is missing");
 
@@ -112,11 +121,19 @@ class B2Service {
                 fileNamePrefix: prefix,
                 validDurationInSeconds: 86400,
             });
-            return {
+
+            const tokenData = {
                 baseDownloadUrl: this.downloadUrl,
                 authorizationToken: response.data.authorizationToken,
                 bucketName: Credentials.B2_BUCKET_NAME
             };
+
+            this.tokenCache.set(prefix, {
+                data: tokenData,
+                timestamp: now
+            });
+
+            return tokenData;
         } catch (err) {
             logger.error(`B2: Folder Token Error for ${prefix}: ${err.message}`);
             return null;
