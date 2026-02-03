@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private ordersService: OrdersService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Load orders - authentication is handled by adminGuard at route level
@@ -167,10 +167,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   }
 
@@ -181,7 +181,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const rawNames =
       order.orderForm?.brideAndGroomNames ||
-      order.orderForm?.coupleDescription ||
       order.clientName ||
       '';
 
@@ -194,7 +193,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Otherwise, try to split and format them
     const parts = cleaned
       .split(/&|and|\/|\+|,|x/i)
-      .map(part => part.trim())
+      .map((part: string) => part.trim())
       .filter(Boolean);
 
     if (parts.length >= 2) {

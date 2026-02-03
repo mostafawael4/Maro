@@ -124,10 +124,21 @@ const handlePromoCode = (code, subtotal) => {
   let promoCode, discount = 0;
   if (code) {
     const normalizedCode = code.toString().trim().toLowerCase();
-    const promoValue = PROMO_CODES[normalizedCode];
-    if (promoValue) {
+
+    // Check if the code represents a numeric value (manual discount)
+    const numericValue = parseFloat(normalizedCode);
+    if (!isNaN(numericValue) && numericValue > 0) {
       promoCode = normalizedCode;
-      discount = Math.min(promoValue, subtotal);
+      // We store the numeric discount amount.
+      // It's used in calculations up to the subtotal amount, but we preserve the value.
+      discount = numericValue;
+    } else {
+      // Fallback to legacy promo code lookup
+      const promoValue = PROMO_CODES[normalizedCode];
+      if (promoValue) {
+        promoCode = normalizedCode;
+        discount = promoValue;
+      }
     }
   }
   return { promoCode, discount };
@@ -207,7 +218,7 @@ const normalizePricingSelections = async (pricingInput = {}) => {
   if (collections && collections.length) normalized.collections = collections;
   if (extras && extras.length) normalized.extras = extras;
   if (promoCode) normalized.promoCode = promoCode;
-  if (subtotal > 0 || discount > 0 || total > 0) {
+  if (subtotal >= 0 || discount > 0 || total >= 0) {
     normalized.subtotal = subtotal;
     normalized.discount = discount;
     normalized.total = total;

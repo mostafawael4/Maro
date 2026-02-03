@@ -32,9 +32,6 @@ const OrderFormSchema = new Schema({
   eventDate: { type: Date },
   eventType: [{ type: String }], // wedding, engagement, etc.
   eventVenue: { type: String },
-  timelineOfDay: { type: String },
-  shootersStartTime: { type: String },
-  shootersEndTime: { type: String },
   coupleDescription: { type: String },
   moodBoardLinks: [{ type: String }],
   favoriteSongs: [{ type: String }],
@@ -60,7 +57,6 @@ const OrderFormSchema = new Schema({
     teaserStyleLinks: [{ type: String }],
   },
   socialMediaInspiration: [{ type: String }],
-  tiktokIdeas: [{ type: String }],
   pricing: {
     packages: [pricingPackageSchema],
     collections: [pricingCollectionSchema],

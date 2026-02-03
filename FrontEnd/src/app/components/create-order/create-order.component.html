@@ -75,19 +75,37 @@
         </div>
 
         <div class="form-group">
-          <label for="clientName" class="required">Client Name</label>
-          <input type="text" id="clientName" formControlName="clientName" class="form-control"
-            [class.invalid]="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched"
-            placeholder="Full name" />
-          <span *ngIf="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched" class="error-text">
-            Client name must be at least 3 characters
+          <label for="brideAndGroomNames" class="required">Bride & Groom's names</label>
+          <input type="text" id="brideAndGroomNames" formControlName="brideAndGroomNames" class="form-control"
+            [class.invalid]="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
+            placeholder="e.g., John & Jane" />
+          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
+            class="error-text">
+            Bride & Groom's names are required
           </span>
         </div>
 
-        <div class="form-group">
-          <label for="notes">Notes</label>
-          <textarea id="notes" formControlName="notes" class="form-control" rows="3"
-            placeholder="Any additional notes or special instructions..."></textarea>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="clientName" class="required">Groom's Number</label>
+            <input type="text" id="clientName" formControlName="clientName" class="form-control"
+              [class.invalid]="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched"
+              placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+            <span *ngIf="orderForm.get('clientName')?.invalid && orderForm.get('clientName')?.touched"
+              class="error-text">
+              Valid Egyptian mobile number is required (e.g. 01067715649)
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label for="notes" class="required">Bride's Number</label>
+            <input type="text" id="notes" formControlName="notes" class="form-control"
+              [class.invalid]="orderForm.get('notes')?.invalid && orderForm.get('notes')?.touched"
+              placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+            <span *ngIf="orderForm.get('notes')?.invalid && orderForm.get('notes')?.touched" class="error-text">
+              Valid Egyptian mobile number is required (e.g. 01067715649)
+            </span>
+          </div>
         </div>
       </section>
 
@@ -167,22 +185,18 @@
             <span>Subtotal</span>
             <strong>{{ currencyService.formatCurrency(pricingSummary.subtotal) }}</strong>
           </div>
-          <div class="summary-row">
+          <div class="summary-row" *ngIf="pricingSummary.discount > 0">
             <span>Discount</span>
             <strong>-{{ currencyService.formatCurrency(pricingSummary.discount) }}</strong>
           </div>
-          <div class="summary-row total">
-            <span>Total</span>
+          <div class="summary-row total" *ngIf="pricingSummary.discount > 0">
+            <span>Total after Discount</span>
             <strong>{{ currencyService.formatCurrency(pricingSummary.total) }}</strong>
           </div>
 
           <div class="summary-row">
-            <label for="depositPaid" class="deposit-label">Deposit Paid</label>
-            <div class="deposit-input-wrapper" formGroupName="pricing">
-              <input type="number" id="depositPaid" formControlName="depositPaid" min="0"
-                class="form-control deposit-input" (input)="onDepositChange()" placeholder="0" />
-              <span class="currency-suffix">{{ currencyService.getCurrencySuffix() }}</span>
-            </div>
+            <span>Deposit Paid (50%)</span>
+            <strong>{{ currencyService.formatCurrency(pricingSummary.total * 0.5) }}</strong>
           </div>
           <p class="error-text" *ngIf="depositError">{{ depositError }}</p>
 
@@ -191,21 +205,13 @@
             <strong>{{ currencyService.formatCurrency(pricingSummary.remaining) }}</strong>
           </div>
 
-          <div class="promo-section" formGroupName="pricing">
-            <label for="promoCode">Promo Code</label>
+          <div class="promo-section" formGroupName="pricing" *ngIf="isAdminUser">
+            <label for="promoCode">Discount Amount</label>
             <div class="promo-actions">
-              <input type="text" id="promoCode" formControlName="promoCode" placeholder="Enter promo code"
-                [disabled]="isEditMode" />
-              <button type="button" class="btn-apply" (click)="applyPromoCode()" [disabled]="isEditMode">
-                Apply
-              </button>
-              <button type="button" class="btn-link" *ngIf="appliedPromoCode" (click)="clearPromoCode()"
-                [disabled]="isEditMode">
-                Remove
-              </button>
+              <input type="number" id="promoCode" formControlName="promoCode" placeholder="0"
+                (input)="updatePricingSummary()" min="0" />
+              <span class="currency-suffix">{{ currencyService.getCurrencySuffix() }}</span>
             </div>
-            <p class="promo-success" *ngIf="promoSuccess">{{ promoSuccess }}</p>
-            <p class="promo-error" *ngIf="promoError">{{ promoError }}</p>
           </div>
 
           <div class="selected-items" *ngIf="getSelectedCollectionsList().length || getSelectedExtrasList().length">
@@ -230,16 +236,7 @@
       <section class="form-section">
         <h2 class="section-title">Event Details</h2>
 
-        <div class="form-group">
-          <label for="brideAndGroomNames" class="required">Bride & Groom's names</label>
-          <input type="text" id="brideAndGroomNames" formControlName="brideAndGroomNames" class="form-control"
-            [class.invalid]="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
-            placeholder="e.g., John & Jane" />
-          <span *ngIf="orderForm.get('brideAndGroomNames')?.invalid && orderForm.get('brideAndGroomNames')?.touched"
-            class="error-text">
-            Bride & Groom's names are required
-          </span>
-        </div>
+
 
         <div class="form-group">
           <label for="eventDate" class="required">Event Date</label>
@@ -281,142 +278,32 @@
           </span>
         </div>
 
-        <div class="form-group">
-          <label for="timelineOfDay">Timeline of the Day:</label>
-          <p class="field-instruction">
-            Ex: Getting ready start time, Photoshoot time, Ceremony time, Guest arrival time, Reception start &
-            end time...etc
-          </p>
-          <textarea id="timelineOfDay" formControlName="timelineOfDay" class="form-control"
-            [class.invalid]="orderForm.get('timelineOfDay')?.invalid && orderForm.get('timelineOfDay')?.touched"
-            rows="4" placeholder="Describe the timeline of events for the day..."></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="shootersStartTime" class="required">Shooters Start Time</label>
-            <input type="time" id="shootersStartTime" formControlName="shootersStartTime" class="form-control"
-              [class.invalid]="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched" />
-            <span *ngIf="orderForm.get('shootersStartTime')?.invalid && orderForm.get('shootersStartTime')?.touched"
-              class="error-text">
-              Start time is required
-            </span>
-          </div>
-
-
-          <div class="form-group">
-            <label for="shootersEndTime" class="required">Shooters End Time</label>
-            <input type="time" id="shootersEndTime" formControlName="shootersEndTime" class="form-control"
-              [class.invalid]="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched" />
-            <span *ngIf="orderForm.get('shootersEndTime')?.invalid && orderForm.get('shootersEndTime')?.touched"
-              class="error-text">
-              End time is required
-            </span>
-          </div>
-        </div>
-
-
       </section>
 
       <!-- Couple Information Section -->
-      <section class="form-section">
-        <h2 class="section-title">Couple Information</h2>
 
-        <div class="form-group">
-          <label for="coupleDescription">Describe yourself as a couple; your hobbies, activities you
-            like to do together, things you both share, etc</label>
-          <p class="field-instruction">
-            Ex:
-            -We are an outgoing energetic couple who love to travel a lot & explore new things together...etc.
-            <br>
-            -We are introverted calm together who love to spend more time alone & go on romantic peaceful
-            dates...etc.
-          </p>
-          <textarea id="coupleDescription" formControlName="coupleDescription" class="form-control"
-            [class.invalid]="orderForm.get('coupleDescription')?.invalid && orderForm.get('coupleDescription')?.touched"
-            rows="4" placeholder="Tell us about the couple, their personalities, interests..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Share your mood board/inspiration pics</label>
-          <p class="field-instruction">
-            Ex: Pinterest boards, venue setup, decorations, bridal pictures...etc.
-          </p>
-          <p class="field-instruction italic">
-            Share links separated by a comma or you could share pics via whatsapp.
-          </p>
-          <textarea formControlName="moodBoardLinks" class="form-control mood-board-input"
-            [class.invalid]="orderForm.get('moodBoardLinks')?.invalid && orderForm.get('moodBoardLinks')?.touched"
-            rows="4"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Share with us some of your favorite tracks/songs so that we could get to know your
-            music taste.</label>
-          <div formArrayName="favoriteSongs" class="array-input-group" [class.invalid]="favoriteSongsArray.invalid">
-            <div *ngFor="let song of favoriteSongsArray.controls; let i = index" class="array-item">
-              <input type="text" [formControlName]="i" class="form-control" [class.invalid]="song.invalid"
-                placeholder="Song/Track name" />
-              <button type="button" class="btn-remove" (click)="removeFavoriteSong(i)">Remove</button>
-            </div>
-            <button type="button" class="btn-add" (click)="addFavoriteSong()">+ Add Song</button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="specialMoments">Share any planned special moments in your event so that we make
-            sure it's covered.
-          </label>
-          <p class="field-instruction">
-            Ex: vows, a specific dance, speeches, entertainment, fireworks, confetti...etc.
-
-          </p>
-          <textarea id="specialMoments" formControlName="specialMoments" class="form-control"
-            [class.invalid]="orderForm.get('specialMoments')?.invalid && orderForm.get('specialMoments')?.touched"
-            rows="4" placeholder="List any special moments, traditions, or events you want captured..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="excludeShots">If there is any part that you would prefer not to include, please
-            let us know</label>
-          <p class="field-instruction">
-            Ex: pre-makeup shots, kissing shots, zaffa part, bellydancer, certain family members, specific
-            guests...etc.
-          </p>
-          <textarea id="excludeShots" formControlName="excludeShots" class="form-control"
-            [class.invalid]="orderForm.get('excludeShots')?.invalid && orderForm.get('excludeShots')?.touched" rows="3"
-            placeholder="Any shots or moments you prefer to exclude..."></textarea>
-        </div>
-      </section>
 
       <!-- Vendors Section -->
       <section class="form-section">
         <h2 class="section-title">Vendors</h2>
 
         <div formGroupName="vendors">
-          <div class="form-group">
+          <div class="form-group" *ngIf="!hasSelectedPhotographyPackage">
             <label>Photographers</label>
-            <p class="field-instruction" *ngIf="hasSelectedPhotographyPackage">
-              You've selected a photography package with us, so these details aren't needed.
-            </p>
             <div formArrayName="photographers" class="array-input-group" [class.invalid]="photographersArray.invalid">
               <div *ngFor="let photographer of photographersArray.controls; let i = index" class="array-item">
                 <input type="text" [formControlName]="i" class="form-control" [class.invalid]="photographer.invalid"
                   placeholder="Photographer name or N/A" />
                 <button type="button" class="btn-remove" (click)="removePhotographer(i)">Remove</button>
               </div>
-              <button type="button" class="btn-add" (click)="addPhotographer()"
-                [disabled]="hasSelectedPhotographyPackage">
+              <button type="button" class="btn-add" (click)="addPhotographer()">
                 + Add Photographer
               </button>
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" *ngIf="!hasSelectedCinematographyPackage">
             <label>Cinematographers</label>
-            <p class="field-instruction" *ngIf="hasSelectedCinematographyPackage">
-              You've selected a cinematography package with us, so these details aren't needed.
-            </p>
             <div formArrayName="cinematographers" class="array-input-group"
               [class.invalid]="cinematographersArray.invalid">
               <div *ngFor="let cinematographer of cinematographersArray.controls; let i = index" class="array-item">
@@ -424,8 +311,7 @@
                   placeholder="Cinematographer name or N/A" />
                 <button type="button" class="btn-remove" (click)="removeCinematographer(i)">Remove</button>
               </div>
-              <button type="button" class="btn-add" (click)="addCinematographer()"
-                [disabled]="hasSelectedCinematographyPackage">
+              <button type="button" class="btn-add" (click)="addCinematographer()">
                 + Add Cinematographer
               </button>
             </div>
@@ -498,7 +384,7 @@
       </section>
 
       <!-- Film Editing Section -->
-      <section class="form-section">
+      <section class="form-section" *ngIf="hasSelectedCinematographyPackage">
         <h2 class="section-title">Film Editing Details</h2>
         <p class="section-intro">
           Your inputs would be extremely valuable to us regarding a few specifics in your film, so please choose the
@@ -507,48 +393,14 @@
 
         <div formGroupName="filmEditing">
           <!-- Accessory Shots Question -->
-          <div class="form-group">
-            <label class="required">We usually include shots of the bride and groom accessories during the getting ready
-              part, however, would you like to have separate shots for your accessories alone?</label>
-            <p class="field-instruction">
-              Ex: Shoes next to Cufflinks next to belt, Perfume next to wedding ring next to heels,...etc
-            </p>
-            <div class="radio-group" [class.invalid]="orderForm.get('filmEditing.includeAccessoriesShots')?.invalid">
-              <label *ngFor="let option of accessoryShotsOptions" class="radio-label">
-                <input type="radio" formControlName="includeAccessoriesShots" [value]="option.value" />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-            <span *ngIf="orderForm.get('filmEditing.includeAccessoriesShots')?.invalid" class="error-text">
-              Please let us know your preference for accessory shots.
-            </span>
-          </div>
+
 
           <!-- Edit Sequence Question -->
-          <div class="form-group">
-            <label class="required">Would you prefer your film to be edited in a chronological or random
-              sequence?</label>
-            <div class="definition-box">
-              <p><strong>Chronological sequence:</strong> Editing the film from start to finish according to the actual
-                timeline of your day, which means starting with shots of getting ready, then the first look, then the
-                photoshoot...etc.</p>
-              <p><strong>Random sequence:</strong> Editing the film by creating a unique sequence that tells a story
-                about your day, without sticking to the actual order of your timeline.</p>
-            </div>
-            <div class="radio-group" [class.invalid]="orderForm.get('filmEditing.editSequence')?.invalid">
-              <label *ngFor="let option of editSequenceOptions" class="radio-label">
-                <input type="radio" formControlName="editSequence" [value]="option.value" />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-            <span *ngIf="orderForm.get('filmEditing.editSequence')?.invalid" class="error-text">
-              Please select your preferred edit sequence.
-            </span>
-          </div>
+
 
           <!-- Style Preference -->
           <div class="form-group">
-            <label class="required" style="margin-top: 5rem;">We usually craft the style & direction of your film
+            <label class="required">We usually craft the style & direction of your film
               depending on your actual event day's vibes. Yet, if you have a preference from the below categories,
               please choose it and we'll do our best to match it.</label>
             <div class="checkbox-group" [class.invalid]="stylePreferenceArray.invalid">
@@ -564,66 +416,7 @@
           </div>
 
           <!-- Highlight Preference -->
-          <div class="form-group">
-            <label class="required">We guarantee that all your special moments with family & friends will be covered,
-              yet, some couples* have personalized preferences about what to highlight more in their wedding film, so
-              help us get a better understanding of yours.</label>
-            <div formGroupName="highlightPreference" class="highlight-preference-table">
-              <div class="table-header">
-                <div class="table-cell"></div>
-                <div class="table-cell">Family</div>
-                <div class="table-cell">Friends</div>
-                <div class="table-cell">Equal amount of shots</div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell row-label">Preparations/Getting ready</div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="preparations" value="family" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="preparations" value="friends" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="preparations" value="equal" />
-                </div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell row-label">Group shots</div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="groupShots" value="family" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="groupShots" value="friends" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="groupShots" value="equal" />
-                </div>
-              </div>
-              <div class="table-row">
-                <div class="table-cell row-label">Dancing/party shots</div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="dancingParty" value="family" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="dancingParty" value="friends" />
-                </div>
-                <div class="table-cell">
-                  <input type="radio" formControlName="dancingParty" value="equal" />
-                </div>
-              </div>
-            </div>
-            <div class="error-list" *ngIf="highlightPreferenceGroup.invalid">
-              <span *ngIf="highlightPreferenceGroup.get('preparations')?.invalid" class="error-text">
-                Please select a preference for preparations/getting ready.
-              </span>
-              <span *ngIf="highlightPreferenceGroup.get('groupShots')?.invalid" class="error-text">
-                Please select a preference for group shots.
-              </span>
-              <span *ngIf="highlightPreferenceGroup.get('dancingParty')?.invalid" class="error-text">
-                Please select a preference for dancing/party shots.
-              </span>
-            </div>
-          </div>
+
         </div>
       </section>
 
@@ -649,20 +442,7 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Do you have any Tiktok or Reels that you would like to recreate on your day?</label>
-          <p class="field-instruction italic">
-            If yes, please share links separated by a comma & we will try our best to help you create them.
-          </p>
-          <div formArrayName="tiktokIdeas" class="array-input-group" [class.invalid]="tiktokIdeasArray.invalid">
-            <div *ngFor="let idea of tiktokIdeasArray.controls; let i = index" class="array-item">
-              <input type="text" [formControlName]="i" class="form-control" [class.invalid]="idea.invalid"
-                placeholder="TikTok or Reels link (or N/A)" />
-              <button type="button" class="btn-remove" (click)="removeTiktokIdea(i)">Remove</button>
-            </div>
-            <button type="button" class="btn-add" (click)="addTiktokIdea()">+ Add Link</button>
-          </div>
-        </div>
+
       </section>
 
       <!-- Submit Button -->

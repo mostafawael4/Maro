@@ -33,7 +33,7 @@
         <div class="download-spinner"></div>
         <h3>Downloading Folder</h3>
         <p class="download-status">{{ downloadStatus }}</p>
-        
+
         <!-- Progress Bar -->
         <div class="progress-container" *ngIf="totalBytes > 0">
           <div class="progress-bar">
@@ -48,7 +48,7 @@
             <div class="progress-fill-indeterminate"></div>
           </div>
         </div>
-        
+
         <p class="download-note" *ngIf="totalBytes > 0">Please don't close this page until download completes</p>
         <p class="download-note" *ngIf="totalBytes === 0 && downloadedBytes === 0">Preparing files for download...</p>
       </div>
@@ -107,8 +107,8 @@
       [isAuthenticated]="isAuthenticated" [baseUrl]="baseUrl"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
       (back)="exitFolderView()" (openMedia)="openImageSlider($event)" (downloadMedia)="downloadImage($event)"
-      (deleteMedia)="onDeleteMediaClick($event)"
-      (selectVideoThumbnail)="onSelectVideoThumbnail($event)" (selectBackground)="onSelectBackgroundImage()">
+      (deleteMedia)="onDeleteMediaClick($event)" (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
+      (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
 
     <app-folder-media-view *ngIf="!selectedFolder && folders.length === 0" [media]="currentMedia"
@@ -116,8 +116,8 @@
       [showStepper]="false" [folderName]="null" [baseUrl]="baseUrl" [isAuthenticated]="isAuthenticated"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
       (openMedia)="openImageSlider($event)" (downloadMedia)="downloadImage($event)"
-      (deleteMedia)="onDeleteMediaClick($event)"
-      (selectVideoThumbnail)="onSelectVideoThumbnail($event)" (selectBackground)="onSelectBackgroundImage()">
+      (deleteMedia)="onDeleteMediaClick($event)" (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
+      (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
   </div>
 

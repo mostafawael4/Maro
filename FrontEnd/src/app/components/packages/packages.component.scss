@@ -118,7 +118,7 @@
   padding: 4rem 2rem;
 
   @media (max-width: 768px) {
-    padding: 3rem 1rem;
+    padding: 0rem 1rem;
   }
 }
 
@@ -126,8 +126,8 @@
 .section-header {
   text-align: center;
   max-width: 900px;
-  margin: 0 auto 4rem;
-  padding: 3rem 2rem;
+  margin: 0 auto 2rem;
+  padding: 0rem 2rem;
   position: relative;
   animation: fadeIn 0.8s ease-out;
 
@@ -488,7 +488,7 @@
 
 .service-price {
   font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #ffdab9; // Light peach
   letter-spacing: 0.5px;
@@ -823,7 +823,7 @@
   }
 
   .page-header {
-    padding: 1.5rem 1rem 2.5rem;
+    padding: 1.5rem 1rem 0rem;
     margin-bottom: 2rem;
   }
 

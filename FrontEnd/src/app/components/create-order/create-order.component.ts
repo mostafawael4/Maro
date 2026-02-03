@@ -35,18 +35,9 @@ export class CreateOrderComponent implements OnInit {
     total: 0,
     remaining: 0
   };
-  appliedPromoCode: string | null = null;
-  promoError = '';
-  promoSuccess = '';
   packageSelectionError = 'Please select at least one package.';
   collectionSelectionError = '';
   depositError = '';
-
-  private readonly PROMO_CODES: Record<string, number> = {
-    sunset: 1000,
-    harmony: 2000,
-    celebration: 3000
-  };
 
   // Event type options
   eventTypes = ['Wedding', 'Engagement', 'Katb Ketab', 'Other'];
@@ -59,11 +50,7 @@ export class CreateOrderComponent implements OnInit {
   ];
 
   // Accessory shots options
-  accessoryShotsOptions = [
-    { value: 'yes', label: 'Yes' },
-    { value: 'no', label: 'No' },
-    { value: 'no-preference', label: 'No preference, whatever fits within my film storyline' }
-  ];
+
 
   // Style preference options
   stylePreferenceOptions = ['Romantic', 'Fun/Energetic/Hyped', 'Vintage', 'Emotional', 'Royal', 'Holy'];
@@ -111,7 +98,6 @@ export class CreateOrderComponent implements OnInit {
       this.orderForm.disable({ emitEvent: false });
     }
 
-    this.updatePromoCodeLock();
   }
 
   ngOnInit(): void {
@@ -147,8 +133,8 @@ export class CreateOrderComponent implements OnInit {
     return this.fb.group({
       // Basic order info
       email: ['', [Validators.required, Validators.email]],
-      clientName: ['', [Validators.required, Validators.minLength(3)]],
-      notes: [''],
+      clientName: ['', [Validators.required, Validators.pattern(/^01[0125][0-9]{8}$/)]],
+      notes: ['', [Validators.required, Validators.pattern(/^01[0125][0-9]{8}$/)]],
 
       // Order form fields
       brideAndGroomNames: ['', Validators.required],
@@ -156,14 +142,7 @@ export class CreateOrderComponent implements OnInit {
       eventType: this.fb.array([], Validators.required),
       eventTypeOther: [''],
       eventVenue: ['', Validators.required],
-      timelineOfDay: [''],
-      shootersStartTime: ['', Validators.required],
-      shootersEndTime: ['', Validators.required],
-      coupleDescription: [''],
-      moodBoardLinks: [''],
-      favoriteSongs: this.fb.array([this.fb.control('')]),
-      specialMoments: [''],
-      excludeShots: [''],
+
 
       // Vendors
       vendors: this.fb.group({
@@ -181,22 +160,14 @@ export class CreateOrderComponent implements OnInit {
 
       // Film editing
       filmEditing: this.fb.group({
-        includeAccessoriesShots: this.fb.control('', Validators.required),
-        editSequence: this.fb.control('', Validators.required),
         stylePreference: this.fb.array([], Validators.required),
-        highlightPreference: this.fb.group({
-          preparations: this.fb.control('', Validators.required),
-          groupShots: this.fb.control('', Validators.required),
-          dancingParty: this.fb.control('', Validators.required)
-        }),
         teaserStyleLinks: this.fb.array([])
       }),
 
       // Social media
       socialMediaInspiration: this.fb.array([this.fb.control('')]),
-      tiktokIdeas: this.fb.array([this.fb.control('')]),
       pricing: this.fb.group({
-        promoCode: [''],
+        promoCode: ['0'], // Using promoCode field to store discount amount
         depositPaid: [0, [Validators.min(0)]]
       })
     });
@@ -382,7 +353,23 @@ export class CreateOrderComponent implements OnInit {
     }
 
     const pricingGroup = this.getPricingFormGroup();
-    pricingGroup?.get('promoCode')?.setValue(pricing?.promoCode || '', { emitEvent: false });
+
+    // Use promoCode field to store the discount for compatibility
+    // If promoCode is numeric, it's our manual discount amount
+    let discountForDisplay = 0;
+    if (pricing?.promoCode && !isNaN(Number(pricing.promoCode))) {
+      discountForDisplay = Number(pricing.promoCode);
+    } else {
+      discountForDisplay = pricing?.discount ?? 0;
+    }
+
+    if (!this.currencyService.isInEgyptValue && discountForDisplay > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        discountForDisplay = Math.round(discountForDisplay / rate);
+      }
+    }
+    pricingGroup?.get('promoCode')?.setValue(discountForDisplay.toString(), { emitEvent: false });
 
     // Convert deposit from EGP to USD for display if outside Egypt
     let depositForDisplay = pricing?.depositPaid ?? 0;
@@ -401,9 +388,7 @@ export class CreateOrderComponent implements OnInit {
         total: pricing.total ?? pricing.subtotal ?? 0,
         remaining: pricing.remainingBalance ?? Math.max((pricing.total ?? 0) - (pricing.depositPaid ?? 0), 0)
       };
-      this.appliedPromoCode = pricing.promoCode || null;
     } else {
-      this.appliedPromoCode = null;
       this.updatePricingSummary();
     }
   }
@@ -432,15 +417,7 @@ export class CreateOrderComponent implements OnInit {
     return result;
   }
 
-  private mapAccessoriesShotsValue(value?: boolean | string): string {
-    if (value === true || value === 'yes') {
-      return 'yes';
-    }
-    if (value === false || value === 'no') {
-      return 'no';
-    }
-    return 'no-preference';
-  }
+
 
   private normalizeDateForInput(value?: string | Date | null): string {
     if (!value) {
@@ -484,20 +461,11 @@ export class CreateOrderComponent implements OnInit {
       brideAndGroomNames: formData.brideAndGroomNames || '',
       eventDate: this.normalizeDateForInput(formData.eventDate),
       eventVenue: formData.eventVenue || '',
-      timelineOfDay: formData.timelineOfDay || '',
-      shootersStartTime: formData.shootersStartTime || '',
-      shootersEndTime: formData.shootersEndTime || '',
-      coupleDescription: formData.coupleDescription || '',
-      moodBoardLinks: Array.isArray(formData.moodBoardLinks) ? formData.moodBoardLinks.join(', ') : (formData.moodBoardLinks as unknown as string) || '',
-      specialMoments: formData.specialMoments || '',
-      excludeShots: formData.excludeShots || '',
       eventTypeOther: ''
     }, { emitEvent: false });
 
     this.setFormArrayValues(this.eventTypeArray, formData.eventType || [], false);
-    this.setFormArrayValues(this.favoriteSongsArray, formData.favoriteSongs || []);
     this.setFormArrayValues(this.socialMediaInspirationArray, formData.socialMediaInspiration || []);
-    this.setFormArrayValues(this.tiktokIdeasArray, formData.tiktokIdeas || []);
     this.setFormArrayValues(this.teaserStyleLinksArray, formData.filmEditing?.teaserStyleLinks || [], false);
 
     const vendors = formData.vendors || {};
@@ -517,18 +485,8 @@ export class CreateOrderComponent implements OnInit {
 
     const filmEditingGroup = this.orderForm.get('filmEditing') as FormGroup;
     const filmEditing = formData.filmEditing || {};
-    filmEditingGroup.patchValue({
-      includeAccessoriesShots: this.mapAccessoriesShotsValue(filmEditing.includeAccessoriesShots),
-      editSequence: filmEditing.editSequence || 'no-preference'
-    }, { emitEvent: false });
+    filmEditingGroup.patchValue({}, { emitEvent: false });
     this.setStylePreferenceSelections(filmEditing.stylePreference || []);
-
-    const highlightSelections = this.parseHighlightSelections(filmEditing.highlightPreference);
-    this.highlightPreferenceGroup.patchValue({
-      preparations: highlightSelections.preparations || '',
-      groupShots: highlightSelections.groupShots || '',
-      dancingParty: highlightSelections.dancingParty || ''
-    }, { emitEvent: false });
 
     this.setPricingSelections(formData.pricing || null);
     this.updateVendorControlStates();
@@ -628,13 +586,7 @@ export class CreateOrderComponent implements OnInit {
     return this.orderForm.get('socialMediaInspiration') as FormArray;
   }
 
-  get tiktokIdeasArray(): FormArray {
-    return this.orderForm.get('tiktokIdeas') as FormArray;
-  }
 
-  get favoriteSongsArray(): FormArray {
-    return this.orderForm.get('favoriteSongs') as FormArray;
-  }
 
   // Event Type checkbox methods
   toggleEventType(eventType: string): void {
@@ -703,27 +655,9 @@ export class CreateOrderComponent implements OnInit {
     }
   }
 
-  addTiktokIdea(): void {
-    this.tiktokIdeasArray.push(this.fb.control(''));
-  }
 
-  removeTiktokIdea(index: number): void {
-    this.tiktokIdeasArray.removeAt(index);
-    if (this.tiktokIdeasArray.length === 0) {
-      this.addTiktokIdea();
-    }
-  }
 
-  addFavoriteSong(): void {
-    this.favoriteSongsArray.push(this.fb.control(''));
-  }
 
-  removeFavoriteSong(index: number): void {
-    this.favoriteSongsArray.removeAt(index);
-    if (this.favoriteSongsArray.length === 0) {
-      this.addFavoriteSong();
-    }
-  }
 
   // Toggle checkbox arrays
   toggleStylePreference(option: string): void {
@@ -804,42 +738,7 @@ export class CreateOrderComponent implements OnInit {
     return this.isPackageTypeSelected('cinematography');
   }
 
-  applyPromoCode(): void {
-    const pricingGroup = this.getPricingFormGroup();
-    const rawCode = pricingGroup?.get('promoCode')?.value || '';
-    const normalizedCode = rawCode.trim().toLowerCase();
 
-    if (!normalizedCode) {
-      this.appliedPromoCode = null;
-      this.promoError = 'Please enter a promo code before applying.';
-      this.promoSuccess = '';
-      this.updatePricingSummary();
-      return;
-    }
-
-    const discountValue = this.PROMO_CODES[normalizedCode];
-    if (!discountValue) {
-      this.appliedPromoCode = null;
-      this.promoError = 'Invalid promo code. Please check your code and try again.';
-      this.promoSuccess = '';
-      this.updatePricingSummary();
-      return;
-    }
-
-    this.appliedPromoCode = normalizedCode;
-    this.promoError = '';
-    this.promoSuccess = `Promo code applied! Discount: ${this.currencyService.formatCurrency(discountValue)}`;
-    this.updatePricingSummary();
-  }
-
-  clearPromoCode(): void {
-    const pricingGroup = this.getPricingFormGroup();
-    pricingGroup?.get('promoCode')?.setValue('');
-    this.appliedPromoCode = null;
-    this.promoError = '';
-    this.promoSuccess = '';
-    this.updatePricingSummary();
-  }
 
   getSelectedCollectionsList(): SelectedCollectionOption[] {
     return Array.from(this.selectedCollections.values());
@@ -913,59 +812,36 @@ export class CreateOrderComponent implements OnInit {
     return isNaN(numeric) ? 0 : numeric;
   }
 
-  private updatePricingSummary(): void {
+  public updatePricingSummary(): void {
     const subtotal =
       [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
         (sum, item) => sum + (item.priceValue || 0),
         0
       );
 
-    let discount = 0;
-    if (this.appliedPromoCode) {
-      discount = this.PROMO_CODES[this.appliedPromoCode] || 0;
+    const pricingGroup = this.getPricingFormGroup();
+    let discount = Number(pricingGroup?.get('promoCode')?.value || 0);
+
+    // Convert discount back to EGP if user is outside Egypt
+    if (!this.currencyService.isInEgyptValue && discount > 0) {
+      const rate = this.currencyService.currentExchangeRate;
+      if (rate > 0) {
+        discount = Math.round(discount * rate);
+      }
     }
+
     if (discount > subtotal) {
       discount = subtotal;
     }
 
     const total = subtotal - discount;
-    const pricingGroup = this.getPricingFormGroup();
     const depositControl = pricingGroup?.get('depositPaid');
-    let depositValue = Number(depositControl?.value || 0);
-    if (depositValue < 0 || isNaN(depositValue)) {
-      depositValue = 0;
-      depositControl?.setValue(0, { emitEvent: false });
-    }
 
-    // Convert deposit to EGP for comparison if outside Egypt
-    let depositInEGP = depositValue;
-    if (!this.currencyService.isInEgyptValue) {
-      const rate = this.currencyService.currentExchangeRate;
-      if (rate > 0) {
-        depositInEGP = depositValue * rate;
-      }
-    }
+    // Deposit is now always 50% of the total
+    const depositInEGP = Math.round(total * 0.5);
 
-    // Compare against total (which is in EGP)
-    if (depositInEGP > total) {
-      // Set max allowed deposit based on location
-      if (this.currencyService.isInEgyptValue) {
-        // In Egypt: set to total (in EGP)
-        depositControl?.setValue(total, { emitEvent: false });
-        depositInEGP = total; // Use capped value for calculation
-      } else {
-        // Outside Egypt: convert total to USD for display
-        const rate = this.currencyService.currentExchangeRate;
-        if (rate > 0) {
-          const maxDepositUSD = Math.round(total / rate);
-          depositControl?.setValue(maxDepositUSD, { emitEvent: false });
-          depositInEGP = total; // Use capped value for calculation
-        }
-      }
-      this.depositError = 'Deposit cannot exceed total amount.';
-    } else {
-      this.depositError = '';
-    }
+    // Set the value in the form control for submission
+    depositControl?.setValue(depositInEGP, { emitEvent: false });
 
     const remaining = total - depositInEGP;
 
@@ -975,6 +851,8 @@ export class CreateOrderComponent implements OnInit {
       total,
       remaining
     };
+
+    this.depositError = '';
   }
 
   private hasCollectionForPackage(packageId: string): boolean {
@@ -1063,68 +941,8 @@ export class CreateOrderComponent implements OnInit {
   }
 
   onDepositChange(): void {
-    const pricingGroup = this.getPricingFormGroup();
-    const depositControl = pricingGroup?.get('depositPaid');
-    if (!depositControl) {
-      return;
-    }
-
-    // Get raw value and sanitize it
-    let rawValue = depositControl.value;
-    if (rawValue === null || rawValue === undefined || rawValue === '') {
-      rawValue = 0;
-    }
-
-    // Convert to number, handling string inputs
-    let value = typeof rawValue === 'string'
-      ? parseFloat(rawValue.toString().replace(/[^\d.-]/g, ''))
-      : Number(rawValue);
-
-    // Validate and sanitize
-    if (isNaN(value) || value < 0) {
-      value = 0;
-    }
-
-    // Round to whole number (no decimals for currency)
-    value = Math.round(value);
-
-    // Cap value to maximum before setting (prevent exceeding max)
-    // We need to calculate the max based on current total
-    const subtotal = [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
-      (sum, item) => sum + (item.priceValue || 0),
-      0
-    );
-    let discount = 0;
-    if (this.appliedPromoCode) {
-      discount = this.PROMO_CODES[this.appliedPromoCode] || 0;
-    }
-    if (discount > subtotal) {
-      discount = subtotal;
-    }
-    const total = subtotal - discount;
-
-    // Convert value to EGP for comparison
-    let valueInEGP = value;
-    if (!this.currencyService.isInEgyptValue) {
-      const rate = this.currencyService.currentExchangeRate;
-      if (rate > 0) {
-        valueInEGP = value * rate;
-      }
-    }
-
-    // Cap to maximum
-    if (valueInEGP > total && total > 0) {
-      if (this.currencyService.isInEgyptValue) {
-        value = total;
-      } else {
-        const rate = this.currencyService.currentExchangeRate;
-        if (rate > 0) {
-          value = Math.round(total / rate);
-        }
-      }
-    }
-
-    depositControl.setValue(value, { emitEvent: false });
+    // This is no longer used as the field is removed from UI
+    // But we keep the method to avoid potential template errors if not fully updated
     this.updatePricingSummary();
   }
 
@@ -1158,24 +976,19 @@ export class CreateOrderComponent implements OnInit {
     const pricingGroup = this.getPricingFormGroup();
     let depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
 
-    // Convert USD to EGP if outside Egypt before saving
-    if (!this.currencyService.isInEgyptValue && depositPaid > 0) {
-      const rate = this.currencyService.currentExchangeRate;
-      if (rate > 0) {
-        depositPaid = Math.round(depositPaid * rate);
-      }
-    }
-
+    // Note: depositPaid is already in EGP because we set it in updatePricingSummary
+    // but we'll keep the safety check logic if needed for different currencies.
     if (depositPaid > 0) {
       pricing.depositPaid = depositPaid;
       pricing.remainingBalance = this.pricingSummary.remaining;
     }
 
-    if (this.appliedPromoCode) {
-      pricing.promoCode = this.appliedPromoCode;
+    if (this.pricingSummary.discount > 0) {
+      pricing.discount = this.pricingSummary.discount;
+      pricing.promoCode = this.pricingSummary.discount.toString();
     }
 
-    if (!hasSelections && !pricing.promoCode) {
+    if (!hasSelections && !(pricing.discount && pricing.discount > 0)) {
       return undefined;
     }
 
@@ -1220,22 +1033,10 @@ export class CreateOrderComponent implements OnInit {
       eventDate: formValue.eventDate || undefined,
       eventType: eventTypes.length > 0 ? eventTypes : undefined,
       eventVenue: formValue.eventVenue || undefined,
-      timelineOfDay: formValue.timelineOfDay || undefined,
-      shootersStartTime: formValue.shootersStartTime || undefined,
-      shootersEndTime: formValue.shootersEndTime || undefined,
-      coupleDescription: formValue.coupleDescription || undefined,
-      moodBoardLinks: formValue.moodBoardLinks
-        ? formValue.moodBoardLinks.split(',').map((link: string) => link.trim()).filter((link: string) => link)
-        : undefined,
-      favoriteSongs: formValue.favoriteSongs && formValue.favoriteSongs.length > 0
-        ? formValue.favoriteSongs.filter((song: string) => song && song.trim())
-        : undefined,
-      specialMoments: formValue.specialMoments || undefined,
-      excludeShots: formValue.excludeShots || undefined,
+
       vendors: this.buildVendorsObject(formValue.vendors),
       filmEditing: this.buildFilmEditingObject(formValue.filmEditing),
-      socialMediaInspiration: formValue.socialMediaInspiration.filter((i: string) => i) || undefined,
-      tiktokIdeas: formValue.tiktokIdeas.filter((i: string) => i) || undefined
+      socialMediaInspiration: formValue.socialMediaInspiration.filter((i: string) => i) || undefined
     };
 
     const pricing = this.buildPricingPayload();
@@ -1327,60 +1128,12 @@ export class CreateOrderComponent implements OnInit {
     const filmEditingObj: OrderFormFilmEditing = {};
     let hasData = false;
 
-    // Handle includeAccessoriesShots - convert radio value to boolean if needed
-    // Save if user selected 'yes' or 'no', but not if 'no-preference' or empty
-    if (filmEditing.includeAccessoriesShots &&
-      filmEditing.includeAccessoriesShots !== '' &&
-      filmEditing.includeAccessoriesShots !== 'no-preference' &&
-      (filmEditing.includeAccessoriesShots === 'yes' || filmEditing.includeAccessoriesShots === 'no')) {
-      filmEditingObj.includeAccessoriesShots = filmEditing.includeAccessoriesShots === 'yes';
-      hasData = true;
-    }
 
-    if (filmEditing.editSequence && filmEditing.editSequence !== '' && filmEditing.editSequence !== 'no-preference') {
-      filmEditingObj.editSequence = filmEditing.editSequence;
-      hasData = true;
-    }
+
 
     if (filmEditing.stylePreference && filmEditing.stylePreference.length > 0) {
       filmEditingObj.stylePreference = filmEditing.stylePreference;
       hasData = true;
-    }
-
-    // Handle highlight preference - convert from object to array format
-    // Save all selections including 'equal' to show user made a choice
-    if (filmEditing.highlightPreference) {
-      const highlightArray: string[] = [];
-      const prefs = filmEditing.highlightPreference;
-
-      // Convert the object structure to array format expected by backend
-      // Include 'equal' selections as well to show the user made a choice
-      if (prefs.preparations && prefs.preparations !== '') {
-        if (prefs.preparations === 'equal') {
-          highlightArray.push(`Preparations: Equal amount of shots`);
-        } else {
-          highlightArray.push(`Preparations: ${prefs.preparations}`);
-        }
-      }
-      if (prefs.groupShots && prefs.groupShots !== '') {
-        if (prefs.groupShots === 'equal') {
-          highlightArray.push(`Group shots: Equal amount of shots`);
-        } else {
-          highlightArray.push(`Group shots: ${prefs.groupShots}`);
-        }
-      }
-      if (prefs.dancingParty && prefs.dancingParty !== '') {
-        if (prefs.dancingParty === 'equal') {
-          highlightArray.push(`Dancing/party: Equal amount of shots`);
-        } else {
-          highlightArray.push(`Dancing/party: ${prefs.dancingParty}`);
-        }
-      }
-
-      if (highlightArray.length > 0) {
-        filmEditingObj.highlightPreference = highlightArray;
-        hasData = true;
-      }
     }
 
     if (filmEditing.teaserStyleLinks && filmEditing.teaserStyleLinks.length > 0) {

@@ -11,13 +11,6 @@ export interface WeddingCalendarEvent {
   location?: string;
   color?: string;
   notes?: string;
-  favoriteSongs?: string[];
-  stylePreferences?: string[];
-  highlightPreferences?: string[];
-  moodboardLinks?: string[];
-  socialIdeas?: string[];
-  editingSequence?: string;
-  includeAccessoriesShots?: boolean;
   editingNotes?: string;
   specialRequests?: string;
   timelineNote?: string;
@@ -27,7 +20,7 @@ export interface WeddingCalendarEvent {
   providedIn: 'root'
 })
 export class CalendarService {
-  constructor(private ordersService: OrdersService) {}
+  constructor(private ordersService: OrdersService) { }
 
   /**
    * Fetch events from the backend orders API and map into calendar-friendly entries.
@@ -43,7 +36,6 @@ export class CalendarService {
       .map(order => {
         const dateSource =
           order.orderForm?.eventDate ||
-          this.extractFirstDate(order.orderForm?.timelineOfDay) ||
           order.createdAt;
         const isoDate = this.toIsoDate(new Date(dateSource));
         const { groomName, brideName } = this.extractCoupleNames(order);
@@ -52,14 +44,7 @@ export class CalendarService {
           `Wedding booking – ${groomName || order.clientName || 'Client'}`;
         const location = order.orderForm?.eventVenue || order.notes;
 
-        const favoriteSongs = order.orderForm?.favoriteSongs?.filter(Boolean);
-        const stylePreferences = order.orderForm?.filmEditing?.stylePreference?.filter(Boolean);
-        const highlightPreferences = order.orderForm?.filmEditing?.highlightPreference?.filter(Boolean);
-        const moodboardLinks = order.orderForm?.moodBoardLinks?.filter(Boolean);
-        const socialIdeas = [
-          ...(order.orderForm?.socialMediaInspiration ?? []),
-          ...(order.orderForm?.tiktokIdeas ?? [])
-        ].filter(Boolean);
+
 
         return {
           id: order._id,
@@ -69,14 +54,7 @@ export class CalendarService {
           title,
           location,
           color: this.getStatusColor(order.status),
-          notes: order.orderForm?.specialMoments || order.notes,
-          favoriteSongs,
-          stylePreferences,
-          highlightPreferences,
-          moodboardLinks,
-          socialIdeas,
-          editingSequence: order.orderForm?.filmEditing?.editSequence,
-          includeAccessoriesShots: order.orderForm?.filmEditing?.includeAccessoriesShots,
+          notes: order.notes,
           editingNotes: this.buildEditingNotes(order.orderForm?.filmEditing),
           specialRequests: this.buildSpecialRequests(order),
           timelineNote: this.buildTimelineNote(order)
@@ -99,7 +77,6 @@ export class CalendarService {
   private extractCoupleNames(order: Order): { groomName?: string; brideName?: string } {
     const rawNames =
       order.orderForm?.brideAndGroomNames ||
-      order.orderForm?.coupleDescription ||
       order.clientName ||
       '';
 
@@ -110,7 +87,7 @@ export class CalendarService {
 
     const parts = cleaned
       .split(/&|and|\/|\+|,|x/i)
-      .map(part => part.trim())
+      .map((part: string) => part.trim())
       .filter(Boolean);
 
     if (parts.length >= 2) {
@@ -146,51 +123,15 @@ export class CalendarService {
 
   private buildSpecialRequests(order: Order): string | undefined {
     const parts: string[] = [];
-    if (order.orderForm?.specialMoments) {
-      parts.push(`Must capture: ${order.orderForm.specialMoments}`);
-    }
-    if (order.orderForm?.excludeShots) {
-      parts.push(`Avoid: ${order.orderForm.excludeShots}`);
-    }
-    if (order.orderForm?.coupleDescription) {
-      parts.push(order.orderForm.coupleDescription);
-    }
     return parts.length ? parts.join(' • ') : undefined;
   }
 
   private buildTimelineNote(order: Order): string | undefined {
-    const segments: string[] = [];
-    if (order.orderForm?.shootersStartTime) {
-      segments.push(`Shooters start: ${order.orderForm.shootersStartTime}`);
-    }
-    if (order.orderForm?.shootersEndTime) {
-      segments.push(`Shooters end: ${order.orderForm.shootersEndTime}`);
-    }
-    if (order.orderForm?.timelineOfDay) {
-      segments.push(`Timeline: ${order.orderForm.timelineOfDay}`);
-    }
-    return segments.length ? segments.join(' | ') : undefined;
-  }
-
-  private formatLabel(value: string | undefined): string | undefined {
-    if (!value) return undefined;
-    return value
-      .split(/[\s-_]/)
-      .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
-      .join(' ');
+    return undefined;
   }
 
   private buildEditingNotes(filmEditing?: OrderFormFilmEditing): string | undefined {
-    if (!filmEditing) return undefined;
-    const segments: string[] = [];
-    const sequence = this.formatLabel(filmEditing.editSequence);
-    if (sequence) {
-      segments.push(`Sequence: ${sequence}`);
-    }
-    if (filmEditing.includeAccessoriesShots) {
-      segments.push('Include accessories shots');
-    }
-    return segments.length ? segments.join(' • ') : undefined;
+    return undefined;
   }
 }
 

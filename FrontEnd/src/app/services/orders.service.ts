@@ -29,10 +29,7 @@ export interface OrderFormVendors {
 }
 
 export interface OrderFormFilmEditing {
-  includeAccessoriesShots?: boolean;
-  editSequence?: 'chronological' | 'random' | 'no-preference';
   stylePreference?: string[];
-  highlightPreference?: string[];
   teaserStyleLinks?: string[];
 }
 
@@ -80,18 +77,9 @@ export interface OrderForm {
   eventDate?: string;
   eventType?: string[];
   eventVenue?: string;
-  timelineOfDay?: string;
-  shootersStartTime?: string;
-  shootersEndTime?: string;
-  coupleDescription?: string;
-  moodBoardLinks?: string[];
-  favoriteSongs?: string[];
-  specialMoments?: string;
-  excludeShots?: string;
   vendors?: OrderFormVendors;
   filmEditing?: OrderFormFilmEditing;
   socialMediaInspiration?: string[];
-  tiktokIdeas?: string[];
   pricing?: OrderPricing;
 }
 
@@ -436,13 +424,13 @@ export class OrdersService {
    * 3. Inform Backend to sync metadata and generate thumbnails
    */
   uploadOrderMediaDirectly(orderId: string, files: File[], folderName: string): Observable<any> {
-     return this.directUpload.uploadFiles(
-         `${this.apiUrl}/${orderId}/prepare-direct-upload`,
-         `${this.apiUrl}/${orderId}/confirm-direct-upload`,
-         files,
-         { foldername: folderName },
-         { foldername: folderName, orderId: orderId }
-     );
+    return this.directUpload.uploadFiles(
+      `${this.apiUrl}/${orderId}/prepare-direct-upload`,
+      `${this.apiUrl}/${orderId}/confirm-direct-upload`,
+      files,
+      { foldername: folderName },
+      { foldername: folderName, orderId: orderId }
+    );
   }
 }
 

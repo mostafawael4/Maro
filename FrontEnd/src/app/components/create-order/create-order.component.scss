@@ -24,6 +24,10 @@
   background: #580111; // Dark burgundy
   min-height: 100vh;
   padding: 2rem 1rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem 0.5rem;
+  }
 }
 
 .container {
@@ -36,6 +40,11 @@
   text-align: center;
   margin-bottom: 2.5rem;
   padding-top: 1rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+    padding-top: 0.5rem;
+  }
 }
 
 .page-title {
@@ -49,7 +58,8 @@
   // font-style: italic;
 
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -95,7 +105,8 @@
   border: 2px solid rgba(255, 218, 185, 0.3);
 
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 12px;
   }
 }
 
@@ -143,13 +154,18 @@
 }
 
 .form-section {
-  margin-bottom: 3rem;
-  padding-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 2px solid rgba(255, 218, 185, 0.2);
+
+  @media (max-width: 768px) {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
 
   &:last-of-type {
     border-bottom: none;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
   }
 }
 
@@ -175,19 +191,25 @@
   }
 
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 0.5rem;
+  }
 
   label {
     display: block;
     font-size: 0.95rem;
     font-weight: 600;
     color: #fdf9f2;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 
     &.required::after {
       content: ' *';
@@ -235,6 +257,11 @@
       box-shadow: 0 0 0 3px rgba(139, 58, 58, 0.1);
     }
 
+    @media (max-width: 768px) {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+    }
+
     &.invalid {
       border-color: #dc3545;
     }
@@ -265,10 +292,11 @@
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 }
 
