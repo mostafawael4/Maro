@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
 // GET /orders - admin only: list all orders
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
-    const list = await Order.find({}).select("-media").sort({ createdAt: -1 }).lean();
+    const list = await Order.find({}).sort({ createdAt: -1 }).lean();
 
     // Optimize: fetch one token for the whole bucket to sign the list
     const sharedToken = await b2.getFolderToken("");
