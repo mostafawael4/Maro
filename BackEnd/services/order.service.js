@@ -32,28 +32,28 @@ const deleteOrderfolder = async (orderId) => {
   try {
     // List all files for the order from B2 (or rely on what we have, but listing ensures we get everything under the prefix)
     const files = await uploadService.listOrderFiles(orderId);
-    
+
     if (!files || files.length === 0) {
-        logger.info(`No files found for order folder: ${orderId}`);
-        return;
+      logger.info(`No files found for order folder: ${orderId}`);
+      return;
     }
 
     const failed = [];
     for (const filename of files) {
-        try {
-            await uploadService.deleteFile(orderId, filename);
-        } catch (err) {
-            failed.push({ filename, error: err.message });
-        }
+      try {
+        await uploadService.deleteFile(orderId, filename);
+      } catch (err) {
+        failed.push({ filename, error: err.message });
+      }
     }
 
     if (failed.length > 0) {
-        logger.warn(`Failed to delete some files in order folder ${orderId}: ${JSON.stringify(failed)}`);
-        return { filesDeletedSuccessfully: [], filesFailedToDeleted: failed };
+      logger.warn(`Failed to delete some files in order folder ${orderId}: ${JSON.stringify(failed)}`);
+      return { filesDeletedSuccessfully: [], filesFailedToDeleted: failed };
     }
 
     logger.info(`Successfully deleted all files for order: ${orderId}`);
-    return ;
+    return;
   } catch (err) {
     logger.error(`Failed to delete order folder: ${orderId} - ${err.message}`);
     return { filesDeletedSuccessfully: [], filesFailedToDeleted: [{ filePath: orderId, error: err.message }] };
@@ -69,28 +69,36 @@ const deleteOrderfolder = async (orderId) => {
 const deleteOrderFileByFileName = async (orderId, filename) => {
   if (!orderId) throw new Error("Order ID is required");
   if (!filename) throw new Error("Filename is required");
-  
+
   try {
     // Find the order to get media details
     const order = await Order.findById(orderId);
     if (!order) throw new Error("Order not found");
 
     const mediaItem = order.media.find(m => m.filename === filename);
-    
+
     // If media item has a thumbnail, delete it first
     if (mediaItem && mediaItem.thumbnailFilename) {
-        try {
-            await uploadService.deleteFile(orderId, mediaItem.thumbnailFilename);
-            logger.info(`Deleted associated thumbnail: ${mediaItem.thumbnailFilename} (orderId: ${orderId})`);
-        } catch (thumbErr) {
-            logger.error(`Failed to delete associated thumbnail ${mediaItem.thumbnailFilename}: ${thumbErr.message}`);
-            // We continue even if thumbnail delete fails, to ensure main file is attempted
-        }
+      try {
+        await uploadService.deleteFile(orderId, mediaItem.thumbnailFilename);
+        logger.info(`Deleted associated thumbnail: ${mediaItem.thumbnailFilename} (orderId: ${orderId})`);
+      } catch (thumbErr) {
+        logger.error(`Failed to delete associated thumbnail ${mediaItem.thumbnailFilename}: ${thumbErr.message}`);
+        // We continue even if thumbnail delete fails, to ensure main file is attempted
+      }
     }
 
     // Delete main file from B2
     await uploadService.deleteFile(orderId, filename);
     logger.info(`Deleted file: ${filename} (orderId: ${orderId})`);
+
+    // Check if this file is the current background and clear it if so
+    if (order.orderBackground && order.orderBackground.filename === filename) {
+      order.orderBackground.image = null;
+      order.orderBackground.filename = null;
+      await order.save();
+      logger.info(`Cleared orderBackground for order ${orderId} because background file ${filename} was deleted.`);
+    }
 
     // Then remove the file from the order's media array in the database
     const updateResult = await Order.updateOne(
