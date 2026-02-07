@@ -335,6 +335,19 @@ export class OrdersService {
     });
   }
 
+  downloadSelectedFiles(orderId: string, filenames: string[]) {
+    return this.http.post(`${this.apiUrl}/orders/${orderId}/download-selected`, { filenames }, {
+      responseType: 'blob',
+      withCredentials: true
+    });
+  }
+
+  generateThumbnails(orderId: string) {
+    return this.http.post<{ ok: boolean, result: any }>(`${this.apiUrl}/${orderId}/generate-thumbnails`, {}, {
+      withCredentials: true
+    });
+  }
+
   updateOrder(orderId: string, updateFields: Partial<Order>): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/${orderId}`, updateFields);
   }

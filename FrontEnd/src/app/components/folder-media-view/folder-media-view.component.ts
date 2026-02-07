@@ -365,7 +365,7 @@ export class FolderMediaViewComponent {
   }
 
   getImageUrl(image: OrderImage): string {
-    return `${image.url}`;
+    return image.thumbnail ? image.thumbnail : image.url;
   }
 
   getDownloadUrl(media: OrderImage): string {

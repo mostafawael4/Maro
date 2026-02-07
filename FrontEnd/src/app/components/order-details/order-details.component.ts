@@ -173,8 +173,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
+
   getImageUrl(image: OrderImage): string {
-    return `${image.url}`;
+    return image.thumbnail ? image.thumbnail : image.url;
   }
 
   isVideo(file: OrderImage): boolean {

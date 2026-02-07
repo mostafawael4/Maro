@@ -8,7 +8,50 @@ import { extractThumbnail } from './videoThumbnail.service.js';
 import logger from '../utils/logger.js';
 import websocketService from './websocket.service.js';
 
-export  async function uploadMediaFiles(orderId, files, foldername) {
+// Helper function to process image thumbnails
+async function processImageThumbnail(orderId, filename, originalName, buffer = null, mimeType = 'image/jpeg') {
+  try {
+    const sharp = (await import('sharp')).default;
+    let imageBuffer = buffer;
+
+    // If buffer not provided (e.g. direct upload), download from B2
+    if (!imageBuffer) {
+      const key = `orders/${orderId}/${filename}`;
+      // Download the image
+      const response = await b2.downloadFileByName(key);
+      imageBuffer = Buffer.from(response);
+    }
+
+    // Generate thumbnail
+    const thumbName = `thumb-${Date.now()}-${originalName}`; // sharp adds extension automatically usually, but let's be explicit if needed or just use name
+    // actually sharp.toBuffer() just gives buffer. We need a filename for B2.
+    // Let's use simple .jpg for thumbnails to ensure compatibility
+    const thumbFilename = `thumb-${Date.now()}-${originalName.replace(/\.[^.]+$/, '')}.jpg`;
+
+    const thumbBuffer = await sharp(imageBuffer)
+      .resize(400, 400, { fit: 'cover' }) // Reasonable size for grid
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
+    // Upload thumbnail to B2
+    const thumbKey = `orders/${orderId}/${thumbFilename}`;
+    await b2.upload(thumbKey, thumbBuffer);
+
+    const thumbnailUrl = b2.getFileUrl(thumbKey);
+
+    return {
+      thumbnail: thumbnailUrl,
+      thumbnailFilename: thumbFilename
+    };
+
+  } catch (err) {
+    logger.error(`Failed to process image thumbnail for ${filename}: ${err.message}`);
+    return null;
+  }
+}
+
+
+export async function uploadMediaFiles(orderId, files, foldername) {
   const order = await Order.findById(orderId);
   if (!order) {
     throw new Error('Order not found');
@@ -42,84 +85,93 @@ export  async function uploadMediaFiles(orderId, files, foldername) {
   const CONCURRENCY_LIMIT = 5;
   const chunks = [];
   for (let i = 0; i < filesToUpload.length; i += CONCURRENCY_LIMIT) {
-      chunks.push(filesToUpload.slice(i, i + CONCURRENCY_LIMIT));
+    chunks.push(filesToUpload.slice(i, i + CONCURRENCY_LIMIT));
   }
 
   const fileObjs = [];
   for (const chunk of chunks) {
-      const chunkResults = await Promise.all(chunk.map(async (f) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const key = `orders/${orderId}/${uniqueSuffix}-${f.originalname}`;
-        
-        // Read file from disk (multer diskStorage)
-        let buffer;
-        if (f.buffer) {
-            buffer = f.buffer;
-        } else if (f.path) {
-            buffer = fs.readFileSync(f.path);
-        } else {
-            throw new Error("No file content found (buffer or path)");
+    const chunkResults = await Promise.all(chunk.map(async (f) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const key = `orders/${orderId}/${uniqueSuffix}-${f.originalname}`;
+
+      // Read file from disk (multer diskStorage)
+      let buffer;
+      if (f.buffer) {
+        buffer = f.buffer;
+      } else if (f.path) {
+        buffer = fs.readFileSync(f.path);
+      } else {
+        throw new Error("No file content found (buffer or path)");
+      }
+
+      // Upload to B2
+      await b2.upload(key, buffer);
+
+      // Construct Native B2 URL
+      const url = b2.getFileUrl(key);
+      const filename = key.split('/').pop();
+
+      const fileObj = {
+        foldername: foldername || null,
+        filename,
+        originalName: f.originalname,
+        url,
+        uploadedAt: new Date(),
+      };
+
+      // IMAGE THUMBNAIL
+      if (allowedExtensions.images.includes(f.mimetype)) {
+        const thumbResult = await processImageThumbnail(orderId, filename, f.originalname, buffer, f.mimetype);
+        if (thumbResult) {
+          fileObj.thumbnail = thumbResult.thumbnail;
+          fileObj.thumbnailFilename = thumbResult.thumbnailFilename;
         }
+      }
 
-        // Upload to B2
-        await b2.upload(key, buffer);
-        
-        // Construct Native B2 URL
-        const url = b2.getFileUrl(key);
-        const filename = key.split('/').pop();
+      // Video thumbnail extraction
+      if (allowedExtensions.videos.includes(f.mimetype)) {
+        try {
+          let videoPath = f.path;
+          let tempVideoPath = null;
 
-        const fileObj = {
-          foldername: foldername || null,
-          filename, 
-          originalName: f.originalname,
-          url, 
-          uploadedAt: new Date(),
-        };
-
-        // Video thumbnail extraction
-        if (allowedExtensions.videos.includes(f.mimetype)) {
-          try {
-            let videoPath = f.path;
-            let tempVideoPath = null;
-            
-            // If we don't have a path (memory storage), write to temp file for ffmpeg
-            if (!videoPath) {
-                tempVideoPath = path.resolve('tmp', filename);
-                fs.writeFileSync(tempVideoPath, buffer);
-                videoPath = tempVideoPath;
-            }
-
-            const thumbName = `thumb-${Date.now()}-${f.originalname}.jpg`;
-            const thumbPath = path.resolve('tmp', thumbName);
-            
-            // Extract thumbnail using the generic service
-            await extractThumbnail(videoPath, thumbPath, 1);
-            
-            // Upload thumbnail
-            const thumbBuffer = fs.readFileSync(thumbPath);
-            const thumbKey = `orders/${orderId}/${thumbName}`;
-            await b2.upload(thumbKey, thumbBuffer);
-            
-            fileObj.thumbnail = b2.getFileUrl(thumbKey);
-            fileObj.thumbnailFilename = thumbName;
-
-            // Cleanup thumbnail
-            if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
-            if (tempVideoPath && fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
-
-          } catch (err) {
-            logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${err.message}`);
+          // If we don't have a path (memory storage), write to temp file for ffmpeg
+          if (!videoPath) {
+            tempVideoPath = path.resolve('tmp', filename);
+            fs.writeFileSync(tempVideoPath, buffer);
+            videoPath = tempVideoPath;
           }
-        }
 
-        // Cleanup uploaded file if it was on disk
-        if (f.path && fs.existsSync(f.path)) {
-            fs.unlinkSync(f.path);
-        }
+          const thumbName = `thumb-${Date.now()}-${f.originalname}.jpg`;
+          const thumbPath = path.resolve('tmp', thumbName);
 
-        return fileObj;
-      }));
-      fileObjs.push(...chunkResults);
+          // Extract thumbnail using the generic service
+          await extractThumbnail(videoPath, thumbPath, 1);
+
+          // Upload thumbnail
+          const thumbBuffer = fs.readFileSync(thumbPath);
+          const thumbKey = `orders/${orderId}/${thumbName}`;
+          await b2.upload(thumbKey, thumbBuffer);
+
+          fileObj.thumbnail = b2.getFileUrl(thumbKey);
+          fileObj.thumbnailFilename = thumbName;
+
+          // Cleanup thumbnail
+          if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+          if (tempVideoPath && fs.existsSync(tempVideoPath)) fs.unlinkSync(tempVideoPath);
+
+        } catch (err) {
+          logger.error(`Failed to extract thumbnail for ${fileObj.filename}: ${err.message}`);
+        }
+      }
+
+      // Cleanup uploaded file if it was on disk
+      if (f.path && fs.existsSync(f.path)) {
+        fs.unlinkSync(f.path);
+      }
+
+      return fileObj;
+    }));
+    fileObjs.push(...chunkResults);
   }
 
   order.media.push(...fileObjs);
@@ -145,12 +197,12 @@ export async function prepareDirectUploads(orderId, files, foldername) {
 
   for (const f of files) {
     if (!allowedMimes.includes(f.mimetype)) {
-        logger.warn(`Blocked upload of unsupported type: ${f.mimetype}`);
-        continue; // Skip invalid files or throw error
+      logger.warn(`Blocked upload of unsupported type: ${f.mimetype}`);
+      continue; // Skip invalid files or throw error
     }
     if (f.size && f.size > MAX_SIZE) {
-        logger.warn(`Blocked upload of oversized file: ${f.originalname} (${f.size} bytes)`);
-        continue;
+      logger.warn(`Blocked upload of oversized file: ${f.originalname} (${f.size} bytes)`);
+      continue;
     }
 
     const isDuplicate = existingMedia.some(
@@ -165,10 +217,10 @@ export async function prepareDirectUploads(orderId, files, foldername) {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const b2FileName = `${uniqueSuffix}-${f.originalname}`;
       const key = `orders/${orderId}/${b2FileName}`;
-      
+
       // Use Native B2 Upload URL
       const { uploadUrl, authorizationToken } = await b2.getUploadUrl();
-      
+
       uploadSlots.push({
         originalName: f.originalname,
         filename: b2FileName,
@@ -191,19 +243,19 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
 
   for (const f of uploadedFiles) {
     const key = `orders/${orderId}/${f.filename}`;
-    
+
     // Verify file existence in B2 using listFileNames (b2.service removed headObject)
     // We search for the specific file name in the folder (prefix)
     // Actually the prefix is the full key for exact match attempt
     const foundFiles = await b2.listFileNames(key, 1);
-    
+
     // B2 listFileNames returns files starting with prefix.
     // We should check if one matches exactly.
     const exists = foundFiles && foundFiles.some(file => file.fileName === key);
 
     if (!exists) {
-        logger.warn(`File verification failed: ${key} not found.`);
-        continue;
+      logger.warn(`File verification failed: ${key} not found.`);
+      continue;
     }
 
     const url = b2.getFileUrl(key);
@@ -222,6 +274,12 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
       processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
     }
 
+    // Trigger background processing for thumbnails if it's an image
+    // For direct uploads, allow async processing so user gets confirmation fast
+    if (allowedExtensions.images.includes(f.mimetype)) {
+      processImageThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
+    }
+
     fileObjs.push(fileObj);
   }
 
@@ -229,6 +287,27 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
   await order.save();
 
   return { added: fileObjs };
+}
+
+async function processImageThumbnailBackground(orderId, filename, originalName, mimetype) {
+  try {
+    const result = await processImageThumbnail(orderId, filename, originalName, null, mimetype);
+    if (result) {
+      // Update DB
+      await Order.updateOne(
+        { _id: orderId, "media.filename": filename },
+        {
+          $set: {
+            "media.$.thumbnail": result.thumbnail,
+            "media.$.thumbnailFilename": result.thumbnailFilename
+          }
+        }
+      );
+      logger.info(`Background image thumbnail generated for ${filename}`);
+    }
+  } catch (err) {
+    logger.error(`Background image thumbnail generation failed for ${filename}: ${err.message}`);
+  }
 }
 
 async function processVideoThumbnailBackground(orderId, filename, originalName, mimetype) {
@@ -241,23 +320,23 @@ async function processVideoThumbnailBackground(orderId, filename, originalName, 
 
     const thumbName = `thumb-${Date.now()}-${originalName}.jpg`;
     const thumbPath = path.resolve('tmp', thumbName);
-    
+
     await extractThumbnail(tempVideoPath, thumbPath, 1);
-    
+
     const thumbBuffer = fs.readFileSync(thumbPath);
     const thumbKey = `orders/${orderId}/${thumbName}`;
     await b2.upload(thumbKey, thumbBuffer);
-    
+
     const thumbnailUrl = b2.getFileUrl(thumbKey);
 
     // Update DB
     await Order.updateOne(
       { _id: orderId, "media.filename": filename },
-      { 
-        $set: { 
+      {
+        $set: {
           "media.$.thumbnail": thumbnailUrl,
-          "media.$.thumbnailFilename": thumbName 
-        } 
+          "media.$.thumbnailFilename": thumbName
+        }
       }
     );
 
@@ -269,4 +348,59 @@ async function processVideoThumbnailBackground(orderId, filename, originalName, 
   } catch (err) {
     logger.error(`Background thumbnail generation failed for ${filename}: ${err.message}`);
   }
+}
+
+export async function generateThumbnailsForOrder(orderId) {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  const media = order.media || [];
+  const imagesWithoutThumbnails = media.filter(m => {
+    // Check if it's an image and has no thumbnail
+    const ext = m.filename.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'webp', 'avif'].includes(ext);
+    return isImage && !m.thumbnail;
+  });
+
+  logger.info(`Found ${imagesWithoutThumbnails.length} images without thumbnails for order ${orderId}`);
+
+  let processedCount = 0;
+  let errorCount = 0;
+
+  // Process in batches
+  const CONCURRENCY = 3;
+  for (let i = 0; i < imagesWithoutThumbnails.length; i += CONCURRENCY) {
+    const batch = imagesWithoutThumbnails.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (mediaItem) => {
+      try {
+        // Determine mime type from extension simply
+        const ext = mediaItem.filename.split('.').pop().toLowerCase();
+        let mime = 'image/jpeg';
+        if (ext === 'png') mime = 'image/png';
+        if (ext === 'webp') mime = 'image/webp';
+
+        const result = await processImageThumbnail(orderId, mediaItem.filename, mediaItem.originalName || mediaItem.filename, null, mime);
+
+        if (result) {
+          await Order.updateOne(
+            { _id: orderId, "media.filename": mediaItem.filename },
+            {
+              $set: {
+                "media.$.thumbnail": result.thumbnail,
+                "media.$.thumbnailFilename": result.thumbnailFilename
+              }
+            }
+          );
+          processedCount++;
+        } else {
+          errorCount++;
+        }
+      } catch (err) {
+        logger.error(`Error regenerating thumbnail for ${mediaItem.filename}: ${err.message}`);
+        errorCount++;
+      }
+    }));
+  }
+
+  return { processed: processedCount, errors: errorCount, total: imagesWithoutThumbnails.length };
 }

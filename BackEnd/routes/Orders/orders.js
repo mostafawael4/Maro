@@ -298,31 +298,16 @@ router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res
     const { orderId } = req.params;
     const { uploadedFiles, foldername } = req.body;
 
-    const verifiedFiles = [];
-    const failedFiles = [];
-
-    for (const f of uploadedFiles) {
-      const key = `orders/${orderId}/${f.filename}`;
-      const foundFiles = await b2.listFileNames(key, 1);
-      const exists = foundFiles && foundFiles.some(file => file.fileName === key);
-
-      if (exists) {
-        verifiedFiles.push(f);
-      } else {
-        logger.warn(`File verification failed: ${key} not found.`);
-        failedFiles.push({ filename: f.filename, error: "File not found in B2" });
-      }
-    }
+    const result = await confirmDirectUploads(orderId, uploadedFiles, foldername);
 
     return res.json({
       ok: true,
-      verified: verifiedFiles,
-      failed: failedFiles,
-      message: `${verifiedFiles.length} file(s) verified, ${failedFiles.length} failed.`
+      added: result.added,
+      message: `${result.added.length} file(s) confirmed and processed.`
     });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Failed to verify upload" });
+    return res.status(500).json({ ok: false, message: "Failed to confirm upload", error: err.message });
   }
 });
 
@@ -649,6 +634,19 @@ router.post("/:orderId/download-selected", async (req, res) => {
     if (!res.headersSent) {
       return res.status(500).json({ ok: false, message: "Server error", error: err.message });
     }
+  }
+});
+
+// POST /orders/:orderId/generate-thumbnails - admin/editor: generate missing thumbnails
+import { generateThumbnailsForOrder } from '../../services/orderMediaService.js';
+router.post("/:orderId/generate-thumbnails", requireAdminOrEditorAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const result = await generateThumbnailsForOrder(orderId);
+    return res.json({ ok: true, result });
+  } catch (err) {
+    logger.error(`POST /orders/${req.params.orderId}/generate-thumbnails failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
   }
 });
 
