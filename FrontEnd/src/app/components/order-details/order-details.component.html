@@ -72,7 +72,7 @@
     <!-- Order Header - Simplified -->
     <div class="order-header">
       <div class="header-info">
-        <h1>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h1>
+        <h1>{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h1>
         <p class="client-email">{{ order.email }}</p>
       </div>
       <div class="order-meta">
