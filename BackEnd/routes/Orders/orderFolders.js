@@ -9,7 +9,7 @@ import allowedExtensions from "../../config/allowed_extensions.js";
 import logger from "../../utils/logger.js";
 import { handleMulterErrors } from "../../middleware/upload.js";
 import { deleteOrderFileByFileName } from "../../services/order.service.js";
-import Credentials  from '../../config/Credentials.js';
+import Credentials from '../../config/Credentials.js';
 import { signOrderFiles } from "../../utils/signingUtils.js";
 import archiver from 'archiver';
 import b2 from '../../services/b2.service.js';
@@ -39,7 +39,7 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
 });
 
 router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
-    const { orderId, foldername } = req.params
+  const { orderId, foldername } = req.params
 
   try {
     if (!orderId) {
@@ -49,7 +49,8 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
     // Use aggregation to fetch only media items belonging to this folder
     const result = await Order.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
-      { $project: {
+      {
+        $project: {
           media: {
             $filter: {
               input: "$media",
@@ -57,7 +58,8 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
               cond: { $eq: ["$$m.foldername", foldername] }
             }
           }
-      }}
+        }
+      }
     ]);
 
     if (!result || result.length === 0) {
@@ -92,7 +94,8 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
     // Use aggregation to fetch only media items belonging to this folder
     const result = await Order.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
-      { $project: {
+      {
+        $project: {
           media: {
             $filter: {
               input: "$media",
@@ -100,7 +103,8 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
               cond: { $eq: ["$$m.foldername", foldername] }
             }
           }
-      }}
+        }
+      }
     ]);
 
     if (!result || result.length === 0) {
@@ -153,7 +157,8 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     // Use aggregation to fetch only media items belonging to this folder
     const result = await Order.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
-      { $project: {
+      {
+        $project: {
           media: {
             $filter: {
               input: "$media",
@@ -161,7 +166,8 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
               cond: { $eq: ["$$m.foldername", foldername] }
             }
           }
-      }}
+        }
+      }
     ]);
 
     if (!result || result.length === 0) {
@@ -206,21 +212,21 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     // Process files in parallel batches
     for (let i = 0; i < mediaInFolder.length; i += concurrency) {
       const batch = mediaInFolder.slice(i, Math.min(i + concurrency, mediaInFolder.length));
-      
+
       // Process batch in parallel
       await Promise.all(batch.map(async (media) => {
         try {
           const key = `orders/${orderId}/${media.filename}`;
           const fileName = media.originalName || media.filename;
-          
+
           logger.info(`Streaming file ${processedFiles + 1}/${mediaInFolder.length}: ${fileName}`);
-          
+
           // Get stream from B2
           const fileStream = await b2.downloadFileStream(key);
-          
+
           // Add stream to archive
           archive.append(fileStream, { name: fileName });
-          
+
           processedFiles++;
         } catch (error) {
           logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
@@ -231,7 +237,7 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
 
     // Finalize the archive (this triggers the stream to complete)
     await archive.finalize();
-    
+
     logger.info(`Successfully streamed zip for folder '${foldername}' in order ${orderId} (${processedFiles}/${mediaInFolder.length} files)`);
     return res.end();
   } catch (err) {

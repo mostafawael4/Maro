@@ -13,10 +13,14 @@ import { extractThumbnailForFilmsService } from '../services/videoService.js';
 import b2 from "../services/b2.service.js";
 import websocketService from "../services/websocket.service.js";
 
-const signFilm = (film, tokenData) => {
-  if (!film || !tokenData) return film;
-  const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/films/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
+const signFilm = (film) => {
+  if (!film) return film;
+
+  const cdnUrl = Credential.OFFICIAL_CDN_URL;
+  const bucketName = Credential.B2_BUCKET_NAME;
+
+  const sign = (filename) => `${cdnUrl}/file/${bucketName}/films/${encodeURIComponent(filename)}`;
+
   const newFilm = (typeof film.toObject === 'function') ? film.toObject() : { ...film };
   if (newFilm.filename) newFilm.url = sign(newFilm.filename);
   if (newFilm.thumbnailFilename) newFilm.thumbnail = sign(newFilm.thumbnailFilename);
@@ -124,8 +128,8 @@ router.get("/", async (req, res) => {
       Film.countDocuments()
     ]);
 
-    const tokenData = await b2.getFolderToken("films/");
-    const signedFilms = films.map(f => signFilm(f, tokenData));
+    // Public CDN - no token needed
+    const signedFilms = films.map(f => signFilm(f));
 
     logger.info(`Fetched ${films.length} films (Total: ${total}).`);
 
@@ -254,7 +258,9 @@ router.post("/:id/thumbnail", requireAdminAuth, async (req, res) => {
 
     logger.info(`Thumbnail extracted and set for film ${film.filename} (${film._id})`);
 
-    const signedThumbnail = await b2.getPresignedUrl(`films/${thumbnailResult.thumbnailFilename}`);
+    const cdnUrl = Credential.OFFICIAL_CDN_URL;
+    const bucketName = Credential.B2_BUCKET_NAME;
+    const signedThumbnail = `${cdnUrl}/file/${bucketName}/films/${encodeURIComponent(thumbnailResult.thumbnailFilename)}`;
 
     return res.json({
       ok: true,

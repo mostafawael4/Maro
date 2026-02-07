@@ -181,6 +181,8 @@ export class CreateOrderComponent implements OnInit {
         this.packagesLoading = false;
         if (this.isEditMode && this.editingOrder) {
           this.setPricingSelections(this.editingOrder.orderForm?.pricing || null);
+          // Crucial: ensure field states (like style preference) are updated after pricing is set
+          this.updateVendorControlStates();
         }
       },
       error: () => {
@@ -456,8 +458,8 @@ export class CreateOrderComponent implements OnInit {
 
     this.orderForm.patchValue({
       email: order.email || '',
-      clientName: order.clientName || '',
-      notes: order.notes || '',
+      clientName: (order.clientName || '').trim(),
+      notes: (order.notes || '').trim(),
       brideAndGroomNames: formData.brideAndGroomNames || '',
       eventDate: this.normalizeDateForInput(formData.eventDate),
       eventVenue: formData.eventVenue || '',
@@ -930,6 +932,13 @@ export class CreateOrderComponent implements OnInit {
 
     this.setArrayDisabledState(this.photographersArray, disablePhotographers);
     this.setArrayDisabledState(this.cinematographersArray, disableCinematographers);
+
+    // Style preference is only required/visible if cinematography is selected
+    if (disableCinematographers) {
+      this.stylePreferenceArray.enable({ emitEvent: false });
+    } else {
+      this.stylePreferenceArray.disable({ emitEvent: false });
+    }
   }
 
   private setArrayDisabledState(array: FormArray, shouldDisable: boolean): void {
@@ -1004,7 +1013,8 @@ export class CreateOrderComponent implements OnInit {
 
     if (this.orderForm.invalid) {
       this.orderForm.markAllAsTouched();
-      this.submitError = 'Please fill in all required fields correctly.';
+      const invalidFields = this.getFormValidationErrors();
+      this.submitError = 'Please check the following fields: ' + invalidFields.join(', ') + '.';
       this.showErrorModal = true;
       return;
     }
@@ -1171,6 +1181,44 @@ export class CreateOrderComponent implements OnInit {
       return;
     }
     this.router.navigate(['/orders']);
+  }
+
+  private getFormValidationErrors(): string[] {
+    const errors: string[] = [];
+    const controls = this.orderForm.controls;
+
+    const fieldLabels: { [key: string]: string } = {
+      email: 'Email Address',
+      clientName: "Groom's Number",
+      notes: "Bride's Number",
+      brideAndGroomNames: "Bride & Groom's Names",
+      eventDate: 'Event Date',
+      eventVenue: 'Event Venue',
+      eventType: 'Event Type',
+      vendors: 'Vendors Section',
+      filmEditing: 'Film Editing Section',
+      'filmEditing.stylePreference': 'Style Preference'
+    };
+
+    Object.keys(controls).forEach(key => {
+      const control = controls[key];
+      if (control.invalid) {
+        if (key === 'vendors' || key === 'filmEditing') {
+          const group = control as FormGroup;
+          Object.keys(group.controls).forEach(subKey => {
+            const subControl = group.get(subKey);
+            if (subControl?.invalid) {
+              const label = fieldLabels[`${key}.${subKey}`] || fieldLabels[subKey] || `${key} ${subKey}`;
+              if (!errors.includes(label)) errors.push(label);
+            }
+          });
+        } else {
+          errors.push(fieldLabels[key] || key);
+        }
+      }
+    });
+
+    return errors;
   }
 }
 

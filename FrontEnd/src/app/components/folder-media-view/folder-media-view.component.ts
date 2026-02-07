@@ -29,7 +29,7 @@ export class FolderMediaViewComponent {
   @Input() orderId: string | null = null;
 
   @Output() back = new EventEmitter<void>();
-  @Output() openMedia = new EventEmitter<number>();
+  @Output() openMedia = new EventEmitter<{ index: number, sortedMedia: OrderImage[] }>();
   @Output() downloadMedia = new EventEmitter<OrderImage>();
   @Output() deleteMedia = new EventEmitter<OrderImage>();
   @Output() selectVideoThumbnail = new EventEmitter<OrderImage>();
@@ -127,7 +127,7 @@ export class FolderMediaViewComponent {
     // Since visibleMedia is a slice of filteredMedia (from index 0),
     // the index in visibleMedia is the same as index in filteredMedia
     // Just emit it directly like gallery/home components do
-    this.openMedia.emit(index);
+    this.openMedia.emit({ index, sortedMedia: this.filteredMedia });
   }
 
   async onDownload(media: OrderImage, event: Event): Promise<void> {
@@ -239,7 +239,7 @@ export class FolderMediaViewComponent {
 
     try {
       const downloadUrl = this.ordersService.getSelectedFilesDownloadUrl(this.orderId);
-      
+
       // Use fetch to get real progress
       const response = await fetch(downloadUrl, {
         method: 'POST',
@@ -290,7 +290,7 @@ export class FolderMediaViewComponent {
 
       // Combine chunks into a single blob
       const blob = new Blob(chunks as BlobPart[], { type: 'application/zip' });
-      
+
       this.downloadStatus = 'Saving file...';
       this.downloadProgress = 100;
 
@@ -300,18 +300,18 @@ export class FolderMediaViewComponent {
       link.href = blobUrl;
       link.download = `selected-files.zip`;
       link.style.display = 'none';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       window.URL.revokeObjectURL(blobUrl);
-      
+
       // Show completion briefly
       this.downloadStatus = 'Download complete!';
       await this.delay(1000);
-      
+
       // Clear selection and exit selection mode
       this.selectedItems.clear();
       this.selectionMode = false;

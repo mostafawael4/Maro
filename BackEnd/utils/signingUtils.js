@@ -1,4 +1,5 @@
 import b2 from "../services/b2.service.js";
+import Credential from "../config/Credentials.js";
 
 /**
  * Signs a list of media file objects for a specific order.
@@ -8,11 +9,11 @@ import b2 from "../services/b2.service.js";
  */
 export const signOrderFiles = async (orderId, files) => {
     if (!files || files.length === 0) return files;
-    const prefix = `orders/${orderId}/`;
-    const tokenData = await b2.getFolderToken(prefix);
-    if (!tokenData) return files;
-    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
+
+    const cdnUrl = Credential.OFFICIAL_CDN_URL;
+    const bucketName = Credential.B2_BUCKET_NAME;
+
+    const sign = (filename) => `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
 
     return files.map(f => {
         const newF = (typeof f.toObject === 'function') ? f.toObject() : { ...f };
@@ -25,24 +26,18 @@ export const signOrderFiles = async (orderId, files) => {
 /**
  * Signs an entire order object's media and background.
  * @param {Object} orderOrDoc - The order object or Mongoose document.
- * @param {Object} [sharedTokenData] - Optional pre-fetched token data.
+ * @param {Object} [sharedTokenData] - Optional pre-fetched token data (Legacy, ignored now).
  * @returns {Promise<Object>} - The signed order object.
  */
 export const signOrderMedia = async (orderOrDoc, sharedTokenData = null) => {
     if (!orderOrDoc) return orderOrDoc;
     const order = (typeof orderOrDoc.toObject === 'function') ? orderOrDoc.toObject() : orderOrDoc;
     const orderId = order._id.toString();
-    
-    let tokenData = sharedTokenData;
-    if (!tokenData) {
-        const prefix = `orders/${orderId}/`; 
-        tokenData = await b2.getFolderToken(prefix);
-    }
-    
-    if (!tokenData) return order;
 
-    const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-    const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
+    const cdnUrl = Credential.OFFICIAL_CDN_URL;
+    const bucketName = Credential.B2_BUCKET_NAME;
+
+    const sign = (filename) => `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
 
     if (order.media && order.media.length > 0) {
         order.media = order.media.map(m => {

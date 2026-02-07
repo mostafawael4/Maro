@@ -206,26 +206,40 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     return 'status-' + status.toLowerCase().replace(/\s+/g, '-');
   }
 
-  openImageSlider(index: number) {
-    const media = this.currentMedia;
-    if (!media || !media[index]) return;
+  sliderImages: GalleryImage[] = [];
+
+  openImageSlider(event: { index: number, sortedMedia: OrderImage[] } | number) {
+    // Handle both old (number only) and new (object) event formats for backward compatibility
+    // though in this case we only expect the new format from folder-media-view
+
+    let index: number;
+    let mediaList: OrderImage[];
+
+    if (typeof event === 'number') {
+      index = event;
+      mediaList = this.currentMedia || [];
+    } else {
+      index = event.index;
+      mediaList = event.sortedMedia;
+    }
+
+    if (!mediaList || !mediaList[index]) return;
+
     this.currentImageIndex = index;
-    this.showImageSlider = true;
-  }
 
-  closeImageSlider() {
-    this.showImageSlider = false;
-  }
-
-  getSliderImages(): GalleryImage[] {
-    if (!this.currentMedia) return [];
-    // Include both images and videos in the slider
-    return this.currentMedia.map(img => ({
+    // Map the sorted media list to GalleryImage format
+    this.sliderImages = mediaList.map(img => ({
       _id: img.filename,
       filename: img.filename,
       url: img.url,
       uploadedAt: new Date(img.uploadedAt)
     }));
+
+    this.showImageSlider = true;
+  }
+
+  closeImageSlider() {
+    this.showImageSlider = false;
   }
 
   async downloadImage(media: OrderImage, event?: Event) {
@@ -592,7 +606,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
     try {
       const downloadUrl = this.ordersService.getFolderDownloadUrl(this.order._id, folderName);
-      
+
       // Use fetch to get real progress
       const response = await fetch(downloadUrl, {
         credentials: 'include' // Important for auth cookies
@@ -638,7 +652,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
       // Combine chunks into a single blob
       const blob = new Blob(chunks as BlobPart[], { type: 'application/zip' });
-      
+
       this.downloadStatus = 'Saving file...';
       this.downloadProgress = 100;
 
@@ -648,18 +662,18 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       link.href = blobUrl;
       link.download = `${folderName}.zip`;
       link.style.display = 'none';
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Clean up
       window.URL.revokeObjectURL(blobUrl);
-      
+
       // Show completion briefly
       this.downloadStatus = 'Download complete!';
       await this.delay(1000);
-      
+
       this.zippingFolder = false;
 
     } catch (error) {

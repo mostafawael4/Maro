@@ -11,10 +11,14 @@ import { handleMulterErrors } from "../middleware/upload.js";
 import b2 from "../services/b2.service.js";
 import websocketService from "../services/websocket.service.js";
 
-const signHomePageImage = (image, tokenData) => {
-  if (!image || !tokenData) return image;
-  const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/homepage/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
+const signHomePageImage = (image) => {
+  if (!image) return image;
+
+  const cdnUrl = Credential.OFFICIAL_CDN_URL;
+  const bucketName = Credential.B2_BUCKET_NAME;
+
+  const sign = (filename) => `${cdnUrl}/file/${bucketName}/homepage/${encodeURIComponent(filename)}`;
+
   const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
   if (newImage.filename) newImage.url = sign(newImage.filename);
   return newImage;
@@ -122,8 +126,8 @@ router.get("/", async (req, res) => {
       HomePage.countDocuments()
     ]);
 
-    const tokenData = await b2.getFolderToken("homepage/");
-    const signedImages = images.map(img => signHomePageImage(img, tokenData));
+    // Public CDN - no token needed
+    const signedImages = images.map(img => signHomePageImage(img));
 
     logger.info(`Fetched ${images.length} homePage images (Total: ${total}).`);
 

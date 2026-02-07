@@ -72,5 +72,6 @@ export default {
   B2_APPLICATION_KEY,
   B2_BUCKET_ID,
   B2_BUCKET_NAME,
-  B2_CDN_URL
+  B2_CDN_URL,
+  OFFICIAL_CDN_URL: process.env.OFFICIAL_CDN_URL || 'https://cdn.maroweddings.com'
 };

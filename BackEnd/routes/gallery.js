@@ -11,10 +11,14 @@ import { handleMulterErrors } from "../middleware/upload.js";
 import b2 from "../services/b2.service.js";
 import websocketService from "../services/websocket.service.js";
 
-const signGalleryImage = (image, tokenData) => {
-  if (!image || !tokenData) return image;
-  const { baseDownloadUrl, authorizationToken, bucketName } = tokenData;
-  const sign = (filename) => `${baseDownloadUrl}/file/${bucketName}/gallery/${encodeURIComponent(filename)}?Authorization=${authorizationToken}`;
+const signGalleryImage = (image) => {
+  if (!image) return image;
+  // Use public CDN URL without authorization
+  const cdnUrl = Credential.OFFICIAL_CDN_URL;
+  const bucketName = Credential.B2_BUCKET_NAME;
+
+  const sign = (filename) => `${cdnUrl}/file/${bucketName}/gallery/${encodeURIComponent(filename)}`;
+
   const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
   if (newImage.filename) newImage.url = sign(newImage.filename);
   return newImage;
@@ -120,9 +124,8 @@ router.get("/", async (req, res) => {
       Gallery.countDocuments()
     ]);
 
-    // Get token for gallery prefix
-    const tokenData = await b2.getFolderToken("gallery/");
-    const signedImages = images.map(img => signGalleryImage(img, tokenData));
+    // Public CDN - no token needed
+    const signedImages = images.map(img => signGalleryImage(img));
 
     logger.info(`Fetched ${images.length} gallery images (Total: ${total}).`);
 

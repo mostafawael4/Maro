@@ -483,8 +483,9 @@
   break-inside: avoid;
   border: 3px solid transparent;
   transition: all 0.2s ease;
-  min-height: 200px;
   animation: fadeInProgressive 0.5s ease-out forwards;
+  min-height: 150px;
+  height: fit-content;
 
   .selection-checkbox {
     position: absolute;

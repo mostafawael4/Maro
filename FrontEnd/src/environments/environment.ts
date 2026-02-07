@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://maro-production.up.railway.app'
+  apiUrl: 'http://localhost:4000'
 };

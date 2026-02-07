@@ -64,9 +64,8 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
     const list = await Order.find({}).sort({ createdAt: -1 }).lean();
 
-    // Optimize: fetch one token for the whole bucket to sign the list
-    const sharedToken = await b2.getFolderToken("");
-    const signedList = await Promise.all(list.map(o => signOrderMedia(o, sharedToken)));
+    // Optimize: sharedToken is no longer needed with Public CDN
+    const signedList = await Promise.all(list.map(o => signOrderMedia(o)));
 
     logger.info(
       `Listed all orders by ${req.session && req.session.adminId
@@ -461,7 +460,9 @@ router.post("/:orderId/video/:filename/thumbnail", requireAdminAuth, async (req,
 
     logger.info(`Thumbnail extracted and set for video ${filename} in order ${orderId}`);
 
-    const signedThumbnail = await b2.getPresignedUrl(`orders/${orderId}/${thumbnailResult.thumbnailFilename}`);
+    const cdnUrl = Credentials.OFFICIAL_CDN_URL;
+    const bucketName = Credentials.B2_BUCKET_NAME;
+    const signedThumbnail = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(thumbnailResult.thumbnailFilename)}`;
 
     return res.json({
       ok: true,
@@ -504,7 +505,9 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     order.orderBackground.filename = filename;
     await order.save();
 
-    const signedBackground = await b2.getPresignedUrl(`orders/${orderId}/${filename}`);
+    const cdnUrl = Credentials.OFFICIAL_CDN_URL;
+    const bucketName = Credentials.B2_BUCKET_NAME;
+    const signedBackground = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
 
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({
@@ -569,13 +572,13 @@ router.post("/:orderId/download-selected", async (req, res) => {
     // Validate all filenames exist in the order
     const orderFilenames = order.media ? order.media.map(m => m.filename) : [];
     const invalidFiles = filenames.filter(f => !orderFilenames.includes(f));
-    
+
     if (invalidFiles.length > 0) {
       logger.warn(`Invalid files requested for download in order ${orderId}: ${invalidFiles.join(', ')}`);
-      return res.status(400).json({ 
-        ok: false, 
+      return res.status(400).json({
+        ok: false,
         message: "Some files do not exist in this order",
-        invalidFiles 
+        invalidFiles
       });
     }
 
@@ -613,21 +616,21 @@ router.post("/:orderId/download-selected", async (req, res) => {
     // Process files in parallel batches
     for (let i = 0; i < mediaToDownload.length; i += concurrency) {
       const batch = mediaToDownload.slice(i, Math.min(i + concurrency, mediaToDownload.length));
-      
+
       // Process batch in parallel
       await Promise.all(batch.map(async (media) => {
         try {
           const key = `orders/${orderId}/${media.filename}`;
           const fileName = media.originalName || media.filename;
-          
+
           logger.info(`Streaming file ${processedFiles + 1}/${mediaToDownload.length}: ${fileName}`);
-          
+
           // Get stream from B2
           const fileStream = await b2.downloadFileStream(key);
-          
+
           // Add stream to archive
           archive.append(fileStream, { name: fileName });
-          
+
           processedFiles++;
         } catch (error) {
           logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
@@ -638,9 +641,9 @@ router.post("/:orderId/download-selected", async (req, res) => {
 
     // Finalize the archive
     await archive.finalize();
-    
+
     logger.info(`Successfully created batch download zip for order ${orderId} (${processedFiles}/${mediaToDownload.length} files)`);
-    
+
   } catch (err) {
     logger.error(`POST /orders/:orderId/download-selected failed: ${err.stack || err}`);
     if (!res.headersSent) {
