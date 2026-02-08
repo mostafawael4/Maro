@@ -123,12 +123,18 @@
   <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia">
     <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item">
 
-      <div *ngIf="isVideo(item)" class="video-wrapper">
-        <video [src]="getImageUrl(item)" [poster]="getVideoThumbnailUrl(item)" controls preload="metadata"
-          (click)="onOpenMedia(i, $event)" (loadedmetadata)="onMediaLoad(item.filename)"
-          [class.loaded]="isMediaLoaded(item.filename)" style="pointer-events: auto" class="media-video">
+      <div *ngIf="isVideo(item)" class="video-preview-wrapper" (click)="onOpenMedia(i, $event)">
+        <video [src]="item.url" [poster]="getVideoThumbnailUrl(item)" preload="metadata" muted
+          (loadedmetadata)="onMediaLoad(item.filename)" [class.loaded]="isMediaLoaded(item.filename)"
+          class="media-video">
           Your browser does not support the video tag.
         </video>
+        <div class="video-play-overlay">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="white" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
         <button *ngIf="isAuthenticated" class="thumbnail-selector-btn" (click)="onSelectThumbnail(item, $event)"
           title="Select video thumbnail">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"

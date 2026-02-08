@@ -20,7 +20,7 @@
     <!-- Media Display -->
     <div class="image-wrapper" (click)="onImageClick($event)">
       <!-- Video Player -->
-      <video *ngIf="getCurrentImage() && isVideo(getCurrentImage()!)" [src]="getImageUrl(getCurrentImage()!)" controls
+      <video *ngIf="getCurrentImage() && isVideo(getCurrentImage()!)" [src]="getCurrentImage()!.url" controls
         preload="metadata" class="slider-video" (click)="$event.stopPropagation()">
         Your browser does not support the video tag.
       </video>
