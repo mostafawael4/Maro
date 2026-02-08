@@ -302,8 +302,8 @@ router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res
 
     return res.json({
       ok: true,
-      added: result.added,
-      message: `${result.added.length} file(s) confirmed and processed.`
+      verified: result.verified,
+      message: `${result.verified.length} file(s) confirmed and processed.`
     });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);

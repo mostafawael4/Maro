@@ -286,7 +286,7 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
   order.media.push(...fileObjs);
   await order.save();
 
-  return { added: fileObjs };
+  return { verified: fileObjs };
 }
 
 async function processImageThumbnailBackground(orderId, filename, originalName, mimetype) {
