@@ -7,17 +7,18 @@ const OrderSchema = new mongoose.Schema({
   // optional metadata fields for order form (client name, notes, date etc)
   clientName: { type: String },
   notes: { type: String },
-  status: { type: String, enum: ['pending','in-progress','done'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'in-progress', 'done'], default: 'pending' },
   orderBackground: {
     image: { type: String, default: null }, // Background image URL for order
     filename: { type: String, default: null }, // Background image filename
     selectedAt: { type: Date, default: Date.now },
   },
-  media: [{ 
-    foldername:{ type: String },
-    filename: String, 
+  media: [{
+    foldername: { type: String },
+    filename: String,
     originalName: { type: String }, // Original filename before upload
-    url: String, 
+    url: String,
+    size: { type: Number, default: 0 }, // File size in bytes
     uploadedAt: Date,
     thumbnail: { type: String, default: null }, // Thumbnail URL for videos
     thumbnailFilename: { type: String, default: null } // Thumbnail filename for videos
@@ -28,7 +29,7 @@ const OrderSchema = new mongoose.Schema({
   orderForm: OrderFormSchema,
 });
 
-OrderSchema.pre('save', function(next){
+OrderSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

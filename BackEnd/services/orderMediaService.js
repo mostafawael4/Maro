@@ -120,6 +120,7 @@ export async function uploadMediaFiles(orderId, files, foldername) {
         filename,
         originalName: f.originalname,
         url,
+        size: f.size || 0,
         uploadedAt: new Date(),
       };
 
@@ -269,6 +270,7 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
       filename: f.filename,
       originalName: f.originalName,
       url: url,
+      size: f.size || 0,
       uploadedAt: new Date(),
     };
 

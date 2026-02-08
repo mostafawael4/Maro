@@ -56,10 +56,6 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   deletingFolder = false;
   batchDownloading = false;
   zippingFolder = false;
-  downloadStatus = 'Preparing download...';
-  downloadProgress = 0; // 0-100 percentage
-  downloadedBytes = 0;
-  totalBytes = 0;
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -595,104 +591,28 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     return `Are you sure you want to delete the folder "${this.folderToDelete}" and all its contents?`;
   }
 
-  async onDownloadFolder(folderName: string): Promise<void> {
+  onDownloadFolder(folderName: string): void {
     if (!this.order?._id) return;
 
-    // Reset and show progress
+    // Show spinner feedback
     this.zippingFolder = true;
-    this.downloadProgress = 0;
-    this.downloadedBytes = 0;
-    this.totalBytes = 0;
-    this.downloadStatus = 'Connecting to server...';
 
-    try {
-      const downloadUrl = this.ordersService.getFolderDownloadUrl(this.order._id, folderName);
+    // Use native browser download behavior
+    const downloadUrl = this.ordersService.getFolderDownloadUrl(this.order._id, folderName);
 
-      // Use fetch to get real progress
-      const response = await fetch(downloadUrl, {
-        credentials: 'include' // Important for auth cookies
-      });
+    // Create a temporary link and click it to trigger download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${folderName}.zip`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`);
-      }
-
-      // Get total size from Content-Length header
-      const contentLength = response.headers.get('Content-Length');
-      this.totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-
-      // Get the response body as a stream
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Failed to get response stream');
-      }
-
-      this.downloadStatus = 'Downloading files...';
-      const chunks: Uint8Array[] = [];
-
-      // Read the stream
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
-        }
-
-        chunks.push(value);
-        this.downloadedBytes += value.length;
-
-        // Update progress
-        if (this.totalBytes > 0) {
-          this.downloadProgress = Math.round((this.downloadedBytes / this.totalBytes) * 100);
-          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)} / ${this.formatBytes(this.totalBytes)}`;
-        } else {
-          // If we don't know total size, just show downloaded amount
-          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)}`;
-        }
-      }
-
-      // Combine chunks into a single blob
-      const blob = new Blob(chunks as BlobPart[], { type: 'application/zip' });
-
-      this.downloadStatus = 'Saving file...';
-      this.downloadProgress = 100;
-
-      // Create download link
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `${folderName}.zip`;
-      link.style.display = 'none';
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(blobUrl);
-
-      // Show completion briefly
-      this.downloadStatus = 'Download complete!';
-      await this.delay(1000);
-
+    // Hide spinner after a delay
+    setTimeout(() => {
       this.zippingFolder = false;
-
-    } catch (error) {
-      console.error('Error downloading folder:', error);
-      alert('Failed to download folder. Please try again.');
-      this.zippingFolder = false;
-    }
-  }
-
-  private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    }, 2000);
   }
 }
+
