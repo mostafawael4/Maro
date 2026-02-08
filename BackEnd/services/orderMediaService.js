@@ -15,11 +15,18 @@ async function processImageThumbnail(orderId, filename, originalName, buffer, mi
     const path = await import('path');
     const fs = await import('fs');
 
+    const tmpDir = path.resolve('tmp');
+    if (!fs.existsSync(tmpDir)) {
+      logger.info(`Creating missing tmp directory at ${tmpDir}`);
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+
     let imageBuffer = buffer;
 
     // If no buffer provided (direct upload scenario), download from B2
     if (!imageBuffer) {
       const key = `orders/${orderId}/${filename}`;
+      logger.info(`Downloading image for thumbnail generation: ${key}`);
       // Download max 10MB just to be safe for thumbnail generation
       imageBuffer = await b2.downloadFileRange(key, 0, 10 * 1024 * 1024);
     }
@@ -28,11 +35,14 @@ async function processImageThumbnail(orderId, filename, originalName, buffer, mi
       throw new Error("Could not retrieve image buffer for thumbnail generation");
     }
 
+    // Ensure imageBuffer is a Node.js Buffer (B2 returns ArrayBuffer)
+    const finalBuffer = Buffer.isBuffer(imageBuffer) ? imageBuffer : Buffer.from(imageBuffer);
+
     const thumbName = `thumb-${Date.now()}-${originalName}`;
-    const thumbPath = path.resolve('tmp', thumbName);
+    const thumbPath = path.resolve(tmpDir, thumbName);
 
     // Resize to 400x400 max
-    await sharp(imageBuffer)
+    await sharp(finalBuffer)
       .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
       .toFormat('jpeg', { quality: 80 })
       .toFile(thumbPath);
@@ -49,7 +59,7 @@ async function processImageThumbnail(orderId, filename, originalName, buffer, mi
     return { thumbnail: thumbnailUrl, thumbnailFilename: thumbName };
 
   } catch (err) {
-    logger.error(`Thumbnail generation failed for ${filename}: ${err.message}`);
+    logger.error(`Thumbnail generation failed for ${filename} (Order: ${orderId}): ${err.message}`, { stack: err.stack });
     return null; // Graceful failure
   }
 }
