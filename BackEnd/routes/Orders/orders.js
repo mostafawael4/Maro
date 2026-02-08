@@ -14,6 +14,7 @@ import Credentials from '../../config/Credentials.js'
 import b2 from "../../services/b2.service.js"
 import fs from "fs";
 import path from "path";
+import archiver from 'archiver';
 import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
 import uploadService from "../../services/upload.service.js";
 import websocketService from "../../services/websocket.service.js";
@@ -606,11 +607,10 @@ router.post("/:orderId/download-selected", async (req, res) => {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="selected-files.zip"`);
 
-    // Create archiver instance
-    const archiver = await import('archiver');
-    const archive = archiver.default('zip', {
-      zlib: { level: 6 }, // Balanced compression
-      store: true
+    // Create archiver instance with Zip64 and no compression
+    const archive = archiver('zip', {
+      zlib: { level: 0 },
+      forceZip64: true
     });
 
     // Pipe archive to response
@@ -624,34 +624,52 @@ router.post("/:orderId/download-selected", async (req, res) => {
       }
     });
 
-    // Track progress
-    let processedFiles = 0;
-    const concurrency = 5; // Process 5 files in parallel
+    archive.on('warning', (err) => {
+      if (err.code === 'ENOENT') {
+        logger.warn(`Archiver warning (ENOENT): ${err.message}`);
+      } else {
+        logger.error(`Archiver warning: ${err.message}`);
+      }
+    });
 
-    // Process files in parallel batches
-    for (let i = 0; i < mediaToDownload.length; i += concurrency) {
-      const batch = mediaToDownload.slice(i, Math.min(i + concurrency, mediaToDownload.length));
+    // Handle client disconnection
+    req.on('close', () => {
+      logger.info(`Batch download client disconnected for order ${orderId}. Aborting.`);
+      archive.abort();
+    });
 
-      // Process batch in parallel
-      await Promise.all(batch.map(async (media) => {
-        try {
-          const key = `orders/${orderId}/${media.filename}`;
-          const fileName = media.originalName || media.filename;
+    // Disable timeout
+    req.setTimeout(0);
 
-          logger.info(`Streaming file ${processedFiles + 1}/${mediaToDownload.length}: ${fileName}`);
+    // Process files sequentially for better stability in production with large files
+    for (const media of mediaToDownload) {
+      try {
+        const key = `orders/${orderId}/${media.filename}`;
+        const fileName = media.originalName || media.filename;
 
-          // Get stream from B2
-          const fileStream = await b2.downloadFileStream(key);
+        // Get stream from B2
+        const fileStream = await b2.downloadFileStream(key);
 
-          // Add stream to archive
+        // Append to archive and wait for it to finish reading from B2
+        await new Promise((resolve, reject) => {
+          fileStream.on('end', () => {
+            processedFiles++;
+            if (processedFiles % 10 === 0 || processedFiles === mediaToDownload.length) {
+              logger.info(`Batch streamed file ${processedFiles}/${mediaToDownload.length}: ${fileName}`);
+            }
+            resolve();
+          });
+
+          fileStream.on('error', (err) => {
+            logger.error(`Batch stream error for ${fileName}: ${err.message}`);
+            resolve(); // Continue with next file
+          });
+
           archive.append(fileStream, { name: fileName });
-
-          processedFiles++;
-        } catch (error) {
-          logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
-          // Continue with other files even if one fails
-        }
-      }));
+        });
+      } catch (error) {
+        logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
+      }
     }
 
     // Finalize the archive

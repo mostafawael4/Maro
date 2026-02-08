@@ -188,10 +188,10 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${foldername}.zip"`);
 
-    // Create archiver instance with NO compression for speed
+    // Create archiver instance with NO compression for speed and enable Zip64 for large files
     const archive = archiver('zip', {
-      zlib: { level: 6 }, // No compression - media files don't compress well anyway
-      store: true // Use store mode for maximum speed
+      zlib: { level: 0 }, // True no compression
+      forceZip64: true,  // Essential for zip files > 2GB or with many files
     });
 
     // Pipe archive to response
@@ -207,6 +207,12 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
 
     // Disable timeout for this request as it involves streaming large amount of data
     req.setTimeout(0);
+
+    // Handle client disconnection
+    req.on('close', () => {
+      logger.info(`Download client disconnected for folder '${foldername}' in order ${orderId}. Aborting archiver.`);
+      archive.abort();
+    });
 
     // Track progress
     let processedFiles = 0;
