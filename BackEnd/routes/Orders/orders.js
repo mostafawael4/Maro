@@ -606,6 +606,9 @@ router.post("/:orderId/download-selected", async (req, res) => {
     // Set response headers for zip download
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="selected-files.zip"`);
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering for streaming
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     // Create archiver instance with Zip64 and no compression
     const archive = archiver('zip', {
@@ -676,7 +679,7 @@ router.post("/:orderId/download-selected", async (req, res) => {
     await archive.finalize();
 
     logger.info(`Successfully created batch download zip for order ${orderId} (${processedFiles}/${mediaToDownload.length} files)`);
-
+    // res.end() is handled by archive.pipe(res)
   } catch (err) {
     logger.error(`POST /orders/:orderId/download-selected failed: ${err.stack || err}`);
     if (!res.headersSent) {

@@ -187,11 +187,14 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     // Set response headers for zip download
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${foldername}.zip"`);
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering for streaming
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
-    // Create archiver instance with NO compression for speed and enable Zip64 for large files
+    // Create archiver instance with NO compression for speed
     const archive = archiver('zip', {
-      zlib: { level: 0 }, // True no compression
-      forceZip64: true,  // Essential for zip files > 2GB or with many files
+      zlib: { level: 0 }, // Level 0 is No compression
+      forceZip64: true   // Support for files > 4GB or many files
     });
 
     // Pipe archive to response
@@ -257,7 +260,7 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     await archive.finalize();
 
     logger.info(`Successfully streamed zip for folder '${foldername}' in order ${orderId} (${processedFiles}/${mediaInFolder.length} files)`);
-    return res.end();
+    // No res.end() here - archiver.pipe(res) handles it once finalized and flushed
   } catch (err) {
     logger.error(`GET /:orderId/:foldername/download failed: ${err.stack || err}`);
     if (!res.headersSent) {
