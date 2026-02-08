@@ -9,44 +9,48 @@ import logger from '../utils/logger.js';
 import websocketService from './websocket.service.js';
 
 // Helper function to process image thumbnails
-async function processImageThumbnail(orderId, filename, originalName, buffer = null, mimeType = 'image/jpeg') {
+async function processImageThumbnail(orderId, filename, originalName, buffer, mimetype) {
   try {
-    const sharp = (await import('sharp')).default;
+    const { default: sharp } = await import('sharp');
+    const path = await import('path');
+    const fs = await import('fs');
+
     let imageBuffer = buffer;
 
-    // If buffer not provided (e.g. direct upload), download from B2
+    // If no buffer provided (direct upload scenario), download from B2
     if (!imageBuffer) {
       const key = `orders/${orderId}/${filename}`;
-      // Download the image
-      const response = await b2.downloadFileByName(key);
-      imageBuffer = Buffer.from(response);
+      // Download max 10MB just to be safe for thumbnail generation
+      imageBuffer = await b2.downloadFileRange(key, 0, 10 * 1024 * 1024);
     }
 
-    // Generate thumbnail
-    const thumbName = `thumb-${Date.now()}-${originalName}`; // sharp adds extension automatically usually, but let's be explicit if needed or just use name
-    // actually sharp.toBuffer() just gives buffer. We need a filename for B2.
-    // Let's use simple .jpg for thumbnails to ensure compatibility
-    const thumbFilename = `thumb-${Date.now()}-${originalName.replace(/\.[^.]+$/, '')}.jpg`;
+    if (!imageBuffer) {
+      throw new Error("Could not retrieve image buffer for thumbnail generation");
+    }
 
-    const thumbBuffer = await sharp(imageBuffer)
-      .resize(400, 400, { fit: 'cover' }) // Reasonable size for grid
-      .jpeg({ quality: 80 })
-      .toBuffer();
+    const thumbName = `thumb-${Date.now()}-${originalName}`;
+    const thumbPath = path.resolve('tmp', thumbName);
 
-    // Upload thumbnail to B2
-    const thumbKey = `orders/${orderId}/${thumbFilename}`;
+    // Resize to 400x400 max
+    await sharp(imageBuffer)
+      .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+      .toFormat('jpeg', { quality: 80 })
+      .toFile(thumbPath);
+
+    const thumbBuffer = fs.readFileSync(thumbPath);
+    const thumbKey = `orders/${orderId}/${thumbName}`;
+
     await b2.upload(thumbKey, thumbBuffer);
-
     const thumbnailUrl = b2.getFileUrl(thumbKey);
 
-    return {
-      thumbnail: thumbnailUrl,
-      thumbnailFilename: thumbFilename
-    };
+    // Cleanup
+    if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+
+    return { thumbnail: thumbnailUrl, thumbnailFilename: thumbName };
 
   } catch (err) {
-    logger.error(`Failed to process image thumbnail for ${filename}: ${err.message}`);
-    return null;
+    logger.error(`Thumbnail generation failed for ${filename}: ${err.message}`);
+    return null; // Graceful failure
   }
 }
 
@@ -268,16 +272,29 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
       uploadedAt: new Date(),
     };
 
-    // Trigger background processing for thumbnails if it's a video
+    // Trigger properties for thumbnails if it's a video
     if (allowedExtensions.videos.includes(f.mimetype)) {
-      // Run async without await to return response immediately
       processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
     }
 
-    // Trigger background processing for thumbnails if it's an image
-    // For direct uploads, allow async processing so user gets confirmation fast
+    // Generate thumbnail synchronously for images
     if (allowedExtensions.images.includes(f.mimetype)) {
-      processImageThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
+      const thumbResult = await processImageThumbnail(orderId, f.filename, f.originalName, null, f.mimetype);
+      if (thumbResult) {
+        fileObj.thumbnail = thumbResult.thumbnail;
+        fileObj.thumbnailFilename = thumbResult.thumbnailFilename;
+      }
+    }
+
+    // Check if file already exists in order.media to prevent DB duplicates
+    const alreadyExists = order.media.some(m =>
+      m.filename === f.filename ||
+      (m.originalName === f.originalName && (m.foldername || null) === (foldername || null))
+    );
+
+    if (alreadyExists) {
+      logger.warn(`Skipping duplicate file in confirm: ${f.filename}`);
+      continue;
     }
 
     fileObjs.push(fileObj);

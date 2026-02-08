@@ -667,18 +667,7 @@ router.post("/:orderId/download-selected", async (req, res) => {
   }
 });
 
-// POST /orders/:orderId/generate-thumbnails - admin/editor: generate missing thumbnails
-import { generateThumbnailsForOrder } from '../../services/orderMediaService.js';
-router.post("/:orderId/generate-thumbnails", requireAdminOrEditorAuth, async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const result = await generateThumbnailsForOrder(orderId);
-    return res.json({ ok: true, result });
-  } catch (err) {
-    logger.error(`POST /orders/${req.params.orderId}/generate-thumbnails failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
-  }
-});
+// POST /orders/:orderId/generate-thumbnails - REMOVED
 
 
 import orderFolderRoutes from './orderFolders.js';

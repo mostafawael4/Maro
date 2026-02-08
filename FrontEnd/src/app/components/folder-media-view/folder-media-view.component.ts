@@ -15,6 +15,10 @@ export class FolderMediaViewComponent {
   @Input()
   get media(): OrderImage[] { return this._media; }
   set media(value: OrderImage[]) {
+    console.log('[FolderMediaView DEBUG] Input media changed:', value);
+    if (value && value.length > 0) {
+      console.log('[FolderMediaView DEBUG] Sample item:', value[0]);
+    }
     this._media = value;
     this.resetItemsToShow(); // Reset when media changes
   }
