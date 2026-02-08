@@ -15,6 +15,10 @@ export class FolderMediaViewComponent {
   @Input()
   get media(): OrderImage[] { return this._media; }
   set media(value: OrderImage[]) {
+    console.log('[FolderMediaView DEBUG] Input media changed:', value);
+    if (value && value.length > 0) {
+      console.log('[FolderMediaView DEBUG] Sample item:', value[0]);
+    }
     this._media = value;
     this.resetItemsToShow(); // Reset when media changes
   }
@@ -41,8 +45,6 @@ export class FolderMediaViewComponent {
     this._searchTerm = value;
     this.resetItemsToShow(); // Reset when searching
   }
-  selectionMode: boolean = false;
-  selectedItems: Set<string> = new Set();
   downloadingItems: Set<string> = new Set();
   loadedMedia: Set<string> = new Set();
   sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-asc';
@@ -114,16 +116,6 @@ export class FolderMediaViewComponent {
   }
 
   onOpenMedia(index: number, event?: Event): void {
-    // If in selection mode, toggle selection instead of opening slider
-    if (this.selectionMode) {
-      event?.stopPropagation();
-      const mediaItem = this.visibleMedia[index];
-      if (mediaItem) {
-        this.toggleSelection(mediaItem);
-      }
-      return;
-    }
-
     // Since visibleMedia is a slice of filteredMedia (from index 0),
     // the index in visibleMedia is the same as index in filteredMedia
     // Just emit it directly like gallery/home components do
@@ -132,10 +124,6 @@ export class FolderMediaViewComponent {
 
   async onDownload(media: OrderImage, event: Event): Promise<void> {
     event.stopPropagation();
-    if (this.selectionMode) {
-      this.toggleSelection(media);
-      return;
-    }
 
     if (this.downloadingItems.has(media.filename)) return;
 
@@ -169,27 +157,6 @@ export class FolderMediaViewComponent {
     }
   }
 
-  toggleSelectionMode(): void {
-    this.selectionMode = !this.selectionMode;
-    if (!this.selectionMode) {
-      this.selectedItems.clear();
-    }
-  }
-
-  toggleSelection(media: OrderImage): void {
-    const key = media.filename || media._id || '';
-    if (this.selectedItems.has(key)) {
-      this.selectedItems.delete(key);
-    } else {
-      this.selectedItems.add(key);
-    }
-  }
-
-  isSelected(media: OrderImage): boolean {
-    const key = media.filename || media._id || '';
-    return this.selectedItems.has(key);
-  }
-
   isDownloading(media: OrderImage): boolean {
     return this.downloadingItems.has(media.filename);
   }
@@ -200,152 +167,6 @@ export class FolderMediaViewComponent {
 
   isMediaLoaded(filename: string): boolean {
     return this.loadedMedia.has(filename);
-  }
-
-  getSelectedCount(): number {
-    return this.selectedItems.size;
-  }
-
-  batchDownloading = false;
-  downloadStatus = 'Preparing download...';
-  downloadProgress = 0;
-  downloadedBytes = 0;
-  totalBytes = 0;
-
-  async onDownloadSelected(): Promise<void> {
-    if (!this.orderId) {
-      console.error('Cannot download: orderId is missing');
-      return;
-    }
-
-    const selectedMedia = this.filteredMedia.filter(media => {
-      const key = media.filename || media._id || '';
-      return this.selectedItems.has(key);
-    });
-
-    if (selectedMedia.length === 0) {
-      return;
-    }
-
-    // Extract filenames
-    const filenames = selectedMedia.map(m => m.filename);
-
-    // Reset and show progress
-    this.batchDownloading = true;
-    this.downloadProgress = 0;
-    this.downloadedBytes = 0;
-    this.totalBytes = 0;
-    this.downloadStatus = 'Connecting to server...';
-
-    try {
-      const downloadUrl = this.ordersService.getSelectedFilesDownloadUrl(this.orderId);
-
-      // Use fetch to get real progress
-      const response = await fetch(downloadUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filenames }),
-        credentials: 'include' // Important for auth cookies
-      });
-
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`);
-      }
-
-      // Get total size from Content-Length header
-      const contentLength = response.headers.get('Content-Length');
-      this.totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
-
-      // Get the response body as a stream
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('Failed to get response stream');
-      }
-
-      this.downloadStatus = 'Downloading files...';
-      const chunks: Uint8Array[] = [];
-
-      // Read the stream
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          break;
-        }
-
-        chunks.push(value);
-        this.downloadedBytes += value.length;
-
-        // Update progress
-        if (this.totalBytes > 0) {
-          this.downloadProgress = Math.round((this.downloadedBytes / this.totalBytes) * 100);
-          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)} / ${this.formatBytes(this.totalBytes)}`;
-        } else {
-          // If we don't know total size, just show downloaded amount
-          this.downloadStatus = `Downloading... ${this.formatBytes(this.downloadedBytes)}`;
-        }
-      }
-
-      // Combine chunks into a single blob
-      const blob = new Blob(chunks as BlobPart[], { type: 'application/zip' });
-
-      this.downloadStatus = 'Saving file...';
-      this.downloadProgress = 100;
-
-      // Create download link
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `selected-files.zip`;
-      link.style.display = 'none';
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Clean up
-      window.URL.revokeObjectURL(blobUrl);
-
-      // Show completion briefly
-      this.downloadStatus = 'Download complete!';
-      await this.delay(1000);
-
-      // Clear selection and exit selection mode
-      this.selectedItems.clear();
-      this.selectionMode = false;
-      this.batchDownloading = false;
-
-    } catch (error) {
-      console.error('Error downloading selected files:', error);
-      alert('Failed to download selected files. Please try again.');
-      this.batchDownloading = false;
-    }
-  }
-
-  private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-
-  selectAll(): void {
-    this.filteredMedia.forEach(media => {
-      const key = media.filename || media._id || '';
-      this.selectedItems.add(key);
-    });
-  }
-
-  deselectAll(): void {
-    this.selectedItems.clear();
   }
 
   onSortOptionChange(option: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'): void {

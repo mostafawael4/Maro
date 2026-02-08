@@ -302,8 +302,8 @@ router.post("/:orderId/confirm-direct-upload", requireAdminAuth, async (req, res
 
     return res.json({
       ok: true,
-      added: result.added,
-      message: `${result.added.length} file(s) confirmed and processed.`
+      verified: result.verified,
+      message: `${result.verified.length} file(s) confirmed and processed.`
     });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/confirm-direct-upload failed: ${err.stack || err}`);
@@ -508,6 +508,36 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
   }
 });
 
+// DELETE /orders/:orderId/background-image - admin only: clear the order's background image reference
+router.delete("/:orderId/background-image", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ ok: false, message: "orderId is required" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    // Clear the background reference
+    order.orderBackground.image = null;
+    order.orderBackground.filename = null;
+    await order.save();
+
+    logger.info(`Background image cleared for order ${orderId}`);
+    return res.json({
+      ok: true,
+      message: "Background image cleared successfully",
+      orderBackground: order.orderBackground
+    });
+  } catch (err) {
+    logger.error(`DELETE /orders/:orderId/background-image failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
+  }
+});
+
 // GET /orders/:orderId/download/:filename - public (with obfuscated orderId) or authenticated download
 router.get("/:orderId/download/:filename", async (req, res) => {
   try {
@@ -637,18 +667,7 @@ router.post("/:orderId/download-selected", async (req, res) => {
   }
 });
 
-// POST /orders/:orderId/generate-thumbnails - admin/editor: generate missing thumbnails
-import { generateThumbnailsForOrder } from '../../services/orderMediaService.js';
-router.post("/:orderId/generate-thumbnails", requireAdminOrEditorAuth, async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const result = await generateThumbnailsForOrder(orderId);
-    return res.json({ ok: true, result });
-  } catch (err) {
-    logger.error(`POST /orders/${req.params.orderId}/generate-thumbnails failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: "Server error", error: err.message });
-  }
-});
+// POST /orders/:orderId/generate-thumbnails - REMOVED
 
 
 import orderFolderRoutes from './orderFolders.js';

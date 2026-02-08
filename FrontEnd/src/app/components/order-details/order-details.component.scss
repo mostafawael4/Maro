@@ -200,6 +200,49 @@
     font-size: 1.05rem;
     margin-bottom: 1rem;
   }
+
+  .generate-thumbs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.2) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 12px;
+    color: #60a5fa;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+
+    svg {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%);
+      border-color: rgba(59, 130, 246, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
+      color: #93c5fd;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .spinner-svg {
+      animation: spin 1s linear infinite;
+    }
+  }
 }
 
 .order-meta {

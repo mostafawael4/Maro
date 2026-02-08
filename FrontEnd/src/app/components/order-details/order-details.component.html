@@ -26,34 +26,7 @@
     <p>Loading order details...</p>
   </div>
 
-  <!-- Download Progress Modal -->
-  <div *ngIf="zippingFolder" class="download-modal-overlay">
-    <div class="download-modal">
-      <div class="download-modal-content">
-        <div class="download-spinner"></div>
-        <h3>Downloading Folder</h3>
-        <p class="download-status">{{ downloadStatus }}</p>
 
-        <!-- Progress Bar -->
-        <div class="progress-container" *ngIf="totalBytes > 0">
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="downloadProgress"></div>
-          </div>
-          <p class="progress-text">{{ downloadProgress }}%</p>
-        </div>
-
-        <!-- Indeterminate progress when we don't know total size -->
-        <div class="progress-container" *ngIf="totalBytes === 0 && downloadedBytes > 0">
-          <div class="progress-bar indeterminate">
-            <div class="progress-fill-indeterminate"></div>
-          </div>
-        </div>
-
-        <p class="download-note" *ngIf="totalBytes > 0">Please don't close this page until download completes</p>
-        <p class="download-note" *ngIf="totalBytes === 0 && downloadedBytes === 0">Preparing files for download...</p>
-      </div>
-    </div>
-  </div>
 
   <!-- Error State -->
   <div *ngIf="error" class="error-container" [class.show-error]="error">
@@ -72,7 +45,7 @@
     <!-- Order Header - Simplified -->
     <div class="order-header">
       <div class="header-info">
-        <h1>{{ order.clientName || order.orderForm?.brideAndGroomNames || 'Client' }}</h1>
+        <h1>{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h1>
         <p class="client-email">{{ order.email }}</p>
       </div>
       <div class="order-meta">

@@ -205,34 +205,46 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
       }
     });
 
+    // Disable timeout for this request as it involves streaming large amount of data
+    req.setTimeout(0);
+
     // Track progress
     let processedFiles = 0;
-    const concurrency = 5; // Process 5 files in parallel for speed
 
-    // Process files in parallel batches
-    for (let i = 0; i < mediaInFolder.length; i += concurrency) {
-      const batch = mediaInFolder.slice(i, Math.min(i + concurrency, mediaInFolder.length));
+    // Process files sequentially to avoid opening too many connections (which causes timeouts)
+    for (const media of mediaInFolder) {
+      try {
+        const key = `orders/${orderId}/${media.filename}`;
+        const fileName = media.originalName || media.filename;
 
-      // Process batch in parallel
-      await Promise.all(batch.map(async (media) => {
-        try {
-          const key = `orders/${orderId}/${media.filename}`;
-          const fileName = media.originalName || media.filename;
+        // Get stream from B2
+        const fileStream = await b2.downloadFileStream(key);
 
-          logger.info(`Streaming file ${processedFiles + 1}/${mediaInFolder.length}: ${fileName}`);
+        // Append to archive and wait for it to be consumed
+        // This ensures we don't open the next B2 connection until the current one is done
+        await new Promise((resolve, reject) => {
+          fileStream.on('end', () => {
+            processedFiles++;
+            // Log every 5 files to avoid spamming logs, or if it's the last one
+            if (processedFiles % 5 === 0 || processedFiles === mediaInFolder.length) {
+              logger.info(`Streamed file ${processedFiles}/${mediaInFolder.length}: ${fileName}`);
+            }
+            resolve();
+          });
 
-          // Get stream from B2
-          const fileStream = await b2.downloadFileStream(key);
+          fileStream.on('error', (err) => {
+            logger.error(`Stream error for ${fileName}: ${err.message}`);
+            // Don't reject, just resolve so we continue to next file (partial zip is better than no zip)
+            resolve();
+          });
 
-          // Add stream to archive
           archive.append(fileStream, { name: fileName });
+        });
 
-          processedFiles++;
-        } catch (error) {
-          logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
-          // Continue with other files even if one fails
-        }
-      }));
+      } catch (error) {
+        logger.error(`Failed to process file ${media.filename}: ${error.message}`);
+        // Continue with other files
+      }
     }
 
     // Finalize the archive (this triggers the stream to complete)

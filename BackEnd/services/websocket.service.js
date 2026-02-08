@@ -31,7 +31,7 @@ export function sendToClient(clientId, message) {
   }
 
   let sent = false;
-  
+
   wssInstance.trackedClients.forEach((clientData, ws) => {
     if (clientData.clientId === clientId && ws.readyState === 1) { // 1 = OPEN
       ws.send(JSON.stringify(message));
@@ -161,15 +161,15 @@ export async function processUploadedFile(context, fileData, clientId, orderId =
       case 'gallery':
         result = await processGalleryFile(fileData, clientId);
         break;
-        
+
       case 'film':
         result = await processFilmFile(fileData, clientId);
         break;
-        
+
       case 'homepage':
         result = await processHomepageFile(fileData, clientId);
         break;
-        
+
       case 'order':
         if (!orderId) {
           logger.warn('Order ID required for order context processing');
@@ -177,7 +177,7 @@ export async function processUploadedFile(context, fileData, clientId, orderId =
         }
         result = await processOrderFile(fileData, clientId, orderId);
         break;
-        
+
       default:
         logger.warn(`Unknown context for processing: ${context}`);
         throw new Error(`Unknown context: ${context}`);
@@ -198,7 +198,7 @@ export async function processUploadedFile(context, fileData, clientId, orderId =
 
   } catch (error) {
     logger.error(`Error processing file ${fileData.filename}: ${error.message}`);
-    
+
     if (clientId) {
       notifyProcessingStatus(clientId, {
         context,
@@ -208,7 +208,7 @@ export async function processUploadedFile(context, fileData, clientId, orderId =
         message: `Processing failed: ${error.message}`
       });
     }
-    
+
     throw error;
   }
 }
@@ -223,7 +223,7 @@ async function processGalleryFile(fileData, clientId) {
 
   const context = { type: 'gallery' };
   const { exists, url } = await uploadService.verifyFileExists(context, fileData.filename);
-  
+
   if (!exists) {
     throw new Error(`Gallery file verification failed: ${fileData.filename}`);
   }
@@ -249,7 +249,7 @@ async function processFilmFile(fileData, clientId) {
 
   const context = { type: 'film' };
   const { exists, url } = await uploadService.verifyFileExists(context, fileData.filename);
-  
+
   if (!exists) {
     throw new Error(`Film file verification failed: ${fileData.filename}`);
   }
@@ -305,7 +305,7 @@ async function processHomepageFile(fileData, clientId) {
 
   const context = { type: 'homepage' };
   const { exists, url } = await uploadService.verifyFileExists(context, fileData.filename);
-  
+
   if (!exists) {
     throw new Error(`HomePage file verification failed: ${fileData.filename}`);
   }
@@ -329,7 +329,7 @@ async function processOrderFile(fileData, clientId, orderId) {
   const allowedExtensions = (await import('../config/allowed_extensions.js')).default;
 
   const key = `orders/${orderId}/${fileData.filename}`;
-  
+
   // Verify file existence in B2
   const foundFiles = await b2.listFileNames(key, 1);
   const exists = foundFiles && foundFiles.some(file => file.fileName === key);
@@ -373,10 +373,14 @@ async function processOrderFile(fileData, clientId, orderId) {
     }
   }
 
-  order.media.push(fileObj);
-  await order.save();
+  // order.media.push(fileObj);
+  // await order.save();
+  // logger.info(`Order media added: ${fileData.filename} to order ${orderId}`);
 
-  logger.info(`Order media added: ${fileData.filename} to order ${orderId}`);
+  // We rely on confirmDirectUploads to add the file to the DB to prevent duplicates
+  // This function only triggers background processing if needed (e.g. video thumbs)
+  logger.info(`WebSocket processed file: ${fileData.filename} (DB insertion skipped - handled by HTTP)`);
+
   return fileObj;
 }
 
@@ -392,7 +396,7 @@ async function processVideoThumbnailForOrder(orderId, filename, originalName, mi
     const path = await import('path');
 
     const key = `orders/${orderId}/${filename}`;
-    
+
     // Download small portion of video to extract thumbnail
     const videoBuffer = await b2.downloadFileRange(key, 0, 5 * 1024 * 1024);
     const tempVideoPath = path.resolve('tmp', `thumb-gen-${filename}`);
@@ -400,23 +404,23 @@ async function processVideoThumbnailForOrder(orderId, filename, originalName, mi
 
     const thumbName = `thumb-${Date.now()}-${originalName}.jpg`;
     const thumbPath = path.resolve('tmp', thumbName);
-    
+
     await extractThumbnail(tempVideoPath, thumbPath, 1);
-    
+
     const thumbBuffer = fs.readFileSync(thumbPath);
     const thumbKey = `orders/${orderId}/${thumbName}`;
     await b2.upload(thumbKey, thumbBuffer);
-    
+
     const thumbnailUrl = b2.getFileUrl(thumbKey);
 
     // Update DB
     await Order.updateOne(
       { _id: orderId, "media.filename": filename },
-      { 
-        $set: { 
+      {
+        $set: {
           "media.$.thumbnail": thumbnailUrl,
-          "media.$.thumbnailFilename": thumbName 
-        } 
+          "media.$.thumbnailFilename": thumbName
+        }
       }
     );
 
@@ -437,7 +441,7 @@ async function processVideoThumbnailForOrder(orderId, filename, originalName, mi
     }
   } catch (err) {
     logger.error(`Background thumbnail generation failed for ${filename}: ${err.message}`);
-    
+
     if (clientId) {
       notifyProcessingStatus(clientId, {
         context: 'order',
