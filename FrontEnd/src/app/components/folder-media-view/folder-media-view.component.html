@@ -146,9 +146,11 @@
         </button>
       </div>
 
-      <img *ngIf="!isVideo(item)" [src]="getImageUrl(item)" [alt]="getDisplayName(item)" loading="lazy"
-        (load)="onMediaLoad(item.filename)" [class.loaded]="isMediaLoaded(item.filename)"
-        (click)="onOpenMedia(i, $event); $event.stopPropagation()" style="pointer-events: auto">
+      <img *ngIf="!isVideo(item)" [src]="getImageUrl(item)" [srcset]="getSrcSet(item)"
+        sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+        [alt]="getDisplayName(item)" loading="lazy" (load)="onMediaLoad(item.filename)"
+        [class.loaded]="isMediaLoaded(item.filename)" (click)="onOpenMedia(i, $event); $event.stopPropagation()"
+        style="pointer-events: auto">
 
       <div class="image-overlay">
         <span class="image-filename">{{ getDisplayName(item) }}</span>

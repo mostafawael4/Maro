@@ -229,6 +229,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       _id: img.filename,
       filename: img.filename,
       url: img.url,
+      medium: img.medium,
+      hero: img.hero,
       uploadedAt: new Date(img.uploadedAt)
     }));
 

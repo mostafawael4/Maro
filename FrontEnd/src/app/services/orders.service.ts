@@ -12,6 +12,8 @@ export interface OrderImage {
   _id?: string;
   thumbnail?: string;
   thumbnailFilename?: string;
+  medium?: string; // 1200w
+  hero?: string; // 2000w
   foldername?: string | null;
 }
 

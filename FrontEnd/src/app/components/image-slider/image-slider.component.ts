@@ -79,11 +79,19 @@ export class ImageSliderComponent {
   }
 
   getImageUrl(image: ImageType): string {
+    // Cast to any to access properties
+    const img = image as any;
+
+    // Prefer Hero (2000w) or Medium (1200w) for display
+    // Avoid displaying the original URL (img.url) directly if optimized versions exist,
+    // to save bandwidth and improve load performance.
+    let url = img.hero || img.medium || img.url;
+
     // If the URL is relative, prepend the backend URL
-    if (image.url.startsWith('/')) {
-      return `${environment.apiUrl}${image.url}`;
+    if (url && url.startsWith('/')) {
+      return `${environment.apiUrl}${url}`;
     }
-    return image.url;
+    return url;
   }
 
   isVideo(image: ImageType): boolean {

@@ -18,7 +18,28 @@ export const signOrderFiles = async (orderId, files) => {
     return files.map(f => {
         const newF = (typeof f.toObject === 'function') ? f.toObject() : { ...f };
         if (newF.filename) newF.url = sign(newF.filename);
-        if (newF.thumbnailFilename) newF.thumbnail = sign(newF.thumbnailFilename);
+
+        // Handle derived images
+        const derived = ['thumbnail', 'medium', 'hero'];
+        derived.forEach(field => {
+            if (newF[field]) {
+                // If it's a full URL, extract filename. If it's just a filename (legacy?), use it.
+                // Assuming format .../filename.ext or just filename.ext
+                const parts = newF[field].split('/');
+                const filename = parts.pop();
+                if (filename) newF[field] = sign(filename);
+            }
+        });
+
+        // Legacy support for thumbnailFilename if thumbnail field wasn't populated differently?
+        // In the new model, we populate 'thumbnail' with the full URL (which we just signed above)
+        // If 'thumbnail' was empty but 'thumbnailFilename' existed (old video logic), we sign it.
+        // But the loop above might have already handled 'thumbnail' if it held a URL.
+        // Let's ensure if thumbnail is still null but thumbnailFilename exists, we sign it.
+        if (!newF.thumbnail && newF.thumbnailFilename) {
+            newF.thumbnail = sign(newF.thumbnailFilename);
+        }
+
         return newF;
     });
 };
@@ -43,7 +64,20 @@ export const signOrderMedia = async (orderOrDoc, sharedTokenData = null) => {
         order.media = order.media.map(m => {
             const newM = { ...m };
             if (newM.filename) newM.url = sign(newM.filename);
-            if (newM.thumbnailFilename) newM.thumbnail = sign(newM.thumbnailFilename);
+
+            // Handle derived images
+            const derived = ['thumbnail', 'medium', 'hero'];
+            derived.forEach(field => {
+                if (newM[field]) {
+                    const parts = newM[field].split('/');
+                    const filename = parts.pop();
+                    if (filename) newM[field] = sign(filename);
+                }
+            });
+
+            if (!newM.thumbnail && newM.thumbnailFilename) {
+                newM.thumbnail = sign(newM.thumbnailFilename);
+            }
             return newM;
         });
     }

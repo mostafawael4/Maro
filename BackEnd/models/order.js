@@ -20,8 +20,10 @@ const OrderSchema = new mongoose.Schema({
     url: String,
     size: { type: Number, default: 0 }, // File size in bytes
     uploadedAt: Date,
-    thumbnail: { type: String, default: null }, // Thumbnail URL for videos
-    thumbnailFilename: { type: String, default: null } // Thumbnail filename for videos
+    thumbnail: { type: String, default: null }, // Thumbnail URL (400w)
+    thumbnailFilename: { type: String, default: null }, // Thumbnail filename
+    medium: { type: String, default: null }, // Medium URL (1200w)
+    hero: { type: String, default: null }, // Hero URL (2000w)
   }],
   feedbacks: [FeedbackSchema],
   createdAt: { type: Date, default: Date.now },

@@ -77,20 +77,38 @@ const deleteOrderFileByFileName = async (orderId, filename) => {
 
     const mediaItem = order.media.find(m => m.filename === filename);
 
-    // If media item has a thumbnail, delete it first
-    if (mediaItem && mediaItem.thumbnailFilename) {
-      try {
-        await uploadService.deleteFile(orderId, mediaItem.thumbnailFilename);
-        logger.info(`Deleted associated thumbnail: ${mediaItem.thumbnailFilename} (orderId: ${orderId})`);
-      } catch (thumbErr) {
-        logger.error(`Failed to delete associated thumbnail ${mediaItem.thumbnailFilename}: ${thumbErr.message}`);
-        // We continue even if thumbnail delete fails, to ensure main file is attempted
+    const filesToDelete = [filename];
+
+    if (mediaItem) {
+      // Legacy/explicit thumbnail filename
+      if (mediaItem.thumbnailFilename) {
+        filesToDelete.push(mediaItem.thumbnailFilename);
       }
+
+      // Derived images (thumbnail, medium, hero) - extract filename from URL
+      ['thumbnail', 'medium', 'hero'].forEach(field => {
+        if (mediaItem[field] && typeof mediaItem[field] === 'string') {
+          const url = mediaItem[field];
+          // Basic check if it looks like a URL or just a filename
+          if (url.includes('/')) {
+            const derivedName = url.split('/').pop();
+            if (derivedName && !filesToDelete.includes(derivedName)) {
+              filesToDelete.push(derivedName);
+            }
+          }
+        }
+      });
     }
 
-    // Delete main file from B2
-    await uploadService.deleteFile(orderId, filename);
-    logger.info(`Deleted file: ${filename} (orderId: ${orderId})`);
+    // Attempt delete for all identified files
+    for (const fName of filesToDelete) {
+      try {
+        await uploadService.deleteFile(orderId, fName);
+        logger.info(`Deleted file from B2: ${fName} (orderId: ${orderId})`);
+      } catch (err) {
+        logger.warn(`Failed to delete file ${fName} from B2: ${err.message}`);
+      }
+    }
 
     // Check if this file is the current background and clear it if so
     if (order.orderBackground && order.orderBackground.filename === filename) {
@@ -105,6 +123,7 @@ const deleteOrderFileByFileName = async (orderId, filename) => {
       { _id: orderId },
       { $pull: { media: { filename } } }
     );
+
     if (updateResult.modifiedCount === 0) {
       logger.warn(`File deleted from server but not found in media array (orderId: ${orderId}, filename: ${filename})`);
     } else {

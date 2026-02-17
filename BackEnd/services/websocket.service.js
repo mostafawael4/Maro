@@ -443,8 +443,63 @@ async function processOrderFile(fileData, clientId, orderId) {
   // logger.info(`Order media added: ${fileData.filename} to order ${orderId}`);
 
   // We rely on confirmDirectUploads to add the file to the DB to prevent duplicates
-  // This function only triggers background processing if needed (e.g. video thumbs)
+  // This function triggers background processing
   logger.info(`WebSocket processed file: ${fileData.filename} (DB insertion skipped - handled by HTTP)`);
+
+  // Image Optimization
+  if (allowedExtensions.images.includes(fileData.mimetype)) {
+    try {
+      const { default: imageProcessingService } = await import('./imageProcessing.service.js');
+
+      if (clientId) {
+        notifyProcessingStatus(clientId, {
+          context: 'order',
+          filename: fileData.filename,
+          status: 'progress',
+          progress: 20,
+          message: 'Optimizing image...'
+        });
+      }
+
+      const processedImages = await imageProcessingService.processImage(key);
+
+      if (processedImages) {
+        await Order.updateOne(
+          { _id: orderId, "media.filename": fileData.filename },
+          {
+            $set: {
+              "media.$.thumbnail": processedImages.thumbnail || null,
+              "media.$.medium": processedImages.medium || null,
+              "media.$.hero": processedImages.hero || null
+            }
+          }
+        );
+        logger.info(`Order image optimized: ${fileData.filename}`);
+      }
+
+      if (clientId) {
+        notifyProcessingStatus(clientId, {
+          context: 'order',
+          filename: fileData.filename,
+          status: 'completed',
+          progress: 100,
+          message: 'Image optimization completed'
+        });
+      }
+
+    } catch (err) {
+      logger.error(`Failed to optimize order image ${fileData.filename}: ${err.message}`);
+      if (clientId) {
+        notifyProcessingStatus(clientId, {
+          context: 'order',
+          filename: fileData.filename,
+          status: 'failed',
+          progress: 0,
+          message: `Optimization failed: ${err.message}`
+        });
+      }
+    }
+  }
 
   return fileObj;
 }

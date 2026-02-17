@@ -284,20 +284,6 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
       uploadedAt: new Date(),
     };
 
-    // Trigger properties for thumbnails if it's a video
-    if (allowedExtensions.videos.includes(f.mimetype)) {
-      processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
-    }
-
-    // Generate thumbnail synchronously for images
-    if (allowedExtensions.images.includes(f.mimetype)) {
-      const thumbResult = await processImageThumbnail(orderId, f.filename, f.originalName, null, f.mimetype);
-      if (thumbResult) {
-        fileObj.thumbnail = thumbResult.thumbnail;
-        fileObj.thumbnailFilename = thumbResult.thumbnailFilename;
-      }
-    }
-
     // Check if file already exists in order.media to prevent DB duplicates
     const alreadyExists = order.media.some(m =>
       m.filename === f.filename ||
@@ -310,12 +296,55 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
     }
 
     fileObjs.push(fileObj);
+
+    // Trigger background processing
+    if (allowedExtensions.videos.includes(f.mimetype)) {
+      processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
+    }
+
+    // NEW: Trigger background image optimization
+    if (allowedExtensions.images.includes(f.mimetype)) {
+      // Fire and forget - don't await to avoid blocking response
+      processOrderImageOptimization(orderId, f.filename, f.originalName).catch(err => {
+        logger.error(`Background image optimization failed for ${f.filename}: ${err.message}`);
+      });
+    }
   }
 
   order.media.push(...fileObjs);
   await order.save();
 
   return { verified: fileObjs };
+}
+
+/**
+ * Background task to optimize order images using the central service
+ */
+async function processOrderImageOptimization(orderId, filename, originalName) {
+  try {
+    const { default: imageProcessingService } = await import('./imageProcessing.service.js');
+    const key = `orders/${orderId}/${filename}`;
+
+    logger.info(`Starting background image optimization for order ${orderId} file ${filename}`);
+
+    const processedImages = await imageProcessingService.processImage(key);
+
+    if (processedImages) {
+      await Order.updateOne(
+        { _id: orderId, "media.filename": filename },
+        {
+          $set: {
+            "media.$.thumbnail": processedImages.thumbnail || null,
+            "media.$.medium": processedImages.medium || null,
+            "media.$.hero": processedImages.hero || null
+          }
+        }
+      );
+      logger.info(`Order image optimized successfully: ${filename}`);
+    }
+  } catch (err) {
+    logger.error(`Failed to optimize order image ${filename}: ${err.message}`);
+  }
 }
 
 async function processImageThumbnailBackground(orderId, filename, originalName, mimetype) {

@@ -186,7 +186,9 @@ export class FolderMediaViewComponent {
   }
 
   getImageUrl(image: OrderImage): string {
-    return image.thumbnail ? image.thumbnail : image.url;
+    // Prefer medium (1200w) for grid display to ensure quality on high-res screens
+    // Fallback to thumbnail (400w) or url (original)
+    return image.medium || image.thumbnail || image.url;
   }
 
   getDownloadUrl(media: OrderImage): string {
@@ -197,6 +199,25 @@ export class FolderMediaViewComponent {
   getVideoThumbnailUrl(image: OrderImage): string {
     if (!image.thumbnail) return '';
     return `${image.thumbnail}`;
+  }
+
+  getSrcSet(image: OrderImage): string | null {
+    if (this.isVideo(image)) return null;
+
+    // If no optimized versions, return null (browser uses src)
+    if (!image.thumbnail && !image.medium && !image.hero) {
+      return null;
+    }
+
+    const parts = [];
+    if (image.thumbnail) parts.push(`${image.thumbnail} 400w`);
+    if (image.medium) parts.push(`${image.medium} 1200w`);
+    if (image.hero) parts.push(`${image.hero} 2000w`);
+
+    // Also include the original if we want, but usually optimized ones are enough
+    // if (image.url) parts.push(`${image.url} 3000w`); // Optional
+
+    return parts.join(', ');
   }
 
   getDisplayName(image: OrderImage): string {
