@@ -20,7 +20,31 @@ const signGalleryImage = (image) => {
   const sign = (filename) => `${cdnUrl}/file/${bucketName}/gallery/${encodeURIComponent(filename)}`;
 
   const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
-  if (newImage.filename) newImage.url = sign(newImage.filename);
+
+  if (newImage.filename) {
+    newImage.url = sign(newImage.filename);
+  }
+
+  // Handle derived images (thumbnail, medium, hero)
+  // These are stored as full B2 URLs currently (e.g., https://f005.backblazeb2.com/file/bucket/gallery/filename.webp)
+  // We need to extract the filename and re-sign it with CDN, OR replace the B2 domain with CDN domain.
+  // Since we know the structure, let's just replace the domain part or re-construct.
+  // The imageProcessing service saves them as `b2Service.getFileUrl(newFileKey)` which is `https://f005.backblazeb2.com/file/${bucketName}/${key}`
+
+  const derived = ['thumbnail', 'medium', 'hero'];
+  derived.forEach(field => {
+    if (newImage[field]) {
+      // extract filename from the URL. 
+      // URL is like: .../file/bucketName/gallery/filename.webp
+      // We can just grab the last part.
+      const parts = newImage[field].split('/');
+      const filename = parts.pop();
+      if (filename) {
+        newImage[field] = sign(filename);
+      }
+    }
+  });
+
   return newImage;
 };
 
@@ -112,15 +136,24 @@ router.post("/confirm-direct-upload", async (req, res) => {
 // Get all gallery images with pagination
 router.get("/", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 8;
+  // Handle limit=0 (no limit) or default to 8
+  let limit = req.query.limit !== undefined ? parseInt(req.query.limit) : 8;
 
   logger.info(`Fetching gallery images. Page: ${page}, Limit: ${limit}`);
 
   try {
-    const skip = (page - 1) * limit;
+    const skip = limit > 0 ? (page - 1) * limit : 0;
+
+    let query = Gallery.find().sort({ uploadedAt: -1 });
+    // Apply skip only if limit > 0 (pagination enabled)
+    // If limit is 0, we want all, so skip is 0 which is default.
+    // Mongoose limit(0) is equivalent to no limit. 
+    if (limit > 0) {
+      query = query.skip(skip).limit(limit);
+    }
 
     const [images, total] = await Promise.all([
-      Gallery.find().sort({ uploadedAt: -1 }).skip(skip).limit(limit).lean(),
+      query.lean(),
       Gallery.countDocuments()
     ]);
 
@@ -133,8 +166,8 @@ router.get("/", async (req, res) => {
       items: signedImages,
       total,
       page,
-      totalPages: Math.ceil(total / limit),
-      hasMore: page * limit < total
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
+      hasMore: limit > 0 ? (page * limit < total) : false
     });
   } catch (err) {
     logger.error("Error fetching all gallery images:", err);
@@ -181,11 +214,48 @@ router.delete("/delete", async (req, res) => {
     }
 
     // Now, remove the file from B2 before deleting the DB record
+    const filesToDelete = [imageToDelete.filename];
+    if (imageToDelete.thumbnail) filesToDelete.push(imageToDelete.thumbnail.split('/').pop());
+    if (imageToDelete.medium) filesToDelete.push(imageToDelete.medium.split('/').pop());
+    if (imageToDelete.hero) filesToDelete.push(imageToDelete.hero.split('/').pop());
+
+    // We need to handle potential full URLs in DB vs filenames expected by deleteFile
+    // usage in deleteFile: (type, filename, context)
+
     try {
+      // 1. Delete Original
       await uploadService.deleteFile(undefined, imageToDelete.filename, { isGallery: true });
       logger.info(`Deleted gallery file from B2: ${imageToDelete.filename}`);
+
+      // 2. Delete Derived Files
+      // We can use the same deleteFile method if we extract the filename correctly
+      // The current uploadService.deleteFile implementation constructs the path based on context.
+      // let's verify uploadService.deleteFile implementation to be sure.
+
+      // Actually, let's look at uploadService.deleteFile first.
+      // If it takes just filename and context, we can reuse it.
+
+      const derived = ['thumbnail', 'medium', 'hero'];
+      for (const field of derived) {
+        if (imageToDelete[field]) {
+          // extract filename from URL if it is a URL
+          const derivedFilename = imageToDelete[field].split('/').pop();
+          // The B2 structure for derived images is likely same folder: gallery/filename-suffix.webp
+          // uploadService.deleteFile likely handles 'gallery/' prefix internally based on isGallery: true
+
+          try {
+            await uploadService.deleteFile(undefined, derivedFilename, { isGallery: true });
+            logger.info(`Deleted gallery derived file from B2: ${derivedFilename}`);
+          } catch (dErr) {
+            logger.warn(`Failed to delete derived file ${derivedFilename}: ${dErr.message}`);
+          }
+        }
+      }
+
     } catch (fileErr) {
       logger.error(`Failed to delete gallery file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
+      // Proceed to delete DB record anyway? Maybe not if original failed. 
+      // User asked to clean up, so we should try best effort.
       return res.status(500).json({ error: `Failed to delete gallery file from B2: ${fileErr.message}` });
     }
 

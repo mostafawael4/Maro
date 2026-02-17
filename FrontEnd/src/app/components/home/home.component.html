@@ -31,7 +31,11 @@
     <div *ngFor="let image of images; let i = index" class="photo-item" [attr.data-index]="i"
       [class.animate-in]="isImageVisible(i)" [class.deleting]="deletingImageId === image._id"
       (click)="openImageSlider(i)">
-      <img [src]="getImageUrl(image)" [alt]="image.filename" (load)="onImageLoad(i)" [class.loaded]="isImageLoaded(i)" />
+      <img [src]="image.medium || image.url" [alt]="image.filename"
+        [srcset]="(image.thumbnail || image.url) + ' 400w, ' + (image.medium || image.url) + ' 1200w, ' + (image.hero || image.url) + ' 2000w'"
+        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw" (load)="onImageLoad(i)"
+        [class.loaded]="isImageLoaded(i)" [attr.loading]="i > 5 ? 'lazy' : 'eager'"
+        [attr.fetchpriority]="i <= 5 ? 'high' : 'auto'" />
 
       <!-- Admin Delete Button -->
       <button *ngIf="isAuthenticated && isAdmin" class="admin-delete-btn" (click)="onDeleteClick(image, $event)"

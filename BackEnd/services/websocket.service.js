@@ -220,17 +220,50 @@ async function processGalleryFile(fileData, clientId) {
   const { default: Gallery } = await import('../models/Gallery.js');
   const { default: b2 } = await import('./b2.service.js');
   const { default: uploadService } = await import('./upload.service.js');
+  const { default: imageProcessingService } = await import('./imageProcessing.service.js');
 
   const context = { type: 'gallery' };
-  const { exists, url } = await uploadService.verifyFileExists(context, fileData.filename);
+  const { exists, url, key } = await uploadService.verifyFileExists(context, fileData.filename);
 
   if (!exists) {
     throw new Error(`Gallery file verification failed: ${fileData.filename}`);
   }
 
+  // Optimize Image
+  let processedImages = {};
+  try {
+    if (clientId) {
+      notifyProcessingStatus(clientId, {
+        context: 'gallery',
+        filename: fileData.filename,
+        status: 'progress',
+        progress: 20,
+        message: 'Optimizing image versions...'
+      });
+    }
+
+    processedImages = await imageProcessingService.processImage(key);
+
+    if (clientId) {
+      notifyProcessingStatus(clientId, {
+        context: 'gallery',
+        filename: fileData.filename,
+        status: 'progress',
+        progress: 90,
+        message: 'Optimization complete, saving...'
+      });
+    }
+  } catch (err) {
+    logger.error(`Image processing failed for ${fileData.filename}: ${err.message}`);
+    // Continue without optimization if it fails (optional fallback)
+  }
+
   const newImage = await Gallery.create({
     filename: fileData.filename,
     url: url,
+    thumbnail: processedImages.thumbnail || null,
+    medium: processedImages.medium || null,
+    hero: processedImages.hero || null,
     uploadedAt: new Date(),
   });
 
@@ -302,17 +335,49 @@ async function processFilmFile(fileData, clientId) {
 async function processHomepageFile(fileData, clientId) {
   const { default: HomePage } = await import('../models/HomePage.js');
   const { default: uploadService } = await import('./upload.service.js');
+  const { default: imageProcessingService } = await import('./imageProcessing.service.js');
 
   const context = { type: 'homepage' };
-  const { exists, url } = await uploadService.verifyFileExists(context, fileData.filename);
+  const { exists, url, key } = await uploadService.verifyFileExists(context, fileData.filename);
 
   if (!exists) {
     throw new Error(`HomePage file verification failed: ${fileData.filename}`);
   }
 
+  // Optimize Image
+  let processedImages = {};
+  try {
+    if (clientId) {
+      notifyProcessingStatus(clientId, {
+        context: 'homepage',
+        filename: fileData.filename,
+        status: 'progress',
+        progress: 20,
+        message: 'Optimizing image versions...'
+      });
+    }
+
+    processedImages = await imageProcessingService.processImage(key);
+
+    if (clientId) {
+      notifyProcessingStatus(clientId, {
+        context: 'homepage',
+        filename: fileData.filename,
+        status: 'progress',
+        progress: 90,
+        message: 'Optimization complete, saving...'
+      });
+    }
+  } catch (err) {
+    logger.error(`Image processing failed for ${fileData.filename}: ${err.message}`);
+  }
+
   const newImage = await HomePage.create({
     filename: fileData.filename,
     url: url,
+    thumbnail: processedImages.thumbnail || null,
+    medium: processedImages.medium || null,
+    hero: processedImages.hero || null,
     uploadedAt: new Date(),
   });
 

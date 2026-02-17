@@ -20,7 +20,21 @@ const signHomePageImage = (image) => {
   const sign = (filename) => `${cdnUrl}/file/${bucketName}/homepage/${encodeURIComponent(filename)}`;
 
   const newImage = (typeof image.toObject === 'function') ? image.toObject() : { ...image };
-  if (newImage.filename) newImage.url = sign(newImage.filename);
+  if (newImage.filename) {
+    newImage.url = sign(newImage.filename);
+  }
+
+  const derived = ['thumbnail', 'medium', 'hero'];
+  derived.forEach(field => {
+    if (newImage[field]) {
+      const parts = newImage[field].split('/');
+      const filename = parts.pop();
+      if (filename) {
+        newImage[field] = sign(filename);
+      }
+    }
+  });
+
   return newImage;
 };
 
@@ -184,8 +198,23 @@ router.delete("/delete", async (req, res) => {
 
     // Now, remove the file from B2 before deleting the DB record
     try {
+      // 1. Delete Original
       await uploadService.deleteFile(undefined, imageToDelete.filename, { isHomePage: true });
       logger.info(`Deleted homePage file from B2: ${imageToDelete.filename}`);
+
+      // 2. Delete Derived Files
+      const derived = ['thumbnail', 'medium', 'hero'];
+      for (const field of derived) {
+        if (imageToDelete[field]) {
+          const derivedFilename = imageToDelete[field].split('/').pop();
+          try {
+            await uploadService.deleteFile(undefined, derivedFilename, { isHomePage: true });
+            logger.info(`Deleted homePage derived file from B2: ${derivedFilename}`);
+          } catch (dErr) {
+            logger.warn(`Failed to delete derived file ${derivedFilename}: ${dErr.message}`);
+          }
+        }
+      }
     } catch (fileErr) {
       logger.error(`Failed to delete homePage file from B2 (${imageToDelete.filename}): ${fileErr.message}`);
       return res.status(500).json({ error: `Failed to delete homePage file from B2: ${fileErr.message}` });

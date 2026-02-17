@@ -10,6 +10,9 @@ export interface HomePageImage {
   _id: string;
   filename: string;
   url: string;
+  thumbnail?: string;
+  medium?: string;
+  hero?: string;
   uploadedAt: Date | string;
 }
 

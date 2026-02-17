@@ -27,7 +27,8 @@
 
       <!-- Image -->
       <img *ngIf="getCurrentImage() && !isVideo(getCurrentImage()!)" [src]="getImageUrl(getCurrentImage()!)"
-        [alt]="getCurrentImage()!.filename" class="slider-image" />
+        [srcset]="getSrcSet(getCurrentImage()!)" sizes="100vw" [alt]="getCurrentImage()!.filename"
+        class="slider-image" />
 
       <!-- Media Counter -->
       <div class="image-counter">

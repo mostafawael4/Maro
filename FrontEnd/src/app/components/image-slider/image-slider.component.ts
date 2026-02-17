@@ -109,5 +109,29 @@ export class ImageSliderComponent {
       this.closeSlider();
     }
   }
+  getSrcSet(image: ImageType): string {
+    if (this.isVideo(image)) return '';
+
+    // Cast to any to access optional properties if TypeScript complains, 
+    // or assume ImageType has them (which it does via union)
+    const img = image as any;
+
+    // If no optimized versions, return empty (browser uses src)
+    if (!img.thumbnail && !img.medium && !img.hero) {
+      return '';
+    }
+
+    const parts = [];
+    if (img.thumbnail) parts.push(`${img.thumbnail} 400w`);
+    if (img.medium) parts.push(`${img.medium} 1200w`);
+    if (img.hero) parts.push(`${img.hero} 2000w`);
+
+    // Also include original if it's absolute URL, roughly assuming it's large? 
+    // Or maybe skip original in srcset to force usage of optimized ones?
+    // Let's include original as fallback for largest if needed, but 'hero' should be enough.
+    // Actually, let's just use the optimized ones + original as default in src.
+
+    return parts.join(', ');
+  }
 }
 
