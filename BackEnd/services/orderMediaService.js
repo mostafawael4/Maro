@@ -199,6 +199,15 @@ export async function uploadMediaFiles(orderId, files, foldername) {
   };
 }
 
+
+// Helper to sanitize filenames
+function sanitizeFilename(filename) {
+  return filename
+    .replace(/\s+/g, '_')          // Replace spaces with underscores
+    .replace(/[^a-zA-Z0-9._-]/g, '') // Remove any non-alphanumeric chars except . _ -
+    .replace(/^_+|_+$/g, '');      // Trim underscores
+}
+
 export async function prepareDirectUploads(orderId, files, foldername) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
@@ -230,7 +239,9 @@ export async function prepareDirectUploads(orderId, files, foldername) {
       duplicates.push({ originalName: f.originalname, foldername: foldername || null });
     } else {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const b2FileName = `${uniqueSuffix}-${f.originalname}`;
+      // SANITIZE THE FILENAME
+      const cleanOriginalName = sanitizeFilename(f.originalname);
+      const b2FileName = `${uniqueSuffix}-${cleanOriginalName}`;
       const key = `orders/${orderId}/${b2FileName}`;
 
       // Use Native B2 Upload URL

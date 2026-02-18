@@ -24,9 +24,10 @@ class ImageProcessingService {
         }
 
         const uniqueId = Date.now() + Math.random().toString(36).substring(7);
-        const originalExt = path.extname(fileKey);
-        const baseName = path.basename(fileKey, originalExt);
-        const dirName = path.dirname(fileKey); // e.g., 'gallery'
+        // Use path.posix for B2 keys to ensure forward slashes on all OSs
+        const originalExt = path.posix.extname(fileKey);
+        const baseName = path.posix.basename(fileKey, originalExt);
+        const dirName = path.posix.dirname(fileKey); // e.g., 'gallery'
 
         const localOriginalPath = path.join(tempDir, `${uniqueId}-original${originalExt}`);
 
