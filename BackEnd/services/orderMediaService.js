@@ -71,6 +71,8 @@ export async function uploadMediaFiles(orderId, files, foldername) {
     throw new Error('Order not found');
   }
 
+  const normalizedFoldername = foldername ? foldername.trim() : null;
+
   const existingMedia = order.media || [];
   const duplicates = [];
   const filesToUpload = [];
@@ -79,16 +81,16 @@ export async function uploadMediaFiles(orderId, files, foldername) {
     const isDuplicate = existingMedia.some(
       (existing) =>
         existing.originalName === f.originalname &&
-        (existing.foldername || null) === (foldername || null)
+        (existing.foldername || null) === normalizedFoldername
     );
 
     if (isDuplicate) {
       duplicates.push({
         originalName: f.originalname,
-        foldername: foldername || null,
+        foldername: normalizedFoldername,
       });
       logger.info(
-        `Duplicate file detected: "${f.originalname}" in folder "${foldername || 'root'}" for order ${orderId}`
+        `Duplicate file detected: "${f.originalname}" in folder "${normalizedFoldername || 'root'}" for order ${orderId}`
       );
     } else {
       filesToUpload.push(f);
@@ -126,7 +128,7 @@ export async function uploadMediaFiles(orderId, files, foldername) {
       const filename = key.split('/').pop();
 
       const fileObj = {
-        foldername: foldername || null,
+        foldername: normalizedFoldername,
         filename,
         originalName: f.originalname,
         url,
@@ -216,6 +218,8 @@ export async function prepareDirectUploads(orderId, files, foldername) {
   const duplicates = [];
   const uploadSlots = [];
 
+  const normalizedFoldername = foldername ? foldername.trim() : null;
+
   const allowedMimes = [...allowedExtensions.images, ...allowedExtensions.videos];
   const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
 
@@ -232,11 +236,11 @@ export async function prepareDirectUploads(orderId, files, foldername) {
     const isDuplicate = existingMedia.some(
       (existing) =>
         existing.originalName === f.originalname &&
-        (existing.foldername || null) === (foldername || null)
+        (existing.foldername || null) === normalizedFoldername
     );
 
     if (isDuplicate) {
-      duplicates.push({ originalName: f.originalname, foldername: foldername || null });
+      duplicates.push({ originalName: f.originalname, foldername: normalizedFoldername });
     } else {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       // SANITIZE THE FILENAME
@@ -265,6 +269,7 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
   const order = await Order.findById(orderId);
   if (!order) throw new Error('Order not found');
 
+  const normalizedFoldername = foldername ? foldername.trim() : null;
   const fileObjs = [];
 
   for (const f of uploadedFiles) {
@@ -287,7 +292,7 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
     const url = b2.getFileUrl(key);
 
     const fileObj = {
-      foldername: foldername || null,
+      foldername: normalizedFoldername,
       filename: f.filename,
       originalName: f.originalName,
       url: url,
@@ -298,7 +303,7 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
     // Check if file already exists in order.media to prevent DB duplicates
     const alreadyExists = order.media.some(m =>
       m.filename === f.filename ||
-      (m.originalName === f.originalName && (m.foldername || null) === (foldername || null))
+      (m.originalName === f.originalName && (m.foldername || null) === normalizedFoldername)
     );
 
     if (alreadyExists) {
