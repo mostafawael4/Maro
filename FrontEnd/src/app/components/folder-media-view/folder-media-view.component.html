@@ -1,104 +1,88 @@
 <div class="images-gallery">
-  <div *ngIf="showStepper && folderName" class="folder-stepper">
-    <div class="steps">
-      <span class="step completed">Folders</span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-      <span class="step active">{{ folderName | titlecase }}</span>
-    </div>
+  <div class="media-toolbar" *ngIf="hasMedia || showStepper">
+    <!-- Back to folders -->
     <button *ngIf="canGoBack" class="folder-back-btn" (click)="back.emit()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5">
         <polyline points="15 18 9 12 15 6"></polyline>
-        <line x1="9" y1="12" x2="21" y2="12"></line>
       </svg>
-      Back to folders
+      Albums
     </button>
-  </div>
 
-  <div class="gallery-header">
-    <div class="header-title-actions">
-      <div>
-        <h2>
-          {{ folderName ? (folderName | titlecase) + ' Folder' : 'Order Media' }}
-        </h2>
-        <p class="folder-subtitle" *ngIf="folderName">
-          <span *ngIf="searchTerm.trim(); else totalCount">
-            {{ filteredMedia.length }} of {{ media.length }} {{ media.length === 1 ? 'item' : 'items' }}
-          </span>
-          <ng-template #totalCount>
-            {{ media.length }} {{ media.length === 1 ? 'item' : 'items' }}
-          </ng-template>
-        </p>
-      </div>
-      <div class="header-actions">
-        <button *ngIf="isAuthenticated && canSelectBackground" class="select-background-btn"
-          (click)="selectBackground.emit()" title="Select background image for this order">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-          Set Background Image
-        </button>
-      </div>
+    <!-- Search -->
+    <div class="search-input-wrapper" *ngIf="hasMedia">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" class="search-icon">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Search..." class="search-input" />
+      <button *ngIf="searchTerm.trim()" class="clear-search-btn" (click)="searchTerm = ''">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
     </div>
 
-    <!-- Search & Sort -->
-    <div class="filters-toolbar" *ngIf="hasMedia">
-      <div class="search-container">
-        <div class="search-input-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" class="search-icon">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input type="text" [(ngModel)]="searchTerm" placeholder="Search media by name..." class="search-input" />
-          <button *ngIf="searchTerm.trim()" class="clear-search-btn" (click)="searchTerm = ''" title="Clear search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-      </div>
+    <!-- Right actions: Sort + Set Background + Download Album -->
+    <div class="toolbar-right" *ngIf="hasMedia">
+      <!-- Download Album Button -->
+      <button *ngIf="folderName" class="download-album-btn" (click)="downloadFolder.emit()" [disabled]="zippingFolder">
+        <svg *ngIf="!zippingFolder" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <svg *ngIf="zippingFolder" class="spinner-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" opacity="0.25"></circle>
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+        </svg>
+        {{ zippingFolder ? 'Preparing...' : 'Download Album' }}
+      </button>
 
+      <!-- Sort -->
       <div class="sort-container">
-        <label for="sortOption">Sort</label>
-        <button class="sort-toggle" type="button" (click)="toggleSortOptions($event)" [class.active]="showSortOptions"
-          aria-haspopup="listbox" [attr.aria-expanded]="showSortOptions">
-          <span class="sort-label">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" class="sort-icon">
-              <path d="M3 6h13"></path>
-              <path d="M3 12h9"></path>
-              <path d="M3 18h5"></path>
-              <path d="M21 6v12"></path>
-              <path d="m17 8 4-4 4 4"></path>
-            </svg>
-            {{ currentSortLabel }}
-          </span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" class="chevron-icon">
+        <button class="sort-toggle" type="button" (click)="toggleSortOptions($event)" [class.active]="showSortOptions">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M3 6h13"></path>
+            <path d="M3 12h9"></path>
+            <path d="M3 18h5"></path>
+            <path d="M21 6v12"></path>
+            <path d="m17 8 4-4 4 4"></path>
+          </svg>
+          {{ currentSortLabel }}
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" class="chevron-icon">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
-        <div class="sort-dropdown" *ngIf="showSortOptions" role="listbox" aria-label="Sort media">
+        <div class="sort-dropdown" *ngIf="showSortOptions" role="listbox">
           <button *ngFor="let option of sortOptions" type="button" class="sort-option"
-            [class.active]="option.value === sortOption" (click)="selectSortOption($event, option.value)" role="option"
-            [attr.aria-selected]="option.value === sortOption">
+            [class.active]="option.value === sortOption" (click)="selectSortOption($event, option.value)">
             <span>{{ option.label }}</span>
-            <svg *ngIf="option.value === sortOption" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+            <svg *ngIf="option.value === sortOption" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </button>
         </div>
       </div>
+
+      <!-- Set Background (admin only) -->
+      <button *ngIf="isAuthenticated && canSelectBackground" class="select-background-btn icon-only"
+        (click)="selectBackground.emit()" title="Set background image for this order">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </button>
     </div>
   </div>
 

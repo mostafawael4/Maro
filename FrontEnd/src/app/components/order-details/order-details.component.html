@@ -10,15 +10,33 @@
     warning="This action cannot be undone. All media in this folder will be permanently deleted."
     (confirm)="onConfirmDeleteFolder()" (cancel)="onCancelDeleteFolder()" />
 
-  <!-- Back Button -->
-  <button class="back-btn" (click)="goBack()">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2">
-      <line x1="19" y1="12" x2="5" y2="12" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
-    Back to Orders
-  </button>
+  <!-- Order Hero Header -->
+  <div class="order-hero" *ngIf="order">
+    <button class="back-btn" (click)="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5">
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="12 19 5 12 12 5" />
+      </svg>
+      Back
+    </button>
+
+    <div class="hero-center">
+      <div class="hero-eyebrow">Your Event</div>
+      <h1 class="hero-name">
+        {{ order.orderForm?.brideAndGroomNames || order.clientName || 'Your Order' }}
+      </h1>
+      <div class="hero-divider">
+        <span class="divider-line"></span>
+        <span class="divider-diamond">◆</span>
+        <span class="divider-line"></span>
+      </div>
+      <span class="hero-status" [ngClass]="getStatusClass(order.status)">
+        <span class="status-pulse"></span>
+        {{ order.status }}
+      </span>
+    </div>
+  </div>
 
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
@@ -42,31 +60,6 @@
 
   <!-- Order Details -->
   <div *ngIf="order && !loading" class="order-content">
-    <!-- Order Header - Simplified -->
-    <div class="order-header">
-      <div class="header-info">
-        <h1>{{ order.orderForm?.brideAndGroomNames || order.clientName || 'Client' }}</h1>
-        <p class="client-email">{{ order.email }}</p>
-      </div>
-      <div class="order-meta">
-        <div class="meta-item">
-          <span class="meta-label">Status:</span>
-          <span class="status-badge" [ngClass]="getStatusClass(order.status)">
-            <span class="status-dot"></span>
-            <span class="status-text">{{ order.status }}</span>
-          </span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Event Date:</span>
-          <span class="meta-value">{{ order.orderForm?.eventDate ? (order.orderForm?.eventDate | date: 'MMM dd, yyyy') :
-            'N/A' }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Total Media:</span>
-          <span class="meta-value">{{ (order.media || []).length }}</span>
-        </div>
-      </div>
-    </div>
 
     <app-order-folder-panel *ngIf="(folders.length > 0 || foldersLoading) && !selectedFolder" [folders]="folders"
       [loading]="foldersLoading" [error]="foldersError" [selectedFolder]="selectedFolder"
@@ -79,12 +72,13 @@
       [error]="folderMediaError" [folderName]="selectedFolder" [showStepper]="true" [canGoBack]="folders.length > 0"
       [isAuthenticated]="isAuthenticated" [baseUrl]="baseUrl"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
-      (back)="exitFolderView()" (openMedia)="openImageSlider($event)" (downloadMedia)="downloadImage($event)"
+      [zippingFolder]="zippingFolder" (back)="exitFolderView()" (openMedia)="openImageSlider($event)"
+      (downloadMedia)="downloadImage($event)" (downloadFolder)="onDownloadFolder(selectedFolder!)"
       (deleteMedia)="onDeleteMediaClick($event)" (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">
     </app-folder-media-view>
 
-    <app-folder-media-view *ngIf="!selectedFolder && folders.length === 0" [media]="currentMedia"
+    <app-folder-media-view *ngIf="!selectedFolder && folders.length === 0 && !foldersLoading" [media]="currentMedia"
       [loading]="loading && !isAuthenticated" [error]="!isAuthenticated ? error : ''" [canGoBack]="false"
       [showStepper]="false" [folderName]="null" [baseUrl]="baseUrl" [isAuthenticated]="isAuthenticated"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"

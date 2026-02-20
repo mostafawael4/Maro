@@ -1,19 +1,31 @@
-<div class="folders-section">
-  <div class="folders-header">
-    <div class="folders-title">
-      <h2>Media Folders</h2>
-      <p>Select a folder to browse its media collection.</p>
+<div class="folders-page">
+
+  <!-- Folders Header -->
+  <div class="folders-page-header">
+    <div class="header-text">
+      <h2>Your Albums</h2>
+      <p>Select an album to view your photos & videos</p>
     </div>
-    <span class="folder-count-badge">{{ folders.length }} {{ folders.length === 1 ? 'folder' : 'folders' }}</span>
+    <span class="folder-count-badge">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
+        <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
+      </svg>
+      {{ folders.length }} {{ folders.length === 1 ? 'Album' : 'Albums' }}
+    </span>
   </div>
 
-  <div *ngIf="loading" class="folder-state">
-    <div class="spinner small"></div>
-    <p>Loading folders...</p>
+  <!-- Loading -->
+  <div *ngIf="loading" class="folders-loader">
+    <div class="loader-ring"></div>
+    <p>Loading your albums...</p>
   </div>
 
-  <div *ngIf="!loading && error" class="folder-state error">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <!-- Error -->
+  <div *ngIf="!loading && error" class="folders-error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2">
       <circle cx="12" cy="12" r="10"></circle>
       <line x1="12" y1="8" x2="12" y2="12"></line>
       <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -21,68 +33,64 @@
     <p>{{ error }}</p>
   </div>
 
+  <!-- Folders Grid -->
   <div *ngIf="!loading && !error && folders.length > 0" class="folders-grid">
-    <div 
-      *ngFor="let folder of folders" 
-      class="folder-card-wrapper">
-      <button 
-        class="folder-card" 
-        [class.active]="folder === selectedFolder"
-        (click)="onFolderClick(folder, $event)">
-        <!-- Download Button - Above the card on the left -->
-        <button 
-          class="folder-download-btn"
-          (click)="onDownloadFolder(folder, $event)"
-          [disabled]="zippingFolder"
-          [title]="zippingFolder ? 'Zipping folder...' : 'Download folder as ZIP'">
-          <svg *ngIf="!zippingFolder" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          
-          <svg *ngIf="zippingFolder" class="spinner-svg" 
-              width="18" height="18" viewBox="0 0 24 24" 
-              xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </button>
-        <!-- Delete Button (Admin Only) - Above the card -->
-        <button 
-          *ngIf="isAuthenticated"
-          class="folder-delete-btn"
-          (click)="onDeleteFolder(folder, $event)"
-          title="Delete folder and all its contents">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-        </button>
-        <div class="folder-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div *ngFor="let folder of folders; let i = index" class="folder-card-wrapper">
+
+      <!-- Admin action buttons -->
+      <button *ngIf="isAuthenticated" class="folder-action-btn folder-delete-btn"
+        (click)="onDeleteFolder(folder, $event)" title="Delete folder">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+
+      <!-- Main Folder Card -->
+      <button class="folder-card" [class.active]="folder === selectedFolder" (click)="onFolderClick(folder, $event)">
+
+        <!-- Decorative orb -->
+        <div class="folder-orb" [style.--orb-hue]="(i * 47 + 10) % 360 + 'deg'"></div>
+
+        <!-- Folder icon area -->
+        <div class="folder-icon-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5">
             <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
             <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
           </svg>
         </div>
-        <div class="folder-name">{{ folder }}</div>
-        <div class="folder-meta">
-          <span>—</span>
-          <small>items</small>
+
+        <!-- Folder name -->
+        <div class="folder-label">
+          <span class="folder-name">{{ folder }}</span>
+          <span class="folder-tap">Tap to open</span>
         </div>
+
+        <!-- Arrow -->
+        <div class="folder-arrow">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
+
       </button>
     </div>
   </div>
 
-  <div *ngIf="!loading && !error && folders.length === 0" class="folder-state empty">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-      <path d="M21 15l-5-5L5 21"></path>
-    </svg>
-    <p>No folders yet. Upload media to start organizing!</p>
+  <!-- Empty -->
+  <div *ngIf="!loading && !error && folders.length === 0" class="folders-empty">
+    <div class="empty-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.5">
+        <path d="M3 7h6l2 3h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"></path>
+        <path d="M3 7V5a2 2 0 0 1 2-2h4l2 3"></path>
+      </svg>
+    </div>
+    <h3>No Albums Yet</h3>
+    <p>Your media albums will appear here once uploaded.</p>
   </div>
-</div>
 
+</div>

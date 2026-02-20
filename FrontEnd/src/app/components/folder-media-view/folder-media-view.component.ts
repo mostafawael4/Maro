@@ -31,6 +31,7 @@ export class FolderMediaViewComponent {
   @Input() baseUrl: string = '';
   @Input() canSelectBackground: boolean = false;
   @Input() orderId: string | null = null;
+  @Input() zippingFolder: boolean = false;
 
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<{ index: number, sortedMedia: OrderImage[] }>();
@@ -38,6 +39,7 @@ export class FolderMediaViewComponent {
   @Output() deleteMedia = new EventEmitter<OrderImage>();
   @Output() selectVideoThumbnail = new EventEmitter<OrderImage>();
   @Output() selectBackground = new EventEmitter<void>();
+  @Output() downloadFolder = new EventEmitter<void>();
 
   private _searchTerm: string = '';
   get searchTerm(): string { return this._searchTerm; }
