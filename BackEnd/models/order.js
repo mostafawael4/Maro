@@ -9,7 +9,8 @@ const OrderSchema = new mongoose.Schema({
   notes: { type: String },
   status: { type: String, enum: ['pending', 'in-progress', 'done'], default: 'pending' },
   orderBackground: {
-    image: { type: String, default: null }, // Background image URL for order
+    image: { type: String, default: null }, // Background image URL for order (original)
+    thumbnail: { type: String, default: null }, // Background image thumbnail URL (400w)
     filename: { type: String, default: null }, // Background image filename
     selectedAt: { type: Date, default: Date.now },
   },

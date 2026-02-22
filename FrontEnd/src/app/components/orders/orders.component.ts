@@ -162,19 +162,19 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   getFirstImage(order: Order): string {
-    // Use order.orderBackground.image if present (newer orders)
-    if (order.orderBackground && order.orderBackground.image) {
-      return `${order.orderBackground.image}`;
+    // Prefer thumbnail (400w) for fast card display; fall back to original if no thumbnail yet
+    if (order.orderBackground && (order.orderBackground.thumbnail || order.orderBackground.image)) {
+      return order.orderBackground.thumbnail || order.orderBackground.image!;
     }
     // Otherwise, use the first image from media array if exists and is an image
     if (order.media && order.media.length > 0) {
       // Prefer images (not videos) for order preview
       const firstImage = order.media.find(m => !m.url?.match(/\.(mp4|mov|webm)$/i));
       if (firstImage) {
-        return `${firstImage.url}`;
+        return firstImage.thumbnail || firstImage.medium || firstImage.url;
       }
       // Fall back to first media if all are videos
-      return `${order.media[0].url}`;
+      return order.media[0].url;
     }
     // Default placeholder if nothing available
     return 'assets/images/placeholder.jpg';

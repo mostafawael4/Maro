@@ -353,18 +353,20 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.showBackgroundImageSelector = true;
   }
 
-  onBackgroundImageSelected(data: { backgroundImage: string; backgroundImageFilename: string }): void {
+  onBackgroundImageSelected(data: { backgroundImage: string; backgroundImageFilename: string; backgroundImageThumbnail: string | null }): void {
     if (!this.order) return;
 
     // Ensure orderBackground exists (for legacy orders)
     if (!this.order.orderBackground) {
       this.order.orderBackground = {
         image: data.backgroundImage,
+        thumbnail: data.backgroundImageThumbnail ?? undefined,
         filename: data.backgroundImageFilename,
         selectedAt: new Date()
       };
     } else {
       this.order.orderBackground.image = data.backgroundImage;
+      this.order.orderBackground.thumbnail = data.backgroundImageThumbnail ?? undefined;
       this.order.orderBackground.filename = data.backgroundImageFilename;
       this.order.orderBackground.selectedAt = new Date();
     }

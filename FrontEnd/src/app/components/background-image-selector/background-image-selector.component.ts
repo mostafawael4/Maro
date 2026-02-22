@@ -15,7 +15,7 @@ export class BackgroundImageSelectorComponent {
   @Input() orderId!: string;
   @Input() images: OrderImage[] = [];
   @Input() currentBackgroundImage?: string;
-  @Output() imageSelected = new EventEmitter<{ backgroundImage: string; backgroundImageFilename: string }>();
+  @Output() imageSelected = new EventEmitter<{ backgroundImage: string; backgroundImageFilename: string; backgroundImageThumbnail: string | null }>();
   @Output() close = new EventEmitter<void>();
 
   baseUrl = environment.apiUrl;
@@ -27,10 +27,11 @@ export class BackgroundImageSelectorComponent {
   successMessage: string = 'Background image updated successfully!';
   errorMessage: string = 'Failed to update background image. Please try again.';
 
-  constructor(private ordersService: OrdersService) {}
+  constructor(private ordersService: OrdersService) { }
 
   getImageUrl(image: OrderImage): string {
-    return `${image.url}`;
+    // Use thumbnail (400w) in the picker grid for fast loading; fall back to medium then original
+    return image.thumbnail || image.medium || image.url;
   }
 
   getDisplayName(image: OrderImage): string {
@@ -39,8 +40,8 @@ export class BackgroundImageSelectorComponent {
   }
 
   isSelected(image: OrderImage): boolean {
-    return image.filename === this.currentBackgroundImage?.split('/').pop() || 
-           image.filename === this.selectedImageFilename;
+    return image.filename === this.currentBackgroundImage?.split('/').pop() ||
+      image.filename === this.selectedImageFilename;
   }
 
   selectImage(image: OrderImage): void {
@@ -62,11 +63,12 @@ export class BackgroundImageSelectorComponent {
     this.error = '';
 
     this.ordersService.updateOrderBackgroundImage(this.orderId, selectedImage.filename).subscribe({
-      next: (response: { ok: boolean; backgroundImage: string; backgroundImageFilename: string }) => {
+      next: (response: { ok: boolean; backgroundImage: string; backgroundImageFilename: string; backgroundImageThumbnail: string | null }) => {
         if (response.ok) {
           this.imageSelected.emit({
             backgroundImage: response.backgroundImage,
-            backgroundImageFilename: response.backgroundImageFilename
+            backgroundImageFilename: response.backgroundImageFilename,
+            backgroundImageThumbnail: response.backgroundImageThumbnail ?? null
           });
           this.showSuccessModal = true;
         } else {

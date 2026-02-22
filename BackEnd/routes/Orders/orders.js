@@ -488,6 +488,7 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
 
     // Update the order's background image
     order.orderBackground.image = mediaItem.url;
+    order.orderBackground.thumbnail = mediaItem.thumbnail || null; // store 400w thumbnail if available
     order.orderBackground.filename = filename;
     await order.save();
 
@@ -495,14 +496,27 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
     const bucketName = Credentials.B2_BUCKET_NAME;
     const signedBackground = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
 
+    // Build thumbnail CDN URL (thumbnailFilename lives alongside the image in the same folder)
+    let signedThumbnail = null;
+    if (mediaItem.thumbnailFilename) {
+      signedThumbnail = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(mediaItem.thumbnailFilename)}`;
+    } else if (mediaItem.thumbnail) {
+      signedThumbnail = mediaItem.thumbnail; // already a full CDN URL
+    }
+
     logger.info(`Background image set for order ${orderId}: ${filename}`);
     return res.json({
       ok: true,
+      backgroundImage: signedBackground,
+      backgroundImageFilename: filename,
+      backgroundImageThumbnail: signedThumbnail,
       orderBackground: {
-        ...order.orderBackground,
-        image: signedBackground
+        ...order.orderBackground.toObject?.() || order.orderBackground,
+        image: signedBackground,
+        thumbnail: signedThumbnail,
       }
     });
+
   } catch (err) {
     logger.error(`PUT /orders/:orderId/background-image failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error", error: err.message });

@@ -98,7 +98,8 @@ export interface Order {
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
   orderBackground?: {
-    image?: string; // Background image URL for order
+    image?: string; // Background image URL for order (original)
+    thumbnail?: string; // Background image thumbnail URL (400w)
     filename?: string; // Background image filename
     selectedAt?: string | Date; // When background was selected
   };
@@ -412,9 +413,8 @@ export class OrdersService {
     );
   }
 
-  updateOrderBackgroundImage(orderId: string, filename: string): Observable<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }> {
-    return this.http.put<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string }>(
-      `${this.apiUrl}/${orderId}/background-image`,
+  updateOrderBackgroundImage(orderId: string, filename: string): Observable<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string; backgroundImageThumbnail: string | null }> {
+    return this.http.put<{ ok: boolean; backgroundImage: string; backgroundImageFilename: string; backgroundImageThumbnail: string | null }>(`${this.apiUrl}/${orderId}/background-image`,
       { filename },
       { withCredentials: true }
     );
