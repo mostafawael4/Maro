@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderImage, OrdersService } from '../../services/orders.service';
@@ -10,7 +10,7 @@ import { OrderImage, OrdersService } from '../../services/orders.service';
   templateUrl: './folder-media-view.component.html',
   styleUrl: './folder-media-view.component.scss'
 })
-export class FolderMediaViewComponent {
+export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   private _media: OrderImage[] = [];
   @Input()
   get media(): OrderImage[] { return this._media; }
@@ -41,12 +41,7 @@ export class FolderMediaViewComponent {
   @Output() selectBackground = new EventEmitter<void>();
   @Output() downloadFolder = new EventEmitter<void>();
 
-  private _searchTerm: string = '';
-  get searchTerm(): string { return this._searchTerm; }
-  set searchTerm(value: string) {
-    this._searchTerm = value;
-    this.resetItemsToShow(); // Reset when searching
-  }
+
   downloadingItems: Set<string> = new Set();
   loadedMedia: Set<string> = new Set();
   sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-asc';
@@ -58,32 +53,54 @@ export class FolderMediaViewComponent {
   ];
   showSortOptions = false;
   itemsToShow: number = 12;
+  isLoadingMore: boolean = false;
+
+  @ViewChild('scrollAnchor') scrollAnchor!: ElementRef<HTMLElement>;
+  private observer: IntersectionObserver | null = null;
 
   constructor(private ordersService: OrdersService) { }
+
+  ngAfterViewInit(): void {
+    this.setupIntersectionObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyObserver();
+  }
+
+  private setupIntersectionObserver(): void {
+    this.destroyObserver();
+    if (!this.scrollAnchor?.nativeElement) return;
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && this.hasMoreItems && !this.isLoadingMore) {
+          this.loadMore();
+        }
+      },
+      { rootMargin: '200px', threshold: 0 }
+    );
+    this.observer.observe(this.scrollAnchor.nativeElement);
+  }
+
+  private destroyObserver(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+  }
 
   get hasMedia(): boolean {
     return !!this.media && this.media.length > 0;
   }
 
   get filteredMedia(): OrderImage[] {
-    const trimmedSearch = this.searchTerm.trim();
-    const filtered = !trimmedSearch
-      ? this.media
-      : this.media.filter(item => {
-        const searchLower = trimmedSearch.toLowerCase();
-        const displayName = this.getDisplayName(item).toLowerCase();
-        const filename = item.filename?.toLowerCase() || '';
-        return displayName.includes(searchLower) || filename.includes(searchLower);
-      });
-
-    return this.sortMedia(filtered);
+    return this.sortMedia(this.media);
   }
 
   get visibleMedia(): OrderImage[] {
     return this.filteredMedia.slice(0, this.itemsToShow);
   }
-
-
 
   get hasMoreItems(): boolean {
     return this.filteredMedia.length > this.itemsToShow;
@@ -106,7 +123,13 @@ export class FolderMediaViewComponent {
   }
 
   loadMore(): void {
-    this.itemsToShow += this.pageSize;
+    if (this.isLoadingMore || !this.hasMoreItems) return;
+    this.isLoadingMore = true;
+    // Small timeout so the loading indicator renders before we add items
+    setTimeout(() => {
+      this.itemsToShow += this.pageSize;
+      this.isLoadingMore = false;
+    }, 150);
   }
 
   private resetItemsToShow(): void {

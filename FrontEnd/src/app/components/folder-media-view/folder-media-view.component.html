@@ -9,22 +9,7 @@
       Albums
     </button>
 
-    <!-- Search -->
-    <div class="search-input-wrapper" *ngIf="hasMedia">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" class="search-icon">
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.35-4.35" />
-      </svg>
-      <input type="text" [(ngModel)]="searchTerm" placeholder="Search..." class="search-input" />
-      <button *ngIf="searchTerm.trim()" class="clear-search-btn" (click)="searchTerm = ''">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </div>
+
 
     <!-- Right actions: Sort + Set Background + Download Album -->
     <div class="toolbar-right" *ngIf="hasMedia">
@@ -174,15 +159,12 @@
     </div>
   </div>
 
-  <!-- Load More Button -->
-  <div *ngIf="hasMoreItems" class="load-more-container">
-    <button (click)="loadMore()" class="load-more-btn">
-      Load More
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-    </button>
+  <!-- Infinite scroll sentinel – IntersectionObserver watches this element -->
+  <div #scrollAnchor class="scroll-anchor" aria-hidden="true"></div>
+
+  <!-- Loading indicator shown while more items are being appended -->
+  <div *ngIf="isLoadingMore" class="scroll-loading">
+    <div class="scroll-spinner"></div>
   </div>
 
   <div *ngIf="!loading && !error && !hasMedia" class="empty-images">
@@ -202,14 +184,5 @@
     </ng-template>
   </div>
 
-  <div *ngIf="!loading && !error && hasMedia && !hasFilteredMedia" class="empty-images">
-    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-    <h3>No Results Found</h3>
-    <p>No media found matching "{{ searchTerm }}"</p>
-    <button class="clear-search-link" (click)="searchTerm = ''">Clear search</button>
-  </div>
+
 </div>
