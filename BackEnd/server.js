@@ -77,8 +77,8 @@ import websocketService from "./services/websocket.service.js";
       proxy: true, // required for secure cookies behind a proxy
       cookie: {
         maxAge: 1000 * 60 * 60 * 8, // 8 hours
-        secure: Credentials.NODE_ENV === "production", // only true online
-        sameSite: Credentials.NODE_ENV === "production" ? "none" : "lax",
+        secure: Credentials.isProduction, // only true online
+        sameSite: Credentials.isProduction ? "none" : "lax",
         httpOnly: true,
       },
       store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
