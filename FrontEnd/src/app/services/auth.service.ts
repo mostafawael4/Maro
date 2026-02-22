@@ -94,14 +94,29 @@ export class AuthService {
     }
   }
 
-  checkAuth(): void {
+  private isChecking = false;
+
+  checkAuth(force: boolean = false): void {
     if (!this.isBrowser) {
       return;
     }
 
+    // If already authenticated and not forced, skip check
+    // This prevents a race condition on mobile right after login
+    if (this.isAuthenticatedValue && !force) {
+      return;
+    }
+
+    // Don't start another check if one is already in progress
+    if (this.isChecking) {
+      return;
+    }
+
+    this.isChecking = true;
     this.http.get(`${this.apiUrl}/me`, { withCredentials: true })
       .subscribe({
         next: (response: any) => {
+          this.isChecking = false;
           if (response?.ok) {
             this.markAuthenticated(response.session);
           } else {
@@ -109,6 +124,7 @@ export class AuthService {
           }
         },
         error: () => {
+          this.isChecking = false;
           this.handleSessionExpired();
         }
       });

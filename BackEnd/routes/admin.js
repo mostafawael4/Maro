@@ -84,8 +84,15 @@ router.post('/login', async (req, res) => {
       req.session.isEditor = false;
       req.session.adminId = admin._id;
 
-      logger.info(`Admin logged in (adminId=${admin._id})`);
-      return res.json({ ok: true, message: 'Logged in as admin', username: 'admin' });
+      // Force session save before redirecting to prevent race condition on mobile
+      req.session.save(err => {
+        if (err) {
+          logger.error('Session save error during admin login: ' + err);
+          return res.status(500).json({ ok: false, message: 'Server error' });
+        }
+        logger.info(`Admin logged in (adminId=${admin._id})`);
+        return res.json({ ok: true, message: 'Logged in as admin', username: 'admin' });
+      });
 
     } else if (username === 'editor') {
       // Find editor user in admins and compare passwords
@@ -106,8 +113,15 @@ router.post('/login', async (req, res) => {
       req.session.isEditor = true;
       req.session.editorUsername = username;
 
-      logger.info(`Editor logged in (username=${username})`);
-      return res.json({ ok: true, message: 'Logged in as editor', username });
+      // Force session save before redirecting to prevent race condition on mobile
+      req.session.save(err => {
+        if (err) {
+          logger.error('Session save error during editor login: ' + err);
+          return res.status(500).json({ ok: false, message: 'Server error' });
+        }
+        logger.info(`Editor logged in (username=${username})`);
+        return res.json({ ok: true, message: 'Logged in as editor', username });
+      });
 
     } else {
       logger.warn(`Login attempt with unknown username: ${username}`);

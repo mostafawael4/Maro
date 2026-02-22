@@ -86,15 +86,18 @@ export class AdminComponent implements OnInit, AfterViewInit {
     this.authService.login(trimmedUsername, trimmedPassword).subscribe({
       next: (response) => {
         if (response.ok) {
-          this.isLoading = false;
-          // Redirect based on role after successful login
-          if (response?.session?.isAdmin) {
-            this.router.navigate(['/dashboard']);
-          } else if (response?.session?.isEditor) {
-            this.router.navigate(['/calendar']);
-          } else {
-            this.router.navigate(['/']); // Default fallback
-          }
+          // Slight delay before redirecting to allow mobile browsers to settle cookie storage
+          setTimeout(() => {
+            this.isLoading = false;
+            // Redirect based on role after successful login
+            if (response?.session?.isAdmin) {
+              this.router.navigate(['/dashboard']);
+            } else if (response?.session?.isEditor) {
+              this.router.navigate(['/calendar']);
+            } else {
+              this.router.navigate(['/']); // Default fallback
+            }
+          }, 150);
         }
       },
       error: (error) => {
