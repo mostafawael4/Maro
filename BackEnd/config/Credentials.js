@@ -1,8 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+
 const NODE_ENV = process.env.NODE_ENV;
-const isProduction = NODE_ENV === "production" || !!process.env.RAILWAY_ENVIRONMENT;
+
+const PORT = process.env.PORT || 4000;
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN || '';
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
 
@@ -42,11 +44,8 @@ const B2_BUCKET_ID = process.env.B2_BUCKET_ID
 const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME
 const B2_CDN_URL = process.env.B2_CDN_URL
 
-const PORT = process.env.PORT || 4000;
-
 export default {
   NODE_ENV,
-  isProduction,
   PORT,
   SERVER_ORIGIN,
   FRONTEND_ORIGIN,

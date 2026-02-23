@@ -32,6 +32,8 @@ import websocketService from "./services/websocket.service.js";
     const allowedOrigins = [
       `${Credentials.SERVER_ORIGIN}`,
       `${Credentials.FRONTEND_ORIGIN}`,
+      'https://maroweddings.com',
+      'https://www.maroweddings.com',
       'http://localhost:4200',
       'http://localhost:4000',
       'http://localhost:3000'
@@ -77,8 +79,8 @@ import websocketService from "./services/websocket.service.js";
       proxy: true, // required for secure cookies behind a proxy
       cookie: {
         maxAge: 1000 * 60 * 60 * 8, // 8 hours
-        secure: Credentials.isProduction, // only true online
-        sameSite: Credentials.isProduction ? "none" : "lax",
+        secure: Credentials.NODE_ENV === "production", // only true online
+        sameSite: Credentials.NODE_ENV === "production" ? "none" : "lax",
         httpOnly: true,
       },
       store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
