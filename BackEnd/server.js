@@ -23,9 +23,10 @@ import websocketService from "./services/websocket.service.js";
 
     const app = express();
 
-    // Trust proxy is essential for secure cookies on Railway/Proxies
-    app.set('trust proxy', 1);
+    // Trust all proxies - essential for secure cookies on Railway
+    app.set('trust proxy', true);
 
+    console.log(`[Backend] Environment: ${Credentials.NODE_ENV}, isProduction: ${Credentials.isProduction}`);
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
