@@ -3,6 +3,7 @@ dotenv.config();
 
 
 const NODE_ENV = process.env.NODE_ENV;
+const isProduction = NODE_ENV === "production" || !!process.env.RAILWAY_ENVIRONMENT;
 
 const PORT = process.env.PORT || 4000;
 const SERVER_ORIGIN = process.env.SERVER_ORIGIN || '';
@@ -46,6 +47,7 @@ const B2_CDN_URL = process.env.B2_CDN_URL
 
 export default {
   NODE_ENV,
+  isProduction,
   PORT,
   SERVER_ORIGIN,
   FRONTEND_ORIGIN,
