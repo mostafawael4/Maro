@@ -75,9 +75,11 @@ import websocketService from "./services/websocket.service.js";
 
     // sessions (using MongoStore)
     const sessionMiddleware = session({
+      name: 'maro.sid',
       secret: Credentials.SESSION_SECRET,
-      resave: false,
+      resave: true,
       saveUninitialized: false,
+      rolling: true,
       proxy: true, // required for secure cookies behind a proxy
       cookie: {
         maxAge: 1000 * 60 * 60 * 8, // 8 hours
