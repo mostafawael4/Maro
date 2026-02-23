@@ -54,6 +54,9 @@ export class AuthService {
       .pipe(
         tap((response: any) => {
           if (response?.ok) {
+            if (this.isBrowser && response.sessionId) {
+              localStorage.setItem('maro_session_id', response.sessionId);
+            }
             this.markAuthenticated(response.session);
           } else {
             this.handleSessionExpired();
@@ -89,6 +92,9 @@ export class AuthService {
 
   handleSessionExpired(): void {
     this.currentRole = null;
+    if (this.isBrowser) {
+      localStorage.removeItem('maro_session_id');
+    }
     if (this.isAuthenticatedSubject.value !== false) {
       this.isAuthenticatedSubject.next(false);
     }

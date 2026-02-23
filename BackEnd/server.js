@@ -74,6 +74,20 @@ import websocketService from "./services/websocket.service.js";
     app.use(morgan("combined", { stream: accessLogStream || process.stdout }));
     app.use(morgan("dev", { stream: process.stdout }));
 
+    // LocalStorage Auth Fallback: Extract X-Session-ID header and inject as cookie
+    app.use((req, res, next) => {
+      const sessionId = req.header('X-Session-ID');
+      if (sessionId && !req.headers.cookie) {
+        // We inject it as a signed cookie if we have the secret, 
+        // but express-session's MongoStore can also find it if we manually set req.sessionID.
+        // However, the easiest way for connect-mongo is to set req.headers.cookie 
+        // formatted like connect.sid=s%3A[sessionId].[signature]
+        // But since we are using sessionId directly, we can just set req.sessionID
+        req.sessionID = sessionId;
+      }
+      next();
+    });
+
     // sessions (using MongoStore)
     const sessionMiddleware = session({
       name: 'maro.sid',

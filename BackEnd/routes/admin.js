@@ -91,7 +91,12 @@ router.post('/login', async (req, res) => {
           return res.status(500).json({ ok: false, message: 'Server error' });
         }
         logger.info(`Admin logged in (adminId=${admin._id})`);
-        return res.json({ ok: true, message: 'Logged in as admin', username: 'admin' });
+        return res.json({
+          ok: true,
+          message: 'Logged in as admin',
+          username: 'admin',
+          sessionId: req.sessionID
+        });
       });
 
     } else if (username === 'editor') {
@@ -120,7 +125,12 @@ router.post('/login', async (req, res) => {
           return res.status(500).json({ ok: false, message: 'Server error' });
         }
         logger.info(`Editor logged in (username=${username})`);
-        return res.json({ ok: true, message: 'Logged in as editor', username });
+        return res.json({
+          ok: true,
+          message: 'Logged in as editor',
+          username,
+          sessionId: req.sessionID
+        });
       });
 
     } else {
