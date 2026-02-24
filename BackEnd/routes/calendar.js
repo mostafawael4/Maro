@@ -65,7 +65,7 @@ router.get('/feed', async (req, res) => {
                 `Status: ${order.status}`,
                 `Client: ${order.clientName || 'N/A'}`,
                 `Notes: ${order.notes || 'None'}`,
-                `Link: https://maroweddings.com/orders/${order._id}`
+                `Link: https://maroweddings.com/order-info/${order._id}`
             ].join('\\n');
 
             // Default event duration: 12 hours from the start date/time
