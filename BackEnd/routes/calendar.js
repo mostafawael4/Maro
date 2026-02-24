@@ -63,8 +63,8 @@ router.get('/feed', async (req, res) => {
 
             const description = [
                 `Status: ${order.status}`,
-                `Client: ${order.clientName || 'N/A'}`,
-                `Notes: ${order.notes || 'None'}`,
+                `Groom's number: ${order.clientName || 'N/A'}`,
+                `Bride's number: ${order.notes || 'None'}`,
                 `Link: https://maroweddings.com/order-info/${order._id}`
             ].join('\\n');
 
