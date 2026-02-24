@@ -133,7 +133,7 @@ router.get('/feed', async (req, res) => {
             details.push('🔗 VIEW ONLINE:');
             details.push(`https://maroweddings.com/order-info/${order._id}`);
 
-            const description = details.join('\\n');
+            const description = details.join('\n');
 
             // Default event duration: 12 hours from the start date/time
             const dtStart = formatIcalDate(eventDate);
