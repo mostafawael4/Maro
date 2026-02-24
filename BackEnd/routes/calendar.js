@@ -62,7 +62,14 @@ router.get('/feed', async (req, res) => {
             const summary = `Wedding: ${brideAndGroom}`;
 
             const details = [];
-            details.push(`💍 Wedding: ${brideAndGroom}`);
+            const separator = '━━━━━━━━━━━━━━━━━━━━';
+            const subSeparator = '──────────────';
+
+            details.push(separator);
+            details.push(`💍 WEDDING: ${brideAndGroom.toUpperCase()}`);
+            details.push(separator);
+            details.push('');
+
             details.push(`📍 Venue: ${venue}`);
             details.push(`📋 Status: ${order.status.toUpperCase()}`);
 
@@ -70,8 +77,11 @@ router.get('/feed', async (req, res) => {
                 details.push(`✨ Type: ${order.orderForm.eventType.join(', ')}`);
             }
 
-            details.push(`📞 Groom's num: ${order.clientName || 'N/A'}`);
-            details.push(`📞 Bride's num: ${order.notes || 'None'}`);
+            details.push('');
+            details.push('� CONTACTS');
+            details.push(subSeparator);
+            details.push(`🤵 Groom: ${order.clientName || 'N/A'}`);
+            details.push(`� Bride: ${order.notes || 'None'}`);
 
             // Add Vendors
             const vendors = order.orderForm?.vendors;
@@ -86,33 +96,42 @@ router.get('/feed', async (req, res) => {
 
                 if (vendorList.length > 0) {
                     details.push('');
-                    details.push('🤝 VENDORS:');
+                    details.push('🤝 VENDORS');
+                    details.push(subSeparator);
                     details.push(...vendorList);
                 }
             }
 
-            // Add Pricing & Packages Summary
+            // Add Selections
             const pricing = order.orderForm?.pricing;
-            if (pricing) {
+            if (pricing && (pricing.packages?.length > 0 || pricing.collections?.length > 0 || pricing.extras?.length > 0)) {
                 details.push('');
-                details.push('💰 PRICING & SELECTIONS:');
+                details.push('� SELECTIONS');
+                details.push(subSeparator);
 
                 if (pricing.packages?.length > 0) {
                     pricing.packages.forEach(p => details.push(`📦 Pkg: ${p.packageDisplayName || p.packageName}`));
                 }
                 if (pricing.collections?.length > 0) {
-                    pricing.collections.forEach(c => details.push(`📂 Coll: ${c.packageDisplayName} - ${c.collectionName}`));
+                    pricing.collections.forEach(c => details.push(`📂 Coll: ${c.collectionName}`));
                 }
                 if (pricing.extras?.length > 0) {
                     pricing.extras.forEach(e => details.push(`➕ Extra: ${e.extraName}`));
                 }
+            }
 
-                if (pricing.total) details.push(`💵 Total: ${pricing.total}`);
-                if (pricing.remainingBalance) details.push(`📉 Balance: ${pricing.remainingBalance}`);
+            // Add Pricing
+            if (pricing && (pricing.total || pricing.remainingBalance)) {
+                details.push('');
+                details.push('💰 PRICING');
+                details.push(subSeparator);
+                if (pricing.total) details.push(`💵 Total: ${pricing.total.toLocaleString()}`);
+                if (pricing.remainingBalance) details.push(`📉 Balance: ${pricing.remainingBalance.toLocaleString()}`);
             }
 
             details.push('');
-            details.push(`🔗 View Order: https://maroweddings.com/order-info/${order._id}`);
+            details.push('🔗 VIEW ONLINE:');
+            details.push(`https://maroweddings.com/order-info/${order._id}`);
 
             const description = details.join('\\n');
 
