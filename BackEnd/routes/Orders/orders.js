@@ -486,17 +486,29 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Media file not found in this order" });
     }
 
+    const isVideo = mediaItem.filename.match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v)$/i);
+    const cdnUrl = Credentials.OFFICIAL_CDN_URL;
+    const bucketName = Credentials.B2_BUCKET_NAME;
+
     // Update the order's background image
-    order.orderBackground.image = mediaItem.url;
-    order.orderBackground.thumbnail = mediaItem.thumbnail || null; // store 400w thumbnail if available
+    // For videos, the "image" is actually the thumbnail
+    order.orderBackground.image = isVideo ? (mediaItem.thumbnail || mediaItem.url) : mediaItem.url;
+    order.orderBackground.thumbnail = mediaItem.thumbnail || null;
     order.orderBackground.filename = filename;
     await order.save();
 
-    const cdnUrl = Credentials.OFFICIAL_CDN_URL;
-    const bucketName = Credentials.B2_BUCKET_NAME;
-    const signedBackground = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
+    let signedBackground;
+    if (isVideo) {
+      if (mediaItem.thumbnailFilename) {
+        signedBackground = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(mediaItem.thumbnailFilename)}`;
+      } else {
+        signedBackground = mediaItem.thumbnail || mediaItem.url;
+      }
+    } else {
+      signedBackground = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(filename)}`;
+    }
 
-    // Build thumbnail CDN URL (thumbnailFilename lives alongside the image in the same folder)
+    // Build thumbnail CDN URL
     let signedThumbnail = null;
     if (mediaItem.thumbnailFilename) {
       signedThumbnail = `${cdnUrl}/file/${bucketName}/orders/${orderId}/${encodeURIComponent(mediaItem.thumbnailFilename)}`;
@@ -504,7 +516,7 @@ router.put("/:orderId/background-image", requireAdminAuth, async (req, res) => {
       signedThumbnail = mediaItem.thumbnail; // already a full CDN URL
     }
 
-    logger.info(`Background image set for order ${orderId}: ${filename}`);
+    logger.info(`Background image set for order ${orderId}: ${filename} (Video: ${!!isVideo})`);
     return res.json({
       ok: true,
       backgroundImage: signedBackground,

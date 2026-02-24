@@ -383,7 +383,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   getImageOnlyMedia(): OrderImage[] {
     if (!this.currentMedia) return [];
-    return this.currentMedia.filter(m => !this.isVideo(m));
+    return this.currentMedia.filter(m => !this.isVideo(m) || (this.isVideo(m) && m.thumbnail));
   }
 
   exitFolderView(): void {
