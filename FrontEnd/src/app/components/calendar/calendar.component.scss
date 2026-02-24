@@ -385,3 +385,171 @@
     min-height: 64px;
   }
 }
+
+// Sync Button & Modal Styles
+.sync-trigger-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #ffdab9;
+  color: #1a0105;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &:hover {
+    background: #fdf9f2;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 218, 185, 0.3);
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.sync-modal {
+  background: #1a0105;
+  border: 1px solid rgba(255, 218, 185, 0.3);
+  border-radius: 28px;
+  width: 100%;
+  max-width: 650px;
+  padding: 2rem;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  position: relative;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.75rem;
+    color: #ffdab9;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #ffdab9;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  p {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+  }
+}
+
+.url-copy-box {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 218, 185, 0.1);
+
+  input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #ffdab9;
+    padding: 0.5rem;
+    font-family: monospace;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  button {
+    background: #ffdab9;
+    color: #1a0105;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+
+    &:hover {
+      background: #fdf9f2;
+    }
+  }
+}
+
+.instructions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.instruction-box {
+  h4 {
+    color: #ffdab9;
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+}

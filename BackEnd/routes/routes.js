@@ -11,6 +11,7 @@ import packagesRoutes from './packages.js';
 import orderFeedbacksRoutes from './orderFeedbacks.js';
 import feedback from './feedback.js'
 import contactUS from "./contactUs.js";
+import calendarRoutes from './calendar.js';
 
 // Mount all sub-routes under /
 router.use('/admin', adminRoutes);
@@ -23,5 +24,6 @@ router.use('/packages', packagesRoutes);
 router.use('/feedbacks/orders', orderFeedbacksRoutes);
 router.use('/feedbacks', feedback);
 router.use("/contact", contactUS);
+router.use('/calendar', calendarRoutes);
 
 export default router;

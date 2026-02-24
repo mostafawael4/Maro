@@ -9,11 +9,13 @@
       </p>
     </div>
     <div class="hero-card">
-      <p class="hero-title">Ready-to-host calendar</p>
+      <p class="hero-title">Sync with your phone</p>
       <p class="hero-text">
-        Drop this component anywhere in your site to showcase confirmed event days.
-        All couple names, event titles, and venues stay in sync with your dashboard data.
+        Automate your schedule by syncing this calendar with your Android or iPhone.
       </p>
+      <button class="sync-trigger-btn" (click)="toggleSyncModal()">
+        Sync to Phone
+      </button>
     </div>
   </div>
 
@@ -166,5 +168,45 @@
 
   <div *ngIf="errorMessage" class="error-banner">
     {{ errorMessage }}
+  </div>
+
+  <!-- Sync Modal -->
+  <div class="modal-overlay" *ngIf="showSyncModal" (click)="toggleSyncModal()">
+    <div class="sync-modal" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <h3>Sync to Phone</h3>
+        <button class="close-btn" (click)="toggleSyncModal()">×</button>
+      </header>
+
+      <div class="modal-content">
+        <p>Subscribe to this calendar on your mobile device to see updates automatically.</p>
+
+        <div class="url-copy-box">
+          <input type="text" [value]="syncUrl" readonly>
+          <button (click)="copySyncUrl()">Copy Link</button>
+        </div>
+
+        <div class="instructions-grid">
+          <div class="instruction-box">
+            <h4>iPhone (iOS)</h4>
+            <ol>
+              <li>Open <strong>Settings</strong> > <strong>Calendar</strong>.</li>
+              <li>Tap <strong>Accounts</strong> > <strong>Add Account</strong>.</li>
+              <li>Select <strong>Other</strong> > <strong>Add Subscribed Calendar</strong>.</li>
+              <li>Paste the link above and tap <strong>Next</strong>.</li>
+            </ol>
+          </div>
+          <div class="instruction-box">
+            <h4>Android (Google)</h4>
+            <ol>
+              <li>Open <strong>Google Calendar</strong> on a computer.</li>
+              <li>Next to "Other calendars", click <strong>+</strong> > <strong>From URL</strong>.</li>
+              <li>Paste the link and click <strong>Add calendar</strong>.</li>
+              <li>On your phone, ensure "Sync" is enabled for this calendar.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>

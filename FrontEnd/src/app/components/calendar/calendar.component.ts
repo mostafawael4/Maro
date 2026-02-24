@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import { CalendarService, WeddingCalendarEvent } from '../../services/calendar.service';
 
 interface CalendarDay {
@@ -31,14 +32,32 @@ export class CalendarComponent implements OnInit {
 
   isLoading = true;
   errorMessage = '';
+  showSyncModal = false;
+  syncUrl = '';
 
   constructor(
     private calendarService: CalendarService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.fetchEvents();
+    this.generateSyncUrl();
+  }
+
+  generateSyncUrl(): void {
+    const baseUrl = environment.apiUrl;
+    const secret = 'maro-wedding-default-secret'; // This should ideally be fetched or configured
+    this.syncUrl = `${baseUrl}/calendar/feed?token=${secret}`;
+  }
+
+  toggleSyncModal(): void {
+    this.showSyncModal = !this.showSyncModal;
+  }
+
+  copySyncUrl(): void {
+    navigator.clipboard.writeText(this.syncUrl);
+    alert('URL copied to clipboard!');
   }
 
   fetchEvents(): void {
@@ -140,12 +159,12 @@ export class CalendarComponent implements OnInit {
 
   private buildUpcomingEvents(): void {
     // Use selected date if available, otherwise use today
-    const referenceDate = this.selectedDate 
+    const referenceDate = this.selectedDate
       ? new Date(this.selectedDate.date.getFullYear(), this.selectedDate.date.getMonth(), this.selectedDate.date.getDate())
       : new Date();
-    
+
     const referenceDateStr = this.toIsoDate(referenceDate);
-    
+
     // Filter events that come AFTER the selected date (not on the same day)
     this.upcomingEvents = [...this.events]
       .filter(event => {
