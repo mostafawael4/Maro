@@ -61,12 +61,60 @@ router.get('/feed', async (req, res) => {
             const venue = order.orderForm?.eventVenue || 'No venue specified';
             const summary = `Wedding: ${brideAndGroom}`;
 
-            const description = [
-                `Status: ${order.status}`,
-                `Groom's number: ${order.clientName || 'N/A'}`,
-                `Bride's number: ${order.notes || 'None'}`,
-                `Link: https://maroweddings.com/order-info/${order._id}`
-            ].join('\\n');
+            const details = [];
+            details.push(`💍 Wedding: ${brideAndGroom}`);
+            details.push(`📍 Venue: ${venue}`);
+            details.push(`📋 Status: ${order.status.toUpperCase()}`);
+
+            if (order.orderForm?.eventType && order.orderForm.eventType.length > 0) {
+                details.push(`✨ Type: ${order.orderForm.eventType.join(', ')}`);
+            }
+
+            details.push(`📞 Groom's num: ${order.clientName || 'N/A'}`);
+            details.push(`📞 Bride's num: ${order.notes || 'None'}`);
+
+            // Add Vendors
+            const vendors = order.orderForm?.vendors;
+            if (vendors) {
+                const vendorList = [];
+                if (vendors.photographers?.length) vendorList.push(`📸 Photog: ${vendors.photographers.join(', ')}`);
+                if (vendors.cinematographers?.length) vendorList.push(`🎥 Cinema: ${vendors.cinematographers.join(', ')}`);
+                if (vendors.makeupArtist) vendorList.push(`💄 Makeup: ${vendors.makeupArtist}`);
+                if (vendors.hairStylist) vendorList.push(`💇‍♀️ Hair: ${vendors.hairStylist}`);
+                if (vendors.eventPlanner) vendorList.push(`📅 Planner: ${vendors.eventPlanner}`);
+                if (vendors.dj) vendorList.push(`🎵 DJ: ${vendors.dj}`);
+
+                if (vendorList.length > 0) {
+                    details.push('');
+                    details.push('🤝 VENDORS:');
+                    details.push(...vendorList);
+                }
+            }
+
+            // Add Pricing & Packages Summary
+            const pricing = order.orderForm?.pricing;
+            if (pricing) {
+                details.push('');
+                details.push('💰 PRICING & SELECTIONS:');
+
+                if (pricing.packages?.length > 0) {
+                    pricing.packages.forEach(p => details.push(`📦 Pkg: ${p.packageDisplayName || p.packageName}`));
+                }
+                if (pricing.collections?.length > 0) {
+                    pricing.collections.forEach(c => details.push(`📂 Coll: ${c.packageDisplayName} - ${c.collectionName}`));
+                }
+                if (pricing.extras?.length > 0) {
+                    pricing.extras.forEach(e => details.push(`➕ Extra: ${e.extraName}`));
+                }
+
+                if (pricing.total) details.push(`💵 Total: ${pricing.total}`);
+                if (pricing.remainingBalance) details.push(`📉 Balance: ${pricing.remainingBalance}`);
+            }
+
+            details.push('');
+            details.push(`🔗 View Order: https://maroweddings.com/order-info/${order._id}`);
+
+            const description = details.join('\\n');
 
             // Default event duration: 12 hours from the start date/time
             const dtStart = formatIcalDate(eventDate);
