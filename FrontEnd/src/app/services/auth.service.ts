@@ -54,6 +54,10 @@ export class AuthService {
       .pipe(
         tap((response: any) => {
           if (response?.ok) {
+            // Store session ID in localStorage if provided (iOS fallback)
+            if (response.sessionId && this.isBrowser) {
+              localStorage.setItem('maro_session_id', response.sessionId);
+            }
             this.markAuthenticated(response.session);
           } else {
             this.handleSessionExpired();
@@ -89,6 +93,9 @@ export class AuthService {
 
   handleSessionExpired(): void {
     this.currentRole = null;
+    if (this.isBrowser) {
+      localStorage.removeItem('maro_session_id');
+    }
     if (this.isAuthenticatedSubject.value !== false) {
       this.isAuthenticatedSubject.next(false);
     }
@@ -118,6 +125,8 @@ export class AuthService {
         next: (response: any) => {
           this.isChecking = false;
           if (response?.ok) {
+            // Update session ID if returned (though me doesn't usually return it, 
+            // the interceptor will use the one we have)
             this.markAuthenticated(response.session);
           } else {
             this.handleSessionExpired();

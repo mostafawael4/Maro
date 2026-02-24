@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import morgan from "morgan";
 import { createServer } from "http";
+import crypto from "crypto";
 
 import connectDB from "./config/db.js";
 
@@ -56,7 +57,7 @@ import websocketService from "./services/websocket.service.js";
           }
         },
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Session-ID", "maro-session-id"],
         credentials: true,
       })
     );
@@ -89,6 +90,25 @@ import websocketService from "./services/websocket.service.js";
         httpOnly: true,
       },
       store: MongoStore.create({ mongoUrl: Credentials.MONGO_URI }),
+    });
+
+    // Handle session ID from custom header (for iOS/Safari fallback)
+    app.use((req, res, next) => {
+      const sessionId = req.headers['x-session-id'] || req.headers['maro-session-id'];
+      if (sessionId && !req.headers.cookie) {
+        // Sign the session ID (express-session requires signed cookies if a secret is used)
+        const sign = (val, secret) => {
+          return 's:' + val + '.' + crypto
+            .createHmac('sha256', secret)
+            .update(val)
+            .digest('base64')
+            .replace(/\=+$/, '');
+        };
+
+        const signedId = sessionId.startsWith('s:') ? sessionId : sign(sessionId, Credentials.SESSION_SECRET);
+        req.headers.cookie = `maro.sid=${signedId}`;
+      }
+      next();
     });
 
     app.use(sessionMiddleware);
@@ -130,6 +150,7 @@ import websocketService from "./services/websocket.service.js";
       }
 
       console.log(`Server is running in ${Credentials.NODE_ENV} mode with edit version 1.9.0`);
+      console.log(Credentials.isProduction);
     });
   } catch (err) {
     console.error("Startup error:", err);
