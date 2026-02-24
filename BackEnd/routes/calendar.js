@@ -31,8 +31,9 @@ router.get('/feed', async (req, res) => {
             return res.status(401).send('Unauthorized');
         }
 
-        // Fetch orders with event dates
-        const orders = await Order.find({ 'orderForm.eventDate': { $exists: true } }).lean();
+        // Fetch all orders to match the website's calendar view
+        const orders = await Order.find({}).lean();
+        logger.info(`Generating calendar feed for ${orders.length} orders total.`);
 
         let ical = [
             'BEGIN:VCALENDAR',
@@ -40,27 +41,37 @@ router.get('/feed', async (req, res) => {
             'PRODID:-//Maro Weddings//Calendar Feed//EN',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
-            'X-WR-CALNAME:Maro Weddings Events',
-            'X-WR-TIMEZONE:UTC'
+            'X-WR-CALNAME:Maro Weddings',
+            'X-WR-TIMEZONE:UTC',
+            'X-PUBLISHED-TTL:PT1H', // Refresh every hour
+            'REFRESH-INTERVAL;VALUE=DURATION:PT1H'
         ];
 
+        let eventCount = 0;
         orders.forEach(order => {
-            const eventDate = new Date(order.orderForm.eventDate);
+            // Use same date logic as frontend: specific eventDate or fallback to createdAt
+            const dateSource = order.orderForm?.eventDate || order.createdAt;
+            if (!dateSource) return;
+
+            const eventDate = new Date(dateSource);
             if (isNaN(eventDate.getTime())) return;
 
-            const groomName = order.orderForm.brideAndGroomNames || order.clientName || 'Wedding';
-            const venue = order.orderForm.eventVenue || '';
-            const summary = `Wedding: ${groomName}`;
+            eventCount++;
+            const brideAndGroom = order.orderForm?.brideAndGroomNames || order.clientName || 'Wedding';
+            const venue = order.orderForm?.eventVenue || 'No venue specified';
+            const summary = `Wedding: ${brideAndGroom}`;
+
             const description = [
                 `Status: ${order.status}`,
                 `Client: ${order.clientName || 'N/A'}`,
-                `Notes: ${order.notes || 'None'}`
+                `Notes: ${order.notes || 'None'}`,
+                `Link: https://maroweddings.com/orders/${order._id}`
             ].join('\\n');
 
-            // Default event duration: 1 day if not specified
+            // Default event duration: 12 hours from the start date/time
             const dtStart = formatIcalDate(eventDate);
             const endDate = new Date(eventDate);
-            endDate.setHours(endDate.getHours() + 12); // Assume 12 hours if only date is provided
+            endDate.setHours(endDate.getHours() + 12);
             const dtEnd = formatIcalDate(endDate);
             const now = formatIcalDate(new Date());
 
@@ -75,11 +86,12 @@ router.get('/feed', async (req, res) => {
             ical.push('END:VEVENT');
         });
 
+        logger.info(`Included ${eventCount} events in the iCal feed.`);
         ical.push('END:VCALENDAR');
 
         res.set({
             'Content-Type': 'text/calendar; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="maro-calendar.ics"'
+            'Content-Disposition': 'inline; filename="calendar.ics"'
         });
 
         res.send(ical.join('\r\n'));
