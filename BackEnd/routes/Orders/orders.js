@@ -18,6 +18,7 @@ import archiver from 'archiver';
 import { signOrderFiles, signOrderMedia } from "../../utils/signingUtils.js";
 import uploadService from "../../services/upload.service.js";
 import websocketService from "../../services/websocket.service.js";
+import { sendBookingConfirmationEmail } from "../../services/orderEmailService.js";
 
 // Helper to sign a list of file objects for a specific order
 // (Removed local implementation to use utility)
@@ -53,6 +54,12 @@ router.post("/", async (req, res) => {
       orderForm: normalizedOrderForm, // store all wedding form data here
     });
     logger.info(`Order created: ${order._id} for email ${email}`);
+
+    // Send booking confirmation email asynchronously
+    sendBookingConfirmationEmail(order).catch(err => {
+      logger.error(`POST /orders: Failed to send booking confirmation: ${err.message}`);
+    });
+
     return res.json({ ok: true, order });
   } catch (err) {
     logger.error(`POST /orders failed: ${err.stack || err}`);
