@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://maro-weddings-production.up.railway.app'
+  apiUrl: 'https://maroweddings-backend-production.up.railway.app'
+  
 };

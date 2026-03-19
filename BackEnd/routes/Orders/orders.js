@@ -290,13 +290,13 @@ router.put("/:orderId/status", requireAdminAuth, async (req, res) => {
 router.post("/:orderId/prepare-direct-upload", requireAdminAuth, async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { files, foldername } = req.body; // files: [{ originalname, mimetype }]
+    const { files, foldername } = req.body; // files: [{ originalname, mimetype, size }]
 
     const result = await prepareDirectUploads(orderId, files, foldername);
     return res.json({ ok: true, ...result });
   } catch (err) {
     logger.error(`POST /orders/${req.params.orderId}/prepare-direct-upload failed: ${err.stack || err}`);
-    return res.status(500).json({ ok: false, message: err.message });
+    return res.status(500).json({ ok: false, message: err.message, error: err.message });
   }
 });
 

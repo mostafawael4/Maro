@@ -94,8 +94,16 @@ export class DirectUploadService {
             return;
           }
 
-          const { uploadSlots, duplicates } = resp;
+          const { uploadSlots, duplicates, rejectedFiles } = resp;
           allDuplicates = duplicates || [];
+          
+          // Handle rejected files
+          if (rejectedFiles && rejectedFiles.length > 0) {
+            rejectedFiles.forEach((rf: any) => {
+              allFailedFiles.push(rf);
+              console.error(`File rejected: ${rf.originalName} - ${rf.reason}`);
+            });
+          }
           const duplicateCount = allDuplicates.length;
 
           // Add duplicates to our tracking
@@ -248,6 +256,9 @@ export class DirectUploadService {
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
 
+      // Set timeout for very large files (30 minutes)
+      xhr.timeout = 30 * 60 * 1000;
+
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const percent = (event.loaded / event.total) * 100;
@@ -259,11 +270,21 @@ export class DirectUploadService {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(true);
         } else {
-          reject(new Error(`B2 Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+          reject(new Error(`B2 Upload failed for ${file.name} (${sizeMB} MB) with status ${xhr.status}: ${xhr.responseText}`));
         }
       };
 
-      xhr.onerror = () => reject(new Error('B2 XHR Network Error'));
+      xhr.ontimeout = () => {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        reject(new Error(`Upload timeout for ${file.name} (${sizeMB} MB). Large files may take longer to upload.`));
+      };
+
+      xhr.onerror = () => {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        reject(new Error(`Network error uploading ${file.name} (${sizeMB} MB). Please check your connection and try again.`));
+      };
+
       xhr.send(file);
     });
   }

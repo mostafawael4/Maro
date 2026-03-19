@@ -31,8 +31,6 @@ const signFilm = (film) => {
 // Prepare Direct Upload
 router.post("/prepare-direct-upload", async (req, res) => {
   try {
-    // Films usually single upload in existing code, but let's support array or just handle one
-    // Frontend sends 'files' array usually in our new service structure.
     const { files } = req.body;
     if (!files || !files.length) {
       return res.status(400).json({ error: "No files provided" });
@@ -40,9 +38,31 @@ router.post("/prepare-direct-upload", async (req, res) => {
 
     const uploadSlots = [];
     const duplicates = [];
+    const rejectedFiles = [];
+    const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+
     for (const file of files) {
+      // Validate file type
       if (!allowedExtensions.videos.includes(file.mimetype)) {
         logger.warn(`Blocked film upload of unsupported type: ${file.mimetype}`);
+        rejectedFiles.push({
+          originalName: file.originalname,
+          reason: 'Unsupported file type. Only video files are allowed.',
+          size: file.size
+        });
+        continue;
+      }
+
+      // Validate file size
+      if (file.size && file.size > MAX_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const maxSizeMB = (MAX_SIZE / (1024 * 1024)).toFixed(0);
+        logger.warn(`Blocked film upload of oversized file: ${file.originalname} (${file.size} bytes)`);
+        rejectedFiles.push({
+          originalName: file.originalname,
+          reason: `File size (${sizeMB} MB) exceeds maximum allowed size (${maxSizeMB} MB)`,
+          size: file.size
+        });
         continue;
       }
 
@@ -70,17 +90,27 @@ router.post("/prepare-direct-upload", async (req, res) => {
       }
     }
 
-    res.json({ ok: true, uploadSlots, duplicates });
+    // If all files were rejected, return error
+    if (uploadSlots.length === 0 && duplicates.length === 0 && rejectedFiles.length > 0) {
+      const reasons = rejectedFiles.map(f => `${f.originalName}: ${f.reason}`).join('; ');
+      return res.status(400).json({ 
+        ok: false, 
+        error: `All files were rejected: ${reasons}`,
+        rejectedFiles 
+      });
+    }
+
+    res.json({ ok: true, uploadSlots, duplicates, rejectedFiles });
   } catch (err) {
     logger.error("Film prepare upload error:", err);
-    res.status(500).json({ error: "Failed to prepare upload" });
+    res.status(500).json({ error: "Failed to prepare upload", message: err.message });
   }
 });
 
 // Confirm Direct Upload
 router.post("/confirm-direct-upload", async (req, res) => {
   try {
-    const { uploadedFiles } = req.body;
+    const { uploadedFiles, description } = req.body;
     if (!uploadedFiles || !uploadedFiles.length) {
       return res.status(400).json({ error: "No files to confirm" });
     }
@@ -93,7 +123,53 @@ router.post("/confirm-direct-upload", async (req, res) => {
       const { exists } = await uploadService.verifyFileExists(context, file.filename);
 
       if (exists) {
-        verifiedFiles.push(file);
+        // Create film document in database
+        const cdnUrl = Credential.OFFICIAL_CDN_URL;
+        const bucketName = Credential.B2_BUCKET_NAME;
+        const url = `${cdnUrl}/file/${bucketName}/films/${encodeURIComponent(file.filename)}`;
+
+        const newFilm = await Film.create({
+          filename: file.filename,
+          url: url,
+          description: description || '',
+          uploadedAt: new Date()
+        });
+
+        logger.info(`Film created in database: ${file.filename} (${newFilm._id})`);
+
+        verifiedFiles.push({ 
+          ...file, 
+          _id: newFilm._id.toString(),
+          url: url 
+        });
+
+        // Trigger thumbnail extraction in background
+        websocketService.reportProcessingStatus(
+          'film',
+          file.filename,
+          'Processing video...',
+          'processing'
+        );
+
+        extractThumbnailForFilmsService(newFilm._id.toString(), file.filename, 1)
+          .then(result => {
+            websocketService.reportProcessingStatus(
+              'film',
+              file.filename,
+              'Video uploaded successfully!',
+              'completed'
+            );
+          })
+          .catch(err => {
+            logger.error(`Thumbnail extraction failed for film ${file.filename}: ${err.message}`);
+            websocketService.reportProcessingStatus(
+              'film',
+              file.filename,
+              'Upload completed but thumbnail generation failed',
+              'completed'
+            );
+          });
+
       } else {
         logger.warn(`Film file verification failed: ${file.filename}`);
         failedFiles.push({ filename: file.filename, error: "File not found in B2" });
@@ -109,7 +185,7 @@ router.post("/confirm-direct-upload", async (req, res) => {
 
   } catch (err) {
     logger.error("Film confirm upload error:", err);
-    res.status(500).json({ error: "Failed to verify upload" });
+    res.status(500).json({ error: "Failed to verify upload", message: err.message });
   }
 });
 

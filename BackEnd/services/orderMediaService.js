@@ -217,6 +217,7 @@ export async function prepareDirectUploads(orderId, files, foldername) {
   const existingMedia = order.media || [];
   const duplicates = [];
   const uploadSlots = [];
+  const rejectedFiles = [];
 
   const normalizedFoldername = foldername ? foldername.trim() : null;
 
@@ -226,10 +227,22 @@ export async function prepareDirectUploads(orderId, files, foldername) {
   for (const f of files) {
     if (!allowedMimes.includes(f.mimetype)) {
       logger.warn(`Blocked upload of unsupported type: ${f.mimetype}`);
-      continue; // Skip invalid files or throw error
+      rejectedFiles.push({ 
+        originalName: f.originalname, 
+        reason: 'Unsupported file type',
+        size: f.size 
+      });
+      continue;
     }
     if (f.size && f.size > MAX_SIZE) {
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(2);
+      const maxSizeMB = (MAX_SIZE / (1024 * 1024)).toFixed(0);
       logger.warn(`Blocked upload of oversized file: ${f.originalname} (${f.size} bytes)`);
+      rejectedFiles.push({ 
+        originalName: f.originalname, 
+        reason: `File size (${sizeMB} MB) exceeds maximum allowed size (${maxSizeMB} MB)`,
+        size: f.size 
+      });
       continue;
     }
 
@@ -262,7 +275,13 @@ export async function prepareDirectUploads(orderId, files, foldername) {
     }
   }
 
-  return { uploadSlots, duplicates };
+  // If all files were rejected, throw an error
+  if (uploadSlots.length === 0 && duplicates.length === 0 && rejectedFiles.length > 0) {
+    const reasons = rejectedFiles.map(f => `${f.originalName}: ${f.reason}`).join('; ');
+    throw new Error(`All files were rejected: ${reasons}`);
+  }
+
+  return { uploadSlots, duplicates, rejectedFiles };
 }
 
 export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {

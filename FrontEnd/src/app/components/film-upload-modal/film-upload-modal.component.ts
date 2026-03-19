@@ -123,13 +123,23 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       const file = files[0];
-      if (this.isVideoFile(file)) {
-        this.selectedFile = file;
-        this.uploadTotalBytes = file.size;
-        this.uploadError = '';
-      } else {
+      if (!this.isVideoFile(file)) {
         this.uploadError = 'Please select a video file.';
+        return;
       }
+
+      // Check file size (5GB limit)
+      const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+      if (file.size > MAX_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const maxSizeGB = (MAX_SIZE / (1024 * 1024 * 1024)).toFixed(0);
+        this.uploadError = `File size (${sizeMB} MB) exceeds the maximum limit of ${maxSizeGB} GB. Please select a smaller file.`;
+        return;
+      }
+
+      this.selectedFile = file;
+      this.uploadTotalBytes = file.size;
+      this.uploadError = '';
     }
   }
 
@@ -137,13 +147,23 @@ export class FilmUploadModalComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
-      if (this.isVideoFile(file)) {
-        this.selectedFile = file;
-        this.uploadTotalBytes = file.size;
-        this.uploadError = '';
-      } else {
+      if (!this.isVideoFile(file)) {
         this.uploadError = 'Please select a video file.';
+        return;
       }
+      
+      // Check file size (5GB limit)
+      const MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+      if (file.size > MAX_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const maxSizeGB = (MAX_SIZE / (1024 * 1024 * 1024)).toFixed(0);
+        this.uploadError = `File size (${sizeMB} MB) exceeds the maximum limit of ${maxSizeGB} GB. Please select a smaller file.`;
+        return;
+      }
+
+      this.selectedFile = file;
+      this.uploadTotalBytes = file.size;
+      this.uploadError = '';
     }
   }
 

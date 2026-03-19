@@ -29,8 +29,8 @@ import websocketService from "./services/websocket.service.js";
 
     console.log(`[Backend] Environment: ${Credentials.NODE_ENV}, isProduction: ${Credentials.isProduction}`);
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(bodyParser.json({ limit: '50mb' }));
+    app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
     // Configure CORS
     const allowedOrigins = [
@@ -138,6 +138,11 @@ import websocketService from "./services/websocket.service.js";
 
     // Create HTTP server
     const httpServer = createServer(app);
+
+    // Configure server timeouts for large file uploads
+    httpServer.keepAliveTimeout = 120000; // 120 seconds
+    httpServer.headersTimeout = 125000; // 125 seconds (must be > keepAliveTimeout)
+    httpServer.requestTimeout = 600000; // 10 minutes for very large uploads
 
     // Initialize WebSocket server
     const wss = initializeWebSocketServer(httpServer, sessionMiddleware);
