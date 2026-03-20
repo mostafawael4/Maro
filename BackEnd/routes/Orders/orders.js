@@ -70,10 +70,23 @@ router.post("/", async (req, res) => {
 // GET /orders - admin only: list all orders
 router.get("/", requireAdminOrEditorAuth, async (req, res) => {
   try {
-    const list = await Order.find({}).sort({ createdAt: -1 }).lean();
-
-    // Optimize: sharedToken is no longer needed with Public CDN
-    const signedList = await Promise.all(list.map(o => signOrderMedia(o)));
+    const list = await Order.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          email: 1,
+          clientName: 1,
+          notes: 1,
+          status: 1,
+          orderBackground: 1,
+          feedbacks: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          orderForm: 1,
+          mediaCount: { $size: { $ifNull: ["$media", []] } }
+        }
+      }
+    ]);
 
     logger.info(
       `Listed all orders by ${req.session && req.session.adminId
@@ -81,7 +94,7 @@ router.get("/", requireAdminOrEditorAuth, async (req, res) => {
         : "unknown admin"
       }`
     );
-    return res.json({ ok: true, orders: signedList });
+    return res.json({ ok: true, orders: list });
   } catch (err) {
     logger.error(`GET /orders failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -582,18 +595,30 @@ router.get("/:orderId/download/:filename", async (req, res) => {
 
     logger.info(`Download requested for: ${key}`);
 
-    const startTime = Date.now();
-    // Get file from B2
-    const fileBuffer = await b2.downloadFileByName(key);
-
-    logger.info(`Downloaded ${key} in ${Date.now() - startTime}ms`);
     // Set appropriate headers
-    res.type(filename);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.send(fileBuffer);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('X-Accel-Buffering', 'no');
+    req.setTimeout(0);
+
+    // Stream file directly from B2 without loading into memory
+    const fileStream = await b2.downloadFileStream(key);
+
+    fileStream.on('error', (err) => {
+      logger.error(`Stream error for ${key}: ${err.message}`);
+      if (!res.headersSent) res.status(500).end();
+    });
+
+    req.on('close', () => {
+      fileStream.destroy();
+    });
+
+    fileStream.pipe(res);
   } catch (err) {
     logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
-    return res.status(500).json({ ok: false, message: "Download failed" });
+    if (!res.headersSent) {
+      return res.status(500).json({ ok: false, message: "Download failed" });
+    }
   }
 });
 
@@ -668,27 +693,38 @@ router.post("/:orderId/download-selected", async (req, res) => {
       }
     });
 
+    // Track abort state and current stream
+    let aborted = false;
+    let currentStream = null;
+
     // Handle client disconnection
     req.on('close', () => {
       logger.info(`Batch download client disconnected for order ${orderId}. Aborting.`);
+      aborted = true;
+      if (currentStream) currentStream.destroy();
       archive.abort();
     });
 
     // Disable timeout
     req.setTimeout(0);
 
+    // Track progress
+    let processedFiles = 0;
+
     // Process files sequentially for better stability in production with large files
     for (const media of mediaToDownload) {
+      if (aborted) break;
+
       try {
         const key = `orders/${orderId}/${media.filename}`;
         const fileName = media.originalName || media.filename;
 
         // Get stream from B2
-        const fileStream = await b2.downloadFileStream(key);
+        currentStream = await b2.downloadFileStream(key);
 
         // Append to archive and wait for it to finish reading from B2
         await new Promise((resolve, reject) => {
-          fileStream.on('end', () => {
+          currentStream.on('end', () => {
             processedFiles++;
             if (processedFiles % 10 === 0 || processedFiles === mediaToDownload.length) {
               logger.info(`Batch streamed file ${processedFiles}/${mediaToDownload.length}: ${fileName}`);
@@ -696,20 +732,23 @@ router.post("/:orderId/download-selected", async (req, res) => {
             resolve();
           });
 
-          fileStream.on('error', (err) => {
+          currentStream.on('error', (err) => {
             logger.error(`Batch stream error for ${fileName}: ${err.message}`);
             resolve(); // Continue with next file
           });
 
-          archive.append(fileStream, { name: fileName });
+          archive.append(currentStream, { name: fileName });
         });
       } catch (error) {
+        if (aborted) break;
         logger.error(`Failed to stream file ${media.filename} from B2: ${error.message}`);
       }
     }
 
-    // Finalize the archive
-    await archive.finalize();
+    // Finalize the archive only if not aborted
+    if (!aborted) {
+      await archive.finalize();
+    }
 
     logger.info(`Successfully created batch download zip for order ${orderId} (${processedFiles}/${mediaToDownload.length} files)`);
     // res.end() is handled by archive.pipe(res)

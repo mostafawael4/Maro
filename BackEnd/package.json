@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node ./server.js",
-    "watch": "node --inspect  --watch-path=./  ./server.js",
-    "dev": "nodemon server.js"
+    "start": "node --max-old-space-size=400 ./server.js",
+    "watch": "node --max-old-space-size=400 --inspect  --watch-path=./  ./server.js",
+    "dev": "nodemon --max-old-space-size=400 server.js"
   },
   "type": "module",
   "dependencies": {

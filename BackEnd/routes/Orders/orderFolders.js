@@ -211,9 +211,15 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     // Disable timeout for this request as it involves streaming large amount of data
     req.setTimeout(0);
 
+    // Track abort state and current stream
+    let aborted = false;
+    let currentStream = null;
+
     // Handle client disconnection
     req.on('close', () => {
       logger.info(`Download client disconnected for folder '${foldername}' in order ${orderId}. Aborting archiver.`);
+      aborted = true;
+      if (currentStream) currentStream.destroy();
       archive.abort();
     });
 
@@ -222,17 +228,19 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
 
     // Process files sequentially to avoid opening too many connections (which causes timeouts)
     for (const media of mediaInFolder) {
+      if (aborted) break;
+
       try {
         const key = `orders/${orderId}/${media.filename}`;
         const fileName = media.originalName || media.filename;
 
         // Get stream from B2
-        const fileStream = await b2.downloadFileStream(key);
+        currentStream = await b2.downloadFileStream(key);
 
         // Append to archive and wait for it to be consumed
         // This ensures we don't open the next B2 connection until the current one is done
         await new Promise((resolve, reject) => {
-          fileStream.on('end', () => {
+          currentStream.on('end', () => {
             processedFiles++;
             // Log every 5 files to avoid spamming logs, or if it's the last one
             if (processedFiles % 5 === 0 || processedFiles === mediaInFolder.length) {
@@ -241,23 +249,26 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
             resolve();
           });
 
-          fileStream.on('error', (err) => {
+          currentStream.on('error', (err) => {
             logger.error(`Stream error for ${fileName}: ${err.message}`);
             // Don't reject, just resolve so we continue to next file (partial zip is better than no zip)
             resolve();
           });
 
-          archive.append(fileStream, { name: fileName });
+          archive.append(currentStream, { name: fileName });
         });
 
       } catch (error) {
+        if (aborted) break;
         logger.error(`Failed to process file ${media.filename}: ${error.message}`);
         // Continue with other files
       }
     }
 
-    // Finalize the archive (this triggers the stream to complete)
-    await archive.finalize();
+    // Finalize the archive only if not aborted
+    if (!aborted) {
+      await archive.finalize();
+    }
 
     logger.info(`Successfully streamed zip for folder '${foldername}' in order ${orderId} (${processedFiles}/${mediaInFolder.length} files)`);
     // No res.end() here - archiver.pipe(res) handles it once finalized and flushed

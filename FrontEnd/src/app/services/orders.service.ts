@@ -104,6 +104,7 @@ export interface Order {
     selectedAt?: string | Date; // When background was selected
   };
   media?: OrderImage[]; // Made optional to handle cases where backend might not send it
+  mediaCount?: number; // Count of media files (used in list view to avoid loading full media array)
   orderForm?: OrderForm;
   feedbacks?: Feedback[];
   createdAt: string;

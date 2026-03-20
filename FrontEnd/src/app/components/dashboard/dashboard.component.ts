@@ -224,7 +224,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getMediaCount(order: Order): number {
-    return (order.media || []).length;
+    return order.mediaCount ?? (order.media || []).length;
   }
 
   onDeleteClick(orderId: string): void {
