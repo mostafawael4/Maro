@@ -391,8 +391,7 @@
   border: 3px solid transparent;
   transition: all 0.2s ease;
   animation: fadeInProgressive 0.5s ease-out forwards;
-  min-height: 150px;
-  height: fit-content;
+  height: auto;
 
   .selection-checkbox {
     position: absolute;
@@ -454,6 +453,7 @@
   .video-preview-wrapper {
     position: relative;
     width: 100%;
+    height: auto;
     cursor: pointer;
     overflow: hidden;
 
@@ -461,6 +461,7 @@
       width: 100%;
       height: auto;
       display: block;
+      object-fit: contain;
     }
 
     .video-play-overlay {
@@ -795,5 +796,17 @@
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes fadeInProgressive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

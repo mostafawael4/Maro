@@ -90,10 +90,9 @@ export async function extractThumbnail(videoPath, outputPath, timeInSeconds = 1)
 
     const command = ffmpeg(videoPath)
       .screenshots({
-        timestamps: [String(timeInSeconds)], // ensure it's a string/number FFmpeg likes
+        timestamps: [String(timeInSeconds)],
         filename: path.basename(outputPath),
-        folder: outputDir,
-        size: '1280x720' // Max size, maintains aspect ratio
+        folder: outputDir
       })
       .on('end', () => {
         logger.info(`Thumbnail extracted successfully: ${outputPath}`);
@@ -131,8 +130,7 @@ export async function streamingExtractThumbnail(videoUrl, outputPath, timeInSeco
       .screenshots({
         timestamps: [String(timeInSeconds)],
         filename: path.basename(outputPath),
-        folder: outputDir,
-        size: '1280x720'
+        folder: outputDir
       })
       .on('end', () => {
         logger.info(`Streaming thumbnail extracted successfully: ${outputPath}`);
