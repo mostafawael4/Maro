@@ -256,24 +256,28 @@ export async function prepareDirectUploads(orderId, files, foldername) {
       duplicates.push({ originalName: f.originalname, foldername: normalizedFoldername });
     } else {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      // SANITIZE THE FILENAME
       const cleanOriginalName = sanitizeFilename(f.originalname);
       const b2FileName = `${uniqueSuffix}-${cleanOriginalName}`;
       const key = `orders/${orderId}/${b2FileName}`;
-
-      // Use Native B2 Upload URL
-      const { uploadUrl, authorizationToken } = await b2.getUploadUrl();
 
       uploadSlots.push({
         originalName: f.originalname,
         filename: b2FileName,
         key: key,
-        mimetype: f.mimetype,
-        uploadUrl: uploadUrl,
-        authorizationToken: authorizationToken
+        mimetype: f.mimetype
       });
     }
   }
+
+  // Batch get upload URLs for all files at once
+  const urlPromises = uploadSlots.map(() => b2.getUploadUrl());
+  const uploadUrls = await Promise.all(urlPromises);
+
+  // Assign upload URLs to slots
+  uploadSlots.forEach((slot, index) => {
+    slot.uploadUrl = uploadUrls[index].uploadUrl;
+    slot.authorizationToken = uploadUrls[index].authorizationToken;
+  });
 
   // If all files were rejected, throw an error
   if (uploadSlots.length === 0 && duplicates.length === 0 && rejectedFiles.length > 0) {
@@ -281,6 +285,7 @@ export async function prepareDirectUploads(orderId, files, foldername) {
     throw new Error(`All files were rejected: ${reasons}`);
   }
 
+  logger.info(`Prepared ${uploadSlots.length} upload slots for order ${orderId}`);
   return { uploadSlots, duplicates, rejectedFiles };
 }
 
@@ -290,66 +295,82 @@ export async function confirmDirectUploads(orderId, uploadedFiles, foldername) {
 
   const normalizedFoldername = foldername ? foldername.trim() : null;
   const fileObjs = [];
+  const verificationErrors = [];
 
-  for (const f of uploadedFiles) {
-    const key = `orders/${orderId}/${f.filename}`;
+  // Batch verify files to reduce B2 API calls
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < uploadedFiles.length; i += BATCH_SIZE) {
+    const batch = uploadedFiles.slice(i, i + BATCH_SIZE);
+    
+    await Promise.all(batch.map(async (f) => {
+      try {
+        const key = `orders/${orderId}/${f.filename}`;
 
-    // Verify file existence in B2 using listFileNames (b2.service removed headObject)
-    // We search for the specific file name in the folder (prefix)
-    // Actually the prefix is the full key for exact match attempt
-    const foundFiles = await b2.listFileNames(key, 1);
+        // Verify file existence in B2
+        const foundFiles = await b2.listFileNames(key, 1);
+        const exists = foundFiles && foundFiles.some(file => file.fileName === key);
 
-    // B2 listFileNames returns files starting with prefix.
-    // We should check if one matches exactly.
-    const exists = foundFiles && foundFiles.some(file => file.fileName === key);
+        if (!exists) {
+          logger.warn(`File verification failed: ${key} not found in B2.`);
+          verificationErrors.push({ 
+            originalName: f.originalName, 
+            filename: f.filename,
+            reason: 'File not found in B2 after upload' 
+          });
+          return;
+        }
 
-    if (!exists) {
-      logger.warn(`File verification failed: ${key} not found.`);
-      continue;
-    }
+        // Check if file already exists in order.media to prevent DB duplicates
+        const alreadyExists = order.media.some(m =>
+          m.filename === f.filename ||
+          (m.originalName === f.originalName && (m.foldername || null) === normalizedFoldername)
+        );
 
-    const url = b2.getFileUrl(key);
+        if (alreadyExists) {
+          logger.warn(`Skipping duplicate file in confirm: ${f.filename}`);
+          return;
+        }
 
-    const fileObj = {
-      foldername: normalizedFoldername,
-      filename: f.filename,
-      originalName: f.originalName,
-      url: url,
-      size: f.size || 0,
-      uploadedAt: new Date(),
-    };
+        const url = b2.getFileUrl(key);
 
-    // Check if file already exists in order.media to prevent DB duplicates
-    const alreadyExists = order.media.some(m =>
-      m.filename === f.filename ||
-      (m.originalName === f.originalName && (m.foldername || null) === normalizedFoldername)
-    );
+        const fileObj = {
+          foldername: normalizedFoldername,
+          filename: f.filename,
+          originalName: f.originalName,
+          url: url,
+          size: f.size || 0,
+          uploadedAt: new Date(),
+        };
 
-    if (alreadyExists) {
-      logger.warn(`Skipping duplicate file in confirm: ${f.filename}`);
-      continue;
-    }
+        fileObjs.push(fileObj);
 
-    fileObjs.push(fileObj);
+        // Trigger background processing
+        if (allowedExtensions.videos.includes(f.mimetype)) {
+          processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
+        }
 
-    // Trigger background processing
-    if (allowedExtensions.videos.includes(f.mimetype)) {
-      processVideoThumbnailBackground(orderId, f.filename, f.originalName, f.mimetype);
-    }
-
-    // NEW: Trigger background image optimization
-    if (allowedExtensions.images.includes(f.mimetype)) {
-      // Fire and forget - don't await to avoid blocking response
-      processOrderImageOptimization(orderId, f.filename, f.originalName).catch(err => {
-        logger.error(`Background image optimization failed for ${f.filename}: ${err.message}`);
-      });
-    }
+        if (allowedExtensions.images.includes(f.mimetype)) {
+          processOrderImageOptimization(orderId, f.filename, f.originalName).catch(err => {
+            logger.error(`Background image optimization failed for ${f.filename}: ${err.message}`);
+          });
+        }
+      } catch (error) {
+        logger.error(`Error confirming upload for ${f.filename}: ${error.message}`);
+        verificationErrors.push({
+          originalName: f.originalName,
+          filename: f.filename,
+          reason: error.message
+        });
+      }
+    }));
   }
 
   order.media.push(...fileObjs);
   await order.save();
 
-  return { verified: fileObjs };
+  logger.info(`Confirmed ${fileObjs.length} uploads for order ${orderId}, ${verificationErrors.length} failed verification`);
+
+  return { verified: fileObjs, verificationErrors };
 }
 
 /**

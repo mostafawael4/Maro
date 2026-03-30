@@ -246,47 +246,65 @@ export class DirectUploadService {
     });
   }
 
-  private async uploadToB2(uploadUrl: string, token: string, fileName: string, file: File, onProgress: (p: number) => void): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', uploadUrl);
+  private async uploadToB2(uploadUrl: string, token: string, fileName: string, file: File, onProgress: (p: number) => void, retries = 3): Promise<any> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', uploadUrl);
 
-      xhr.setRequestHeader('Authorization', token);
-      xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
+          xhr.setRequestHeader('Authorization', token);
+          xhr.setRequestHeader('X-Bz-File-Name', encodeURIComponent(fileName));
+          xhr.setRequestHeader('Content-Type', file.type);
+          xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
 
-      // Set timeout for very large files (30 minutes)
-      xhr.timeout = 30 * 60 * 1000;
+          // Dynamic timeout based on file size: 5 minutes per 100MB (minimum 5 minutes)
+          const timeoutMinutes = Math.max(5, Math.ceil(file.size / (100 * 1024 * 1024)) * 5);
+          xhr.timeout = timeoutMinutes * 60 * 1000;
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = (event.loaded / event.total) * 100;
-          onProgress(percent);
-        }
-      };
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = (event.loaded / event.total) * 100;
+              onProgress(percent);
+            }
+          };
 
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(true);
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(true);
+            } else {
+              const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+              reject(new Error(`B2 Upload failed for ${file.name} (${sizeMB} MB) with status ${xhr.status}: ${xhr.responseText}`));
+            }
+          };
+
+          xhr.ontimeout = () => {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            reject(new Error(`Upload timeout for ${file.name} (${sizeMB} MB) after ${timeoutMinutes} minutes.`));
+          };
+
+          xhr.onerror = () => {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            reject(new Error(`Network error uploading ${file.name} (${sizeMB} MB).`));
+          };
+
+          xhr.send(file);
+        });
+        
+        return true;
+        
+      } catch (error: any) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        
+        if (attempt < retries) {
+          const waitTime = Math.min(2000 * attempt, 10000);
+          console.warn(`Upload attempt ${attempt} failed for ${file.name} (${sizeMB} MB). Retrying in ${waitTime/1000}s...`);
+          await new Promise(r => setTimeout(r, waitTime));
         } else {
-          const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-          reject(new Error(`B2 Upload failed for ${file.name} (${sizeMB} MB) with status ${xhr.status}: ${xhr.responseText}`));
+          throw new Error(`Upload failed for ${file.name} (${sizeMB} MB) after ${retries} attempts: ${error.message}`);
         }
-      };
-
-      xhr.ontimeout = () => {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        reject(new Error(`Upload timeout for ${file.name} (${sizeMB} MB). Large files may take longer to upload.`));
-      };
-
-      xhr.onerror = () => {
-        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        reject(new Error(`Network error uploading ${file.name} (${sizeMB} MB). Please check your connection and try again.`));
-      };
-
-      xhr.send(file);
-    });
+      }
+    }
   }
 }
 

@@ -7,14 +7,24 @@ class B2Service {
     constructor() {
         this.b2 = new B2({ applicationKeyId: Credentials.B2_APPLICATION_KEY_ID, applicationKey: Credentials.B2_APPLICATION_KEY });
         this.authPromise = null;
+        this.authorizedAt = null;
         this.uploadUrlPool = [];
+        this.maxPoolSize = 20;
         this.downloadUrl = null;
         this.nativeDownloadUrl = null;
-        this.tokenCache = new Map(); // Cache for folder tokens
+        this.tokenCache = new Map();
     }
 
     async authorize() {
         try {
+            // If token is older than 23h, force re-auth before it expires
+            if (this.authPromise && this.authorizedAt && (Date.now() - this.authorizedAt > 23 * 60 * 60 * 1000)) {
+                logger.info('B2: Auth token older than 23h, forcing re-authorization...');
+                this.authPromise = null;
+                this.uploadUrlPool = [];
+                this.tokenCache.clear();
+            }
+
             if (this.authPromise) return this.authPromise;
 
             if (!Credentials.B2_APPLICATION_KEY_ID || !Credentials.B2_APPLICATION_KEY) {
@@ -28,6 +38,7 @@ class B2Service {
                     const response = await this.b2.authorize();
 
                     this.nativeDownloadUrl = response.data.downloadUrl;
+                    this.authorizedAt = Date.now();
 
                     // Use CDN URL if available, otherwise fall back to B2 download URL
                     if (Credentials.B2_CDN_URL) {
@@ -154,6 +165,12 @@ class B2Service {
         };
     }
 
+    returnUploadUrl(urlData) {
+        if (this.uploadUrlPool.length < this.maxPoolSize) {
+            this.uploadUrlPool.push(urlData);
+        }
+    }
+
     /**
      * Get the public URL for a file (Native B2 format)
      * @param {string} key 
@@ -268,6 +285,19 @@ class B2Service {
             });
             return response.data;
         } catch (err) {
+            if (err.response && err.response.status === 401) {
+                logger.warn(`B2 Stream 401 for ${fileName}, re-authorizing and retrying...`);
+                this.authPromise = null;
+                this.authorizedAt = null;
+                this.tokenCache.clear();
+                await this.authorize();
+                const retry = await this.b2.downloadFileByName({
+                    bucketName: Credentials.B2_BUCKET_NAME,
+                    fileName: fileName,
+                    responseType: 'stream'
+                });
+                return retry.data;
+            }
             logger.error(`B2 Stream Download Error for ${fileName}: ${err.message}`);
             throw err;
         }
