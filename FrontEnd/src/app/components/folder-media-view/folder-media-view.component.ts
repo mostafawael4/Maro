@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderImage, OrdersService } from '../../services/orders.service';
@@ -44,14 +44,6 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
 
   downloadingItems: Set<string> = new Set();
   loadedMedia: Set<string> = new Set();
-  sortOption: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc' = 'date-asc';
-  readonly sortOptions = [
-    { value: 'name-asc' as const, label: 'Name (A → Z)' },
-    { value: 'name-desc' as const, label: 'Name (Z → A)' },
-    { value: 'date-desc' as const, label: 'Date (Newest first)' },
-    { value: 'date-asc' as const, label: 'Date (Oldest first)' },
-  ];
-  showSortOptions = false;
   itemsToShow: number = 12;
   isLoadingMore: boolean = false;
 
@@ -95,7 +87,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   }
 
   get filteredMedia(): OrderImage[] {
-    return this.sortMedia(this.media);
+    return this.media || [];
   }
 
   get visibleMedia(): OrderImage[] {
@@ -194,12 +186,6 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     return this.loadedMedia.has(filename);
   }
 
-  onSortOptionChange(option: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'): void {
-    this.sortOption = option;
-    this.showSortOptions = false;
-    this.resetItemsToShow(); // Reset visible count on sort change
-  }
-
   onDelete(media: OrderImage, event: Event): void {
     event.stopPropagation();
     this.deleteMedia.emit(media);
@@ -257,44 +243,6 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     return videoExtensions.includes(ext);
   }
 
-  private sortMedia(media: OrderImage[]): OrderImage[] {
-    if (!media?.length) {
-      return media;
-    }
-
-    const [field, direction] = this.sortOption.split('-') as ['name' | 'date', 'asc' | 'desc'];
-    const sorted = [...media].sort((a, b) => {
-      if (field === 'name') {
-        const nameA = this.getDisplayName(a)?.toLowerCase() || '';
-        const nameB = this.getDisplayName(b)?.toLowerCase() || '';
-        if (nameA < nameB) return -1;
-        if (nameA > nameB) return 1;
-        return 0;
-      }
-
-      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
-      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
-      return dateA - dateB;
-    });
-
-    return direction === 'asc' ? sorted : sorted.reverse();
-  }
-
-  get currentSortLabel(): string {
-    const match = this.sortOptions.find(option => option.value === this.sortOption);
-    return match?.label || 'Date (Oldest first)';
-  }
-
-  toggleSortOptions(event: Event): void {
-    event.stopPropagation();
-    this.showSortOptions = !this.showSortOptions;
-  }
-
-  selectSortOption(event: Event, option: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc'): void {
-    event.stopPropagation();
-    this.onSortOptionChange(option);
-  }
-
   getFileNameFromUrl(url: string): string {
     try {
       // remove query params
@@ -310,11 +258,5 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  @HostListener('document:click')
-  closeSortOptions(): void {
-    if (this.showSortOptions) {
-      this.showSortOptions = false;
-    }
-  }
 }
 

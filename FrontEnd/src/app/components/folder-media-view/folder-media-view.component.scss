@@ -73,89 +73,6 @@
     }
   }
 
-  // ── Sort ──
-  .sort-container {
-    position: relative;
-
-    .sort-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.45rem 0.75rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1.5px solid rgba(255, 218, 185, 0.18);
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: rgba(255, 218, 185, 0.8);
-      cursor: pointer;
-      transition: all 0.25s ease;
-      white-space: nowrap;
-
-      svg {
-        flex-shrink: 0;
-      }
-
-      .chevron-icon {
-        transition: transform 0.2s ease;
-        opacity: 0.6;
-      }
-
-      &:hover,
-      &.active {
-        border-color: rgba(255, 218, 185, 0.35);
-        background: rgba(255, 218, 185, 0.06);
-        color: #ffdab9;
-      }
-
-      &.active .chevron-icon {
-        transform: rotate(180deg);
-      }
-    }
-
-    .sort-dropdown {
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      background: rgba(18, 2, 4, 0.97);
-      border: 1.5px solid rgba(255, 218, 185, 0.2);
-      border-radius: 14px;
-      min-width: 200px;
-      padding: 0.35rem;
-      z-index: 30;
-      animation: fadeIn 0.15s ease;
-      backdrop-filter: blur(10px);
-
-      .sort-option {
-        width: 100%;
-        border: none;
-        background: transparent;
-        border-radius: 10px;
-        padding: 0.6rem 0.8rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        font-size: 0.88rem;
-        cursor: pointer;
-        color: #fdf9f2;
-        transition: background 0.2s;
-
-        &:hover {
-          background: rgba(255, 218, 185, 0.06);
-        }
-
-        &.active {
-          color: #ffdab9;
-          font-weight: 600;
-        }
-
-        svg {
-          color: #ffdab9;
-        }
-      }
-    }
-  }
 }
 
 @keyframes fadeIn {
@@ -343,22 +260,24 @@
 .gallery-grid {
   width: 100% !important;
   max-width: 100% !important;
-  column-count: 4;
-  column-gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
   margin-bottom: 2rem;
   padding: 0 10px;
+  align-items: start;
 
   @media (max-width: 1200px) {
-    column-count: 3;
+    grid-template-columns: repeat(3, 1fr);
   }
 
   @media (max-width: 768px) {
-    column-count: 2;
-    column-gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   @media (max-width: 480px) {
-    column-count: 1;
+    grid-template-columns: repeat(1, 1fr);
   }
 
   &.selection-mode {
@@ -386,11 +305,9 @@
   box-shadow: 0 4px 12px rgba(107, 31, 31, 0.1);
   background: transparent;
   width: 100%;
-  break-inside: avoid;
   border: 3px solid transparent;
   transition: all 0.2s ease;
   animation: fadeInProgressive 0.5s ease-out forwards;
-  margin-bottom: 1.5rem;
   display: block;
 
   .selection-checkbox {

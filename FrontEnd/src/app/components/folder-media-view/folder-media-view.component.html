@@ -29,34 +29,6 @@
         {{ zippingFolder ? 'Preparing...' : 'Download Album' }}
       </button>
 
-      <!-- Sort -->
-      <div class="sort-container">
-        <button class="sort-toggle" type="button" (click)="toggleSortOptions($event)" [class.active]="showSortOptions">
-          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
-            <path d="M3 6h13"></path>
-            <path d="M3 12h9"></path>
-            <path d="M3 18h5"></path>
-            <path d="M21 6v12"></path>
-            <path d="m17 8 4-4 4 4"></path>
-          </svg>
-          {{ currentSortLabel }}
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.5" class="chevron-icon">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-        <div class="sort-dropdown" *ngIf="showSortOptions" role="listbox">
-          <button *ngFor="let option of sortOptions" type="button" class="sort-option"
-            [class.active]="option.value === sortOption" (click)="selectSortOption($event, option.value)">
-            <span>{{ option.label }}</span>
-            <svg *ngIf="option.value === sortOption" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
 
       <!-- Set Background (admin only) -->
       <button *ngIf="isAuthenticated && canSelectBackground" class="select-background-btn icon-only"
