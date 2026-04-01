@@ -429,6 +429,22 @@ export class OrdersService {
     return `${this.apiUrl}/folders/${orderId}/${folderName}/download`;
   }
 
+  prepareFolderDownload(orderId: string, folderName: string, clientEmail?: string | null): Observable<{ ok: boolean; jobId: string; totalFiles: number; message: string }> {
+    const body = clientEmail ? { clientEmail } : {};
+    return this.http.post<{ ok: boolean; jobId: string; totalFiles: number; message: string }>(
+      `${this.apiUrl}/folders/${orderId}/${folderName}/prepare-download`,
+      body,
+      { withCredentials: true }
+    );
+  }
+
+  pollFolderDownloadStatus(orderId: string, folderName: string, jobId: string): Observable<{ ok: boolean; status: string; downloadUrl?: string; totalFiles?: number; error?: string }> {
+    return this.http.get<{ ok: boolean; status: string; downloadUrl?: string; totalFiles?: number; error?: string }>(
+      `${this.apiUrl}/folders/${orderId}/${folderName}/download-status/${jobId}`,
+      { withCredentials: true }
+    );
+  }
+
   getSelectedFilesDownloadUrl(orderId: string): string {
     return `${this.apiUrl}/${orderId}/download-selected`;
   }

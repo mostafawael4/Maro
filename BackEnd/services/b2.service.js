@@ -323,6 +323,123 @@ class B2Service {
         }
     }
 
+    async _getUploadPartUrl(fileId) {
+        await this.authorize();
+        const resp = await this.b2.getUploadPartUrl({ fileId });
+        return {
+            uploadUrl: resp.data.uploadUrl,
+            authorizationToken: resp.data.authorizationToken
+        };
+    }
+
+    /**
+     * Upload a readable stream to B2 using the large file API (chunked).
+     * Keeps memory usage to ~PART_SIZE at a time regardless of total zip size.
+     * @param {string} fileName - The destination key in B2
+     * @param {NodeJS.ReadableStream} readableStream - Stream to upload
+     * @param {string} contentType
+     * @returns {Promise<{fileId: string, fileName: string}>}
+     */
+    async uploadLargeFileStream(fileName, readableStream, contentType = 'application/zip') {
+        await this.authorize();
+
+        const { createHash } = await import('crypto');
+        // 5MB parts: short upload windows keep backpressure stalls minimal,
+        // allowing the download pipeline to flow continuously.
+        // Memory: 2 × 5MB = 10MB (current part being uploaded + next part being collected).
+        const PART_SIZE = 5 * 1024 * 1024;
+
+        logger.info(`B2 Large Upload starting: ${fileName}`);
+
+        const startResp = await this.b2.startLargeFile({
+            bucketId: Credentials.B2_BUCKET_ID,
+            fileName,
+            contentType
+        });
+        const fileId = startResp.data.fileId;
+
+        try {
+            const partSha1Array = [];
+            let partNumber = 1;
+            let chunks = [];
+            let totalBuffered = 0;
+            let inflightUpload = null; // pipelined: upload part N while collecting part N+1
+
+            const uploadPart = async (partData, num) => {
+                const { uploadUrl, authorizationToken } = await this._getUploadPartUrl(fileId);
+                const sha1 = createHash('sha1').update(partData).digest('hex');
+                const resp = await this.b2.uploadPart({
+                    partNumber: num,
+                    uploadUrl,
+                    uploadAuthToken: authorizationToken,
+                    data: partData,
+                    hash: sha1
+                });
+                logger.info(`B2 Large Upload: part ${num} done (${(partData.length / 1024 / 1024).toFixed(1)}MB)`);
+                return resp.data.contentSha1;
+            };
+
+            for await (const chunk of readableStream) {
+                const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+                chunks.push(buf);
+                totalBuffered += buf.length;
+
+                if (totalBuffered >= PART_SIZE) {
+                    const partData = Buffer.concat(chunks);
+                    chunks = [];
+                    totalBuffered = 0;
+                    const currentPartNumber = partNumber++;
+
+                    // Wait for the previous part to finish before starting a new one
+                    // (ensures partSha1Array stays in order)
+                    if (inflightUpload) {
+                        partSha1Array.push(await inflightUpload);
+                    }
+                    // Start uploading this part immediately — don't await yet.
+                    // The for-await loop continues collecting the NEXT part concurrently.
+                    inflightUpload = uploadPart(partData, currentPartNumber);
+                }
+            }
+
+            // Wait for any in-flight part upload to finish
+            if (inflightUpload) {
+                partSha1Array.push(await inflightUpload);
+            }
+
+            // Upload remaining bytes as the final part
+            if (chunks.length > 0) {
+                const lastData = Buffer.concat(chunks);
+                const sha1 = await uploadPart(lastData, partNumber);
+                partSha1Array.push(sha1);
+            }
+
+            const finishResp = await this.b2.finishLargeFile({ fileId, partSha1Array });
+            logger.info(`B2 Large Upload complete: ${fileName} (${partSha1Array.length} parts)`);
+            return { fileId: finishResp.data.fileId, fileName: finishResp.data.fileName };
+
+        } catch (err) {
+            logger.error(`B2 Large Upload failed for ${fileName}: ${err.message}`);
+            try {
+                await this.b2.cancelLargeFile({ fileId });
+                logger.info(`Cancelled large file upload: ${fileId}`);
+            } catch (cancelErr) {
+                logger.error(`Failed to cancel large file upload ${fileId}: ${cancelErr.message}`);
+            }
+            throw err;
+        }
+    }
+
+    async deleteFileById(fileId, fileName) {
+        try {
+            await this.b2.deleteFileVersion({ fileId, fileName });
+            logger.info(`Deleted B2 file: ${fileName} (${fileId})`);
+            return true;
+        } catch (err) {
+            logger.error(`B2 Delete by ID failed for ${fileName}: ${err.message}`);
+            throw err;
+        }
+    }
+
     async deleteFile(fileName) {
         await this.authorize();
         try {

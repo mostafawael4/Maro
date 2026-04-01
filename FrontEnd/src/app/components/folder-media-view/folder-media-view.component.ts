@@ -32,6 +32,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   @Input() canSelectBackground: boolean = false;
   @Input() orderId: string | null = null;
   @Input() zippingFolder: boolean = false;
+  @Input() zippingFolderMessage: string = 'Preparing...';
 
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<{ index: number, sortedMedia: OrderImage[] }>();

@@ -585,35 +585,20 @@ router.delete("/:orderId/background-image", requireAdminAuth, async (req, res) =
   }
 });
 
-// GET /orders/:orderId/download/:filename - public (with obfuscated orderId) or authenticated download
+// GET /orders/:orderId/download/:filename
+// Redirects client directly to a B2 presigned URL — file bytes never pass through Railway.
+// This eliminates memory pressure and mobile browser timeouts for large files (e.g. 2GB videos).
 router.get("/:orderId/download/:filename", async (req, res) => {
   try {
     const { orderId, filename } = req.params;
-
-    // Construct the B2 key
     const key = `orders/${orderId}/${filename}`;
 
     logger.info(`Download requested for: ${key}`);
 
-    // Set appropriate headers
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('X-Accel-Buffering', 'no');
-    req.setTimeout(0);
+    const presignedUrl = await b2.getPresignedUrl(key);
 
-    // Stream file directly from B2 without loading into memory
-    const fileStream = await b2.downloadFileStream(key);
-
-    fileStream.on('error', (err) => {
-      logger.error(`Stream error for ${key}: ${err.message}`);
-      if (!res.headersSent) res.status(500).end();
-    });
-
-    req.on('close', () => {
-      fileStream.destroy();
-    });
-
-    fileStream.pipe(res);
+    // 302 redirect — browser downloads directly from B2, Railway is out of the data path
+    return res.redirect(302, presignedUrl);
   } catch (err) {
     logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
     if (!res.headersSent) {

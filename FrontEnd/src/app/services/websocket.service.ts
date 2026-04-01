@@ -25,6 +25,8 @@ export class WebsocketService {
   private uploadComplete$ = new Subject<any>();
   private uploadFailure$ = new Subject<any>();
   private processingStatus$ = new Subject<any>();
+  private folderDownloadReady$ = new Subject<any>();
+  private folderDownloadError$ = new Subject<any>();
 
   constructor() {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -127,6 +129,14 @@ export class WebsocketService {
         this.processingStatus$.next(message.payload);
         break;
 
+      case 'folderDownloadReady':
+        this.folderDownloadReady$.next(message.payload);
+        break;
+
+      case 'folderDownloadError':
+        this.folderDownloadError$.next(message.payload);
+        break;
+
       case 'pong':
         // Heartbeat response
         break;
@@ -186,6 +196,20 @@ export class WebsocketService {
    */
   onProcessingStatus(): Observable<any> {
     return this.processingStatus$.asObservable();
+  }
+
+  /**
+   * Observable for folder download ready events
+   */
+  onFolderDownloadReady(): Observable<any> {
+    return this.folderDownloadReady$.asObservable();
+  }
+
+  /**
+   * Observable for folder download error events
+   */
+  onFolderDownloadError(): Observable<any> {
+    return this.folderDownloadError$.asObservable();
   }
 
   /**

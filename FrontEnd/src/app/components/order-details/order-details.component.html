@@ -72,7 +72,7 @@
       [error]="folderMediaError" [folderName]="selectedFolder" [showStepper]="true" [canGoBack]="folders.length > 0"
       [isAuthenticated]="isAuthenticated" [baseUrl]="baseUrl"
       [canSelectBackground]="isAuthenticated && getImageOnlyMedia().length > 0" [orderId]="order._id"
-      [zippingFolder]="zippingFolder" (back)="exitFolderView()" (openMedia)="openImageSlider($event)"
+      [zippingFolder]="zippingFolder" [zippingFolderMessage]="zippingFolderMessage" (back)="exitFolderView()" (openMedia)="openImageSlider($event)"
       (downloadMedia)="downloadImage($event)" (downloadFolder)="onDownloadFolder(selectedFolder!)"
       (deleteMedia)="onDeleteMediaClick($event)" (selectVideoThumbnail)="onSelectVideoThumbnail($event)"
       (selectBackground)="onSelectBackgroundImage()">
