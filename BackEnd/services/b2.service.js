@@ -344,39 +344,55 @@ class B2Service {
         await this.authorize();
 
         const { createHash } = await import('crypto');
-        // 5MB parts: short upload windows keep backpressure stalls minimal,
-        // allowing the download pipeline to flow continuously.
-        // Memory: 2 × 5MB = 10MB (current part being uploaded + next part being collected).
-        const PART_SIZE = 5 * 1024 * 1024;
-
+        // 25MB parts: optimizes for large albums by reducing the number of individual upload requests.
+        // Memory per job: 2 × 25MB = 50MB (within safe limits).
+        const PART_SIZE = 25 * 1024 * 1024;
+        const PART_RETRY_ATTEMPTS = 3;
+ 
         logger.info(`B2 Large Upload starting: ${fileName}`);
-
+ 
         const startResp = await this.b2.startLargeFile({
             bucketId: Credentials.B2_BUCKET_ID,
             fileName,
             contentType
         });
         const fileId = startResp.data.fileId;
-
+ 
         try {
             const partSha1Array = [];
             let partNumber = 1;
             let chunks = [];
             let totalBuffered = 0;
             let inflightUpload = null; // pipelined: upload part N while collecting part N+1
-
+ 
             const uploadPart = async (partData, num) => {
-                const { uploadUrl, authorizationToken } = await this._getUploadPartUrl(fileId);
-                const sha1 = createHash('sha1').update(partData).digest('hex');
-                const resp = await this.b2.uploadPart({
-                    partNumber: num,
-                    uploadUrl,
-                    uploadAuthToken: authorizationToken,
-                    data: partData,
-                    hash: sha1
-                });
-                logger.info(`B2 Large Upload: part ${num} done (${(partData.length / 1024 / 1024).toFixed(1)}MB)`);
-                return resp.data.contentSha1;
+              let lastErr;
+              for (let attempt = 0; attempt < PART_RETRY_ATTEMPTS; attempt++) {
+                try {
+                  const { uploadUrl, authorizationToken } = await this._getUploadPartUrl(fileId);
+                  const sha1 = createHash('sha1').update(partData).digest('hex');
+                  const resp = await this.b2.uploadPart({
+                      partNumber: num,
+                      uploadUrl,
+                      uploadAuthToken: authorizationToken,
+                      data: partData,
+                      hash: sha1
+                  });
+                  logger.info(`B2 Large Upload: part ${num} done (${(partData.length / 1024 / 1024).toFixed(1)}MB)`);
+                  return resp.data.contentSha1;
+                } catch (err) {
+                  lastErr = err;
+                  const isRetryable = !err.response || [500, 503, 408, 429].includes(err.response.status);
+                  if (attempt < PART_RETRY_ATTEMPTS - 1 && isRetryable) {
+                    const delay = Math.pow(2, attempt) * 1000;
+                    logger.warn(`B2 uploadPart ${num} failed (attempt ${attempt+1}), retrying in ${delay}ms...`);
+                    await new Promise(r => setTimeout(r, delay));
+                  } else {
+                    throw err;
+                  }
+                }
+              }
+              throw lastErr;
             };
 
             for await (const chunk of readableStream) {

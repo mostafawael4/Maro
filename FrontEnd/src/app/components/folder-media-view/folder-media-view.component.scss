@@ -50,6 +50,8 @@
     transition: all 0.25s ease;
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
     white-space: nowrap;
+    position: relative;
+    overflow: hidden;
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
@@ -70,6 +72,22 @@
 
     .spinner-svg {
       animation: spin 1s linear infinite;
+    }
+
+    .download-progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.2);
+      z-index: 0;
+      transition: width 0.4s ease-out;
+    }
+
+    svg,
+    .btn-text {
+      position: relative;
+      z-index: 1;
     }
   }
 

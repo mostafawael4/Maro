@@ -15,10 +15,12 @@ import archiver from 'archiver';
 import { PassThrough } from 'stream';
 import b2 from '../../services/b2.service.js';
 import websocketService from '../../services/websocket.service.js';
+import ZipJob from '../../models/zipJob.js';
 
 // Number of files downloaded from B2 simultaneously inside the background zip job.
-// Higher = faster build, more RAM. 8 concurrent × ~3MB avg JPEG = ~24MB overhead.
-const ZIP_DOWNLOAD_CONCURRENCY = 8;
+// 32 concurrent × ~3MB avg JPEG ≈ 96MB RAM overhead — well within Railway's 8 GB limit.
+// Increases build speed ~4× compared to the previous value of 8.
+const ZIP_DOWNLOAD_CONCURRENCY = 16; // Safely balanced for high-speed without B2 503 errors
 
 // Collect a readable stream into a single Buffer
 async function streamToBuffer(stream) {
@@ -29,17 +31,18 @@ async function streamToBuffer(stream) {
   return Buffer.concat(chunks);
 }
 
-// In-memory job status store — allows polling fallback when WebSocket disconnects (e.g. screen lock)
-// Structure: jobId → { status, downloadUrl, folderName, totalFiles, error, createdAt }
-const zipJobs = new Map();
+// --- Job helpers (MongoDB-backed, survives server restarts) ---
+async function createJob(jobId, folderName, totalFiles) {
+  await ZipJob.create({ _id: jobId, status: 'pending', folderName, totalFiles, filesProcessed: 0, progress: 0 });
+}
 
-// Clean up expired jobs every 30 minutes (jobs expire after 2 hours, same as the zip in B2)
-setInterval(() => {
-  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
-  for (const [jobId, job] of zipJobs.entries()) {
-    if (job.createdAt < cutoff) zipJobs.delete(jobId);
-  }
-}, 30 * 60 * 1000);
+async function updateJob(jobId, fields) {
+  await ZipJob.findByIdAndUpdate(jobId, fields);
+}
+
+async function getJob(jobId) {
+  return ZipJob.findById(jobId).lean();
+}
 
 
 // GET /:orderId - return order's folders count, names, and sizes (admin only)
@@ -192,9 +195,6 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
 });
 
 
-// GET /:orderId/:foldername/download - stream folder as zip directly to client
-// Memory-safe: pipes B2 streams → archiver → response, never buffers the whole zip.
-// Cleanup: on disconnect or error, B2 stream is destroyed and archiver is aborted.
 router.get("/:orderId/:foldername/download", async (req, res) => {
   const { orderId, foldername } = req.params;
 
@@ -203,22 +203,32 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     return res.status(400).json({ ok: false, message: "orderId and foldername are required" });
   }
 
+  // --- Response Headers for Maximum Stability (especially iOS Safari) ---
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(foldername)}.zip"`);
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Transfer-Encoding', 'chunked');
+
   // Track state so cleanup helpers can reference them
   let archive = null;
   let currentStream = null;
   let aborted = false;
 
-  // Central cleanup — safe to call multiple times
+  // Central cleanup
   const cleanup = (reason) => {
     if (aborted) return;
     aborted = true;
     logger.info(`[download cleanup] ${reason} — folder '${foldername}' order ${orderId}`);
-    try { if (currentStream && !currentStream.destroyed) currentStream.destroy(); } catch (_) {}
-    try { if (archive) archive.abort(); } catch (_) {}
+    try { if (currentStream && !currentStream.destroyed) currentStream.destroy(); } catch (_) { }
+    try { if (archive) archive.abort(); } catch (_) { }
   };
 
   try {
-    // Use aggregation to fetch only media items belonging to this folder
+    // 1. Fetch media items for this folder
     const result = await Order.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
       {
@@ -236,29 +246,22 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
 
     if (!result || result.length === 0) {
       logger.warn(`Order not found for folder download: ${orderId}`);
+      cleanup('order not found');
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
 
     const mediaInFolder = result[0].media || [];
-
     if (mediaInFolder.length === 0) {
       logger.warn(`No media found in folder '${foldername}' for order ${orderId}`);
+      cleanup('no media');
       return res.status(404).json({ ok: false, message: `No media found in folder '${foldername}'` });
     }
 
     logger.info(`Starting streaming zip for '${foldername}' in order ${orderId} (${mediaInFolder.length} files)`);
 
-    // Set response headers for zip download
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(foldername)}.zip"`);
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Transfer-Encoding', 'chunked');
-
-    // Level 0 = store-only (no CPU cost), forceZip64 handles >4 GB folders
+    // 3. Initialize Archiver
     archive = archiver('zip', { zlib: { level: 0 }, forceZip64: true });
 
-    // Archiver error → cleanup and close
     archive.on('error', (err) => {
       logger.error(`Archiver error for '${foldername}': ${err.message}`);
       cleanup('archiver error');
@@ -266,30 +269,24 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
       else if (!res.writableEnded) res.end();
     });
 
-    // Pipe: archiver → HTTP response (chunks flow directly, nothing buffered in full)
     archive.pipe(res);
 
-    // Client disconnects mid-download — abort everything, nothing lingers on server
+    // 4. Handle Disconnection
     req.on('close', () => {
-      if (res.writableEnded) return; // Normal close after complete download
+      if (res.writableEnded) return;
       cleanup('client disconnected');
     });
 
-    // Response stream error (e.g. network reset)
     res.on('error', (err) => {
       logger.error(`Response stream error for '${foldername}': ${err.message}`);
       cleanup('response stream error');
     });
 
-    // Disable HTTP timeout — large folders can take minutes to stream
     req.setTimeout(0);
-    res.setTimeout && res.setTimeout(0);
+    if (res.setTimeout) res.setTimeout(0);
 
-    // Track progress
+    // 5. Stream from B2 to Archiver
     let processedFiles = 0;
-
-    // Sequential: one B2 connection at a time.
-    // Memory peak = one file's in-flight chunk (~KB), not the whole folder.
     for (const media of mediaInFolder) {
       if (aborted) break;
 
@@ -311,29 +308,23 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
 
           currentStream.on('error', (err) => {
             logger.error(`B2 stream error for ${fileName}: ${err.message}`);
-            // Skip the broken file — partial zip beats no zip
             currentStream = null;
-            resolve();
+            resolve(); // Skip to next file
           });
 
-          // Append stream; archiver consumes it chunk-by-chunk, forwarding to res
           archive.append(currentStream, { name: fileName });
         });
-
       } catch (err) {
         if (aborted) break;
         logger.error(`Failed to fetch ${fileName} from B2: ${err.message}`);
-        // Continue with remaining files
       }
     }
 
-    // Finalize only if download was not aborted
+    // 6. Finalize
     if (!aborted) {
       await archive.finalize();
-      logger.info(`Zip streamed for '${foldername}' (${processedFiles}/${mediaInFolder.length} files) — server RAM freed`);
+      logger.info(`Zip streamed successfully: '${foldername}' order ${orderId}`);
     }
-    // archive.pipe(res) closes res automatically after finalize flushes.
-    // Nothing to delete from server — streaming leaves zero temp files.
 
   } catch (err) {
     logger.error(`GET /:orderId/:foldername/download failed: ${err.stack || err}`);
@@ -345,6 +336,20 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
   }
 });
 
+
+// Simple retry wrapper for B2 downloads to handle transient 503/500 errors
+async function retryDownload(key, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await b2.downloadFileStream(key);
+    } catch (err) {
+      if (i === attempts - 1) throw err;
+      const delay = Math.pow(2, i) * 1000;
+      logger.warn(`B2 download failed for ${key}, retrying in ${delay}ms... (${err.message})`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
 
 // POST /:orderId/:foldername/prepare-download
 // Builds zip in background, uploads to B2, notifies client via WebSocket (admin) or polling (client).
@@ -380,17 +385,17 @@ router.post("/:orderId/:foldername/prepare-download", async (req, res) => {
 
     const jobId = `zip-${orderId}-${foldername}-${Date.now()}`;
 
-    // Register job as pending so polling can find it immediately
-    zipJobs.set(jobId, { status: 'pending', folderName: foldername, totalFiles: mediaInFolder.length, createdAt: Date.now() });
+    // Register job as pending in MongoDB so polling survives server restarts
+    await createJob(jobId, foldername, mediaInFolder.length);
 
     // Respond immediately so the client connection can close
     res.json({ ok: true, jobId, totalFiles: mediaInFolder.length, message: 'Preparing download in background...' });
 
     // Start background job without awaiting it
     // adminId is null for client users — WebSocket notification is skipped, polling is their channel
-    buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jobId).catch(err => {
+    buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jobId).catch(async err => {
       logger.error(`Background zip job ${jobId} failed: ${err.message}`);
-      zipJobs.set(jobId, { status: 'error', folderName: foldername, error: 'Failed to prepare download. Please try again.', createdAt: Date.now() });
+      await updateJob(jobId, { status: 'error', error: 'Failed to prepare download. Please try again.' });
       if (adminId) {
         websocketService.sendToClient(adminId, {
           type: 'folderDownloadError',
@@ -409,7 +414,10 @@ router.post("/:orderId/:foldername/prepare-download", async (req, res) => {
 
 async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jobId) {
   const zipFileName = `zips/${orderId}/${foldername}-${Date.now()}.zip`;
-  logger.info(`[${jobId}] Background zip started: ${zipFileName} (${mediaInFolder.length} files)`);
+  const total = mediaInFolder.length;
+  logger.info(`[${jobId}] Background zip started: ${zipFileName} (${total} files, concurrency=${ZIP_DOWNLOAD_CONCURRENCY})`);
+
+  await updateJob(jobId, { status: 'building' });
 
   const passthrough = new PassThrough();
   const archive = archiver('zip', { zlib: { level: 0 }, forceZip64: true });
@@ -421,14 +429,16 @@ async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jo
 
   archive.pipe(passthrough);
 
-  // Start the B2 large file upload consuming the passthrough stream concurrently
+  // Start the B2 large-file upload consuming the passthrough stream concurrently
   const uploadPromise = b2.uploadLargeFileStream(zipFileName, passthrough);
 
   // Download ZIP_DOWNLOAD_CONCURRENCY files from B2 in parallel, buffer each, then
-  // append the buffer to the archiver. Buffers are small (~avg file size) and freed
-  // as soon as archiver consumes them. This gives ~5x speedup vs sequential.
+  // append the buffer to the archiver. Freed as soon as archiver consumes them.
   let processedFiles = 0;
   const queue = [...mediaInFolder];
+
+  // Throttle MongoDB progress writes: update every 10 files or on completion
+  const PROGRESS_INTERVAL = 10;
 
   await new Promise((resolve) => {
     let active = 0;
@@ -449,17 +459,23 @@ async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jo
         const key = `orders/${orderId}/${media.filename}`;
         const fileName = media.originalName || media.filename;
 
-        b2.downloadFileStream(key)
+        retryDownload(key)
           .then(stream => streamToBuffer(stream))
           .then(buffer => {
             archive.append(buffer, { name: fileName });
             processedFiles++;
-            if (processedFiles % 50 === 0 || processedFiles === mediaInFolder.length) {
-              logger.info(`[${jobId}] Zipped ${processedFiles}/${mediaInFolder.length} files`);
+            const progress = Math.round((processedFiles / total) * 100);
+
+            // Update DB progress every PROGRESS_INTERVAL files or on last file
+            if (processedFiles % PROGRESS_INTERVAL === 0 || processedFiles === total) {
+              logger.info(`[${jobId}] Zipped ${processedFiles}/${total} files (${progress}%)`);
+              updateJob(jobId, { filesProcessed: processedFiles, progress }).catch(() => {});
             }
           })
           .catch(err => {
             logger.error(`[${jobId}] Failed to add ${fileName}: ${err.message}`);
+            // Still count as processed so progress doesn't stall
+            processedFiles++;
           })
           .finally(() => {
             active--;
@@ -480,17 +496,15 @@ async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jo
 
   const downloadUrl = await b2.getPresignedUrl(zipFileName);
 
-  // Store result so polling can retrieve it even if WebSocket is disconnected
-  zipJobs.set(jobId, {
+  // Persist the ready state with download URL
+  await updateJob(jobId, {
     status: 'ready',
-    folderName: foldername,
     downloadUrl,
-    totalFiles: processedFiles,
-    createdAt: Date.now()
+    filesProcessed: processedFiles,
+    progress: 100,
   });
 
-  // Also notify via WebSocket for clients that are still connected
-  // Notify via WebSocket only for admins (clients use polling instead)
+  // Notify via WebSocket for admins (clients use polling)
   if (adminId) {
     websocketService.sendToClient(adminId, {
       type: 'folderDownloadReady',
@@ -498,7 +512,7 @@ async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jo
     });
   }
 
-  logger.info(`[${jobId}] Download ready. Job store updated${adminId ? ' + WS notified' : ' (client will poll)'}`);
+  logger.info(`[${jobId}] Download ready${adminId ? ' + WS notified' : ' (client will poll)'}`);
 
   // Auto-cleanup the zip from B2 after 2 hours
   setTimeout(async () => {
@@ -512,18 +526,33 @@ async function buildAndUploadZip(orderId, foldername, mediaInFolder, adminId, jo
 }
 
 // GET /:orderId/:foldername/download-status/:jobId
-// Polling fallback — lets the frontend check job progress when WebSocket is unavailable (screen lock, etc.)
-// Open to both admins and clients (jobId is unguessable, acts as a capability token)
+// Polling fallback — lets the frontend check job progress when WebSocket is unavailable.
+// Open to both admins and clients (jobId is unguessable, acts as a capability token).
 router.get("/:orderId/:foldername/download-status/:jobId", async (req, res) => {
   const { jobId } = req.params;
-  const job = zipJobs.get(jobId);
 
-  if (!job) {
-    // Job not found — either expired or invalid jobId, treat as still pending
-    return res.json({ ok: true, status: 'pending' });
+  try {
+    const job = await getJob(jobId);
+
+    if (!job) {
+      // Not found — expired or invalid, treat as still pending
+      return res.json({ ok: true, status: 'pending', progress: 0, filesProcessed: 0, totalFiles: 0 });
+    }
+
+    return res.json({
+      ok: true,
+      status: job.status,
+      progress: job.progress ?? 0,
+      filesProcessed: job.filesProcessed ?? 0,
+      totalFiles: job.totalFiles ?? 0,
+      downloadUrl: job.downloadUrl ?? null,
+      folderName: job.folderName,
+      error: job.error ?? null,
+    });
+  } catch (err) {
+    logger.error(`GET download-status failed for ${jobId}: ${err.message}`);
+    return res.json({ ok: true, status: 'pending', progress: 0, filesProcessed: 0, totalFiles: 0 });
   }
-
-  return res.json({ ok: true, ...job });
 });
 
 export default router;

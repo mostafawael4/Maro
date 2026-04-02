@@ -16,6 +16,8 @@ export class OrderFolderPanelComponent {
   @Input() isAuthenticated: boolean = false;
   @Input() zippingFolder: boolean = false;
   @Input() folderSizes: { [folderName: string]: number } = {};
+  @Input() zippingFolderMessage = '';
+  @Input() zippingProgress = 0;
 
   @Output() folderSelected = new EventEmitter<string>();
   @Output() folderDeleted = new EventEmitter<string>();

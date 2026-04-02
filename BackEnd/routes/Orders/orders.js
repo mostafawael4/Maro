@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router();
+import mongoose from "mongoose";
 import Order from "../../models/order.js";
 import { normalizePricingSelections } from '../../services/pricingService.js';
 import { requireAdminAuth, requireAdminOrEditorAuth } from "../../middleware/auth.js";
@@ -129,8 +130,27 @@ router.get("/view/by-email", async (req, res) => {
       return res.status(404).json({ ok: false, message: "Order not found" });
     }
     const signedOrder = await signOrderMedia(order);
+
+    // Aggregate folder sizes for this order
+    const sizeAgg = await Order.aggregate([
+      { $match: { _id: order._id } },
+      { $unwind: "$media" },
+      { $match: { "media.foldername": { $ne: null } } },
+      {
+        $group: {
+          _id: "$media.foldername",
+          totalSize: { $sum: { $ifNull: ["$media.size", 0] } }
+        }
+      }
+    ]);
+
+    const folderSizes = {};
+    sizeAgg.forEach(item => {
+      folderSizes[item._id] = item.totalSize;
+    });
+
     logger.info(`Order viewed for email: ${email} (order id: ${order._id})`);
-    return res.json({ ok: true, order: signedOrder });
+    return res.json({ ok: true, order: signedOrder, folderSizes });
   } catch (err) {
     logger.error(`GET /orders/view/by-email failed: ${err.stack || err}`);
     return res.status(500).json({ ok: false, message: "Server error" });
@@ -159,8 +179,34 @@ router.get("/view/orders-by-email",
         return res.status(404).json({ ok: false, message: "No orders found for email" });
       }
       const signedOrders = await Promise.all(orders.map(o => signOrderMedia(o)));
+
+      // For the multi-order view, we should probably also provide a map of orderId -> folderSizes
+      // or just calculate the sizes for all folders of all orders retrieved.
+      // The current frontend expect a flat folderSizes map for THE active order.
+      // If the client has multiple orders, they'll likely select one.
+      // Let's calculate sizes for all retrieved orders.
+      const orderIds = orders.map(o => o._id);
+      const sizeAgg = await Order.aggregate([
+        { $match: { _id: { $in: orderIds } } },
+        { $unwind: "$media" },
+        { $match: { "media.foldername": { $ne: null } } },
+        {
+          $group: {
+            _id: { orderId: "$_id", foldername: "$media.foldername" },
+            totalSize: { $sum: { $ifNull: ["$media.size", 0] } }
+          }
+        }
+      ]);
+
+      const allFolderSizes = {}; // orderId -> { foldername -> size }
+      sizeAgg.forEach(item => {
+        const oid = item._id.orderId.toString();
+        if (!allFolderSizes[oid]) allFolderSizes[oid] = {};
+        allFolderSizes[oid][item._id.foldername] = item.totalSize;
+      });
+
       logger.info(`Admin fetched ${orders.length} order(s) by email: ${email}`);
-      return res.json({ ok: true, orders: signedOrders });
+      return res.json({ ok: true, orders: signedOrders, allFolderSizes });
     } catch (err) {
       logger.error(`GET /orders/by-email failed: ${err.stack || err}`);
       return res.status(500).json({ ok: false, message: "Server error" });
@@ -247,9 +293,9 @@ router.put("/:orderId", async (req, res) => {
     if (updateFields.orderForm) {
       // For Mongoose subdocuments, it's safer to work on a plain object if doc is missing
       const formObj = order.orderForm ? (order.orderForm.toObject?.() || order.orderForm) : {};
-      
+
       deepMerge(formObj, updateFields.orderForm);
-      
+
       // Re-assign and mark modified
       order.orderForm = formObj;
       order.markModified("orderForm");

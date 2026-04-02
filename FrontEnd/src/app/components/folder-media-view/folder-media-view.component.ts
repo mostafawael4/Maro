@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, O
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrderImage, OrdersService } from '../../services/orders.service';
+import { SortingUtils } from '../../utils/sorting-utils';
 
 @Component({
   selector: 'app-folder-media-view',
@@ -19,7 +20,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     if (value && value.length > 0) {
       console.log('[FolderMediaView DEBUG] Sample item:', value[0]);
     }
-    this._media = value;
+    this._media = SortingUtils.sortMedia(value);
     this.resetItemsToShow(); // Reset when media changes
   }
   @Input() loading: boolean = false;
@@ -33,6 +34,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   @Input() orderId: string | null = null;
   @Input() zippingFolder: boolean = false;
   @Input() zippingFolderMessage: string = 'Preparing...';
+  @Input() zippingProgress: number = 0;
 
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<{ index: number, sortedMedia: OrderImage[] }>();

@@ -432,20 +432,134 @@ export class OrdersService {
     return `${this.apiUrl}/folders/${orderId}/${folderName}/download`;
   }
 
+  /** Returns true when running inside iOS Safari (iPhone or iPad). */
+  isIOS(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   /**
    * Trigger a direct streaming zip download from the server.
-   * The server pipes B2 → archiver → response with no full-zip buffering.
-   * Nothing is stored on the server after the download completes or is aborted.
+   * On iOS Safari the streaming approach times-out on Railway's Hobby plan,
+   * so we fall back to the background-zip flow (prepare → poll → window.open).
+   *
+   * @param clientEmail  Pass the client's email when the caller is NOT an admin
+   *                     (required for the prepare-download access check on the backend).
    */
-  downloadFolderZip(orderId: string, folderName: string): void {
-    const url = this.getFolderDownloadUrl(orderId, folderName);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${folderName}.zip`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  downloadFolderZip(orderId: string, folderName: string, clientEmail?: string | null): void {
+    if (this.isIOS()) {
+      // iOS: use background-zip + polling then open the presigned URL
+      this.downloadFolderZipViaBackground(orderId, folderName, clientEmail);
+    } else {
+      // PC / Android: direct streaming works reliably
+      const url = this.getFolderDownloadUrl(orderId, folderName);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${folderName}.zip`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+  /**
+   * iOS-safe download: POST prepare-download → poll status every 5 s → navigate pre-opened window to URL.
+   * Returns an observable so callers can surface progress/errors in the UI.
+   *
+   * @param downloadWindow  A Window reference opened synchronously inside a user-gesture handler
+   *                        (required so Safari's popup-blocker doesn't kill it). If null/undefined,
+   *                        falls back to window.open at the ready stage (may be blocked by Safari).
+   */
+  downloadFolderZipViaBackground(
+    orderId: string,
+    folderName: string,
+    clientEmail?: string | null,
+    downloadWindow?: Window | null
+  ): Observable<{
+    stage: 'preparing' | 'polling' | 'ready' | 'error';
+    progress?: number;
+    filesProcessed?: number;
+    totalFiles?: number;
+    downloadUrl?: string;
+    error?: string;
+    jobId?: string
+  }> {
+    return new Observable(observer => {
+      observer.next({ stage: 'preparing', progress: 0 });
+
+      this.prepareFolderDownload(orderId, folderName, clientEmail).subscribe({
+        next: (res) => {
+          if (!res.ok || !res.jobId) {
+            observer.next({ stage: 'error', error: 'Failed to start download preparation.' });
+            observer.complete();
+            return;
+          }
+
+          const jobId = res.jobId;
+          observer.next({ stage: 'polling', jobId, progress: 0, totalFiles: res.totalFiles });
+
+          // Poll every 5 seconds for up to 20 minutes
+          const maxAttempts = 240;
+          let attempts = 0;
+
+          const poll = () => {
+            if (attempts >= maxAttempts) {
+              observer.next({ stage: 'error', error: 'Download preparation timed out. Please try again.' });
+              observer.complete();
+              return;
+            }
+            attempts++;
+
+            this.pollFolderDownloadStatus(orderId, folderName, jobId).subscribe({
+              next: (status) => {
+                if (status.status === 'ready' && status.downloadUrl) {
+                  observer.next({
+                    stage: 'ready',
+                    downloadUrl: status.downloadUrl,
+                    jobId,
+                    progress: 100,
+                    filesProcessed: status.filesProcessed,
+                    totalFiles: status.totalFiles
+                  });
+                  observer.complete();
+                  // Navigate the pre-opened window to the presigned B2 URL.
+                  // Using the pre-opened window satisfies Safari's user-gesture requirement.
+                  if (downloadWindow && !downloadWindow.closed) {
+                    downloadWindow.location.href = status.downloadUrl;
+                  } else {
+                    window.open(status.downloadUrl, '_blank');
+                  }
+                } else if (status.status === 'error') {
+                  observer.next({ stage: 'error', error: status.error || 'Download preparation failed.' });
+                  observer.complete();
+                } else {
+                  // Still pending/building — poll again
+                  observer.next({
+                    stage: 'polling',
+                    jobId,
+                    progress: status.progress,
+                    filesProcessed: status.filesProcessed,
+                    totalFiles: status.totalFiles
+                  });
+                  setTimeout(poll, 5000);
+                }
+              },
+              error: () => {
+                // Network blip — keep polling
+                setTimeout(poll, 5000);
+              }
+            });
+          };
+
+          setTimeout(poll, 5000);
+        },
+        error: (err) => {
+          observer.next({ stage: 'error', error: err?.error?.message || 'Failed to start download.' });
+          observer.complete();
+        }
+      });
+    });
   }
 
   prepareFolderDownload(orderId: string, folderName: string, clientEmail?: string | null): Observable<{ ok: boolean; jobId: string; totalFiles: number; message: string }> {
@@ -457,8 +571,24 @@ export class OrdersService {
     );
   }
 
-  pollFolderDownloadStatus(orderId: string, folderName: string, jobId: string): Observable<{ ok: boolean; status: string; downloadUrl?: string; totalFiles?: number; error?: string }> {
-    return this.http.get<{ ok: boolean; status: string; downloadUrl?: string; totalFiles?: number; error?: string }>(
+  pollFolderDownloadStatus(orderId: string, folderName: string, jobId: string): Observable<{
+    ok: boolean;
+    status: string;
+    progress?: number;
+    filesProcessed?: number;
+    totalFiles?: number;
+    downloadUrl?: string;
+    error?: string;
+  }> {
+    return this.http.get<{
+      ok: boolean;
+      status: string;
+      progress?: number;
+      filesProcessed?: number;
+      totalFiles?: number;
+      downloadUrl?: string;
+      error?: string;
+    }>(
       `${this.apiUrl}/folders/${orderId}/${folderName}/download-status/${jobId}`,
       { withCredentials: true }
     );
