@@ -95,7 +95,7 @@
 
       <div class="image-overlay">
         <span class="image-filename">{{ getDisplayName(item) }}</span>
-        <span class="image-date">{{ item.uploadedAt | date: 'short' }}</span>
+        <span class="image-date">{{ item.uploadedAt | date: 'short' }} · {{ formatSize(item.size) }}</span>
       </div>
 
       <button class="download-btn" [disabled]="isDownloading(item)"

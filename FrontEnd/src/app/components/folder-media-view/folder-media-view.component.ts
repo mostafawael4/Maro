@@ -140,39 +140,15 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     this.openMedia.emit({ index, sortedMedia: this.filteredMedia });
   }
 
-  async onDownload(media: OrderImage, event: Event): Promise<void> {
+  onDownload(media: OrderImage, event: Event): void {
     event.stopPropagation();
-
-    if (this.downloadingItems.has(media.filename)) return;
-
-    this.downloadingItems.add(media.filename);
-    try {
-      const downloadUrl = this.getDownloadUrl(media);
-
-      // Fetch as blob to handle progress and UI state
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error('Download failed');
-      const blob = await response.blob();
-
-      // Create temporary download link
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = media.originalName || media.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error('Download error:', err);
-      // Fallback to direct download if fetch fails (rare since it's same origin/proxied)
-      const link = document.createElement('a');
-      link.href = this.getDownloadUrl(media);
-      link.download = media.originalName || media.filename;
-      link.click();
-    } finally {
-      this.downloadingItems.delete(media.filename);
-    }
+    const downloadUrl = this.getDownloadUrl(media);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = media.originalName || media.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   isDownloading(media: OrderImage): boolean {
@@ -257,6 +233,17 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     } catch {
       return "download";
     }
+  }
+
+  formatSize(bytes?: number): string {
+    if (bytes === undefined || bytes === null || bytes === 0) return '';
+    if (bytes < 1024) return bytes + ' B';
+    const kb = bytes / 1024;
+    if (kb < 1024) return kb.toFixed(1) + ' KB';
+    const mb = kb / 1024;
+    if (mb < 1024) return mb.toFixed(1) + ' MB';
+    const gb = mb / 1024;
+    return gb.toFixed(1) + ' GB';
   }
 
 }

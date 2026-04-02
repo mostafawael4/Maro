@@ -245,10 +245,13 @@ router.put("/:orderId", async (req, res) => {
 
     // Update only the fields sent
     if (updateFields.orderForm) {
-      if (!order.orderForm) {
-        order.orderForm = {};
-      }
-      deepMerge(order.orderForm, updateFields.orderForm);
+      // For Mongoose subdocuments, it's safer to work on a plain object if doc is missing
+      const formObj = order.orderForm ? (order.orderForm.toObject?.() || order.orderForm) : {};
+      
+      deepMerge(formObj, updateFields.orderForm);
+      
+      // Re-assign and mark modified
+      order.orderForm = formObj;
       order.markModified("orderForm");
     }
 
