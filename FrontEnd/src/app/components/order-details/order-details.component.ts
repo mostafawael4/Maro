@@ -55,13 +55,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   showDeleteFolderModal = false;
   folderToDelete: string | null = null;
   deletingFolder = false;
-  batchDownloading = false;
-  zippingFolder = false;
-  zippingFolderMessage = 'Preparing...';
+  /** Folder sizes in bytes, keyed by folder name. Populated from getOrderFolders() response. */
+  folderSizes: { [folderName: string]: number } = {};
   clientEmail: string | null = null;
-  private currentDownloadJobId: string | null = null;
-  private currentDownloadFolder: string | null = null;
-  private pollInterval: any = null;
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -77,23 +73,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Connect WebSocket for background download notifications
+    // Connect WebSocket for real-time notifications (other than zip downloads)
     this.websocketService.connect();
-
-    this.websocketService.onFolderDownloadReady()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(payload => {
-        this.triggerFolderDownload(payload.downloadUrl, payload.folderName);
-      });
-
-    this.websocketService.onFolderDownloadError()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(payload => {
-        this.stopPolling();
-        this.zippingFolder = false;
-        this.zippingFolderMessage = 'Preparing...';
-        alert(payload.error || 'Failed to prepare download. Please try again.');
-      });
 
     // Subscribe to auth changes
     this.authService.isAuthenticated$
@@ -130,54 +111,8 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private triggerFolderDownload(downloadUrl: string, folderName: string): void {
-    this.stopPolling();
-    this.zippingFolder = false;
-    this.zippingFolderMessage = 'Preparing...';
-    this.currentDownloadJobId = null;
-    this.currentDownloadFolder = null;
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `${folderName}.zip`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  private startPolling(orderId: string, folderName: string, jobId: string): void {
-    this.stopPolling();
-    // Poll every 15 seconds — covers screen-lock / WebSocket disconnect scenarios
-    this.pollInterval = setInterval(() => {
-      this.ordersService.pollFolderDownloadStatus(orderId, folderName, jobId).subscribe({
-        next: (result) => {
-          if (result.status === 'ready' && result.downloadUrl) {
-            this.triggerFolderDownload(result.downloadUrl, folderName);
-          } else if (result.status === 'error') {
-            this.stopPolling();
-            this.zippingFolder = false;
-            this.zippingFolderMessage = 'Preparing...';
-            alert(result.error || 'Failed to prepare download. Please try again.');
-          }
-          // If still 'pending', keep polling
-        },
-        error: () => {
-          // Network error — keep polling silently, don't stop
-        }
-      });
-    }, 15000);
-  }
-
-  private stopPolling(): void {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
-    }
   }
 
   get currentMedia(): OrderImage[] {
@@ -479,6 +414,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.ordersService.getOrderFolders(orderId).subscribe({
       next: (response) => {
         this.folders = response.folders || [];
+        this.folderSizes = response.folderSizes || {};
         this.foldersLoading = false;
 
         if (!this.folders.length) {
@@ -669,24 +605,9 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
   onDownloadFolder(folderName: string): void {
     if (!this.order?._id) return;
-
-    this.zippingFolder = true;
-    this.zippingFolderMessage = 'Preparing...';
-
-    this.ordersService.prepareFolderDownload(this.order._id, folderName, this.clientEmail).subscribe({
-      next: ({ jobId, totalFiles }) => {
-        this.currentDownloadJobId = jobId;
-        this.currentDownloadFolder = folderName;
-        this.zippingFolderMessage = `Building zip (${totalFiles} files)...`;
-        // Start polling as fallback for when WebSocket is unavailable (screen lock, background tab)
-        this.startPolling(this.order!._id, folderName, jobId);
-      },
-      error: () => {
-        this.zippingFolder = false;
-        this.zippingFolderMessage = 'Preparing...';
-        alert('Failed to start download preparation. Please try again.');
-      }
-    });
+    // Direct streaming: the server pipes B2 → archiver → HTTP response.
+    // No spinner, no polling, no temp files left on server after completion.
+    this.ordersService.downloadFolderZip(this.order._id, folderName);
   }
 }
 

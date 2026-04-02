@@ -65,6 +65,7 @@
         <!-- Folder name -->
         <div class="folder-label">
           <span class="folder-name">{{ folder }}</span>
+          <span class="folder-size" *ngIf="folderSizes[folder]">{{ formatSize(folderSizes[folder]) }}</span>
           <span class="folder-tap">Tap to open</span>
         </div>
 

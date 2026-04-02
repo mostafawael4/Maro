@@ -42,7 +42,7 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 
-// GET /:orderId - return order's folders count and names (admin only)
+// GET /:orderId - return order's folders count, names, and sizes (admin only)
 router.get("/:orderId", requireAdminAuth, async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -51,13 +51,31 @@ router.get("/:orderId", requireAdminAuth, async (req, res) => {
       return res.status(400).json({ ok: false, message: "orderId is required" });
     }
 
-    // Use distinct to get unique folder names directly from MongoDB
-    const folders = await Order.distinct("media.foldername", { _id: orderId });
+    // Aggregate: get distinct folder names AND sum file sizes per folder in one query
+    const sizeAgg = await Order.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
+      { $unwind: "$media" },
+      { $match: { "media.foldername": { $ne: null } } },
+      {
+        $group: {
+          _id: "$media.foldername",
+          totalSize: { $sum: { $ifNull: ["$media.size", 0] } }
+        }
+      }
+    ]);
+
+    const folders = sizeAgg.map(g => g._id);
+    // Build a { folderName: sizeInBytes } map so the frontend can show e.g. "1.3 GB"
+    const folderSizes = {};
+    for (const g of sizeAgg) {
+      folderSizes[g._id] = g.totalSize;
+    }
 
     return res.json({
       ok: true,
       count: folders.length,
-      folders: folders
+      folders,
+      folderSizes  // e.g. { "Album 1": 1400000000, "Album 2": 800000000 }
     });
   } catch (err) {
     logger.error(`GET /${req.params.orderId}/folders failed: ${err.stack || err}`);
@@ -94,12 +112,15 @@ router.get("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
     }
 
     const filteredMedia = result[0].media || [];
+    // Sum the stored file sizes — no B2 calls needed
+    const folderSize = filteredMedia.reduce((sum, m) => sum + (m.size || 0), 0);
     const signedMedia = await signOrderFiles(orderId, filteredMedia);
 
     return res.json({
       ok: true,
       foldername,
       count: signedMedia.length,
+      folderSize,  // total bytes for this folder
       media: signedMedia
     });
 
@@ -171,7 +192,9 @@ router.delete("/:orderId/:foldername", requireAdminAuth, async (req, res) => {
 });
 
 
-// GET /:orderId/:foldername/download - stream folder as zip file (admin only)
+// GET /:orderId/:foldername/download - stream folder as zip directly to client
+// Memory-safe: pipes B2 streams → archiver → response, never buffers the whole zip.
+// Cleanup: on disconnect or error, B2 stream is destroyed and archiver is aborted.
 router.get("/:orderId/:foldername/download", async (req, res) => {
   const { orderId, foldername } = req.params;
 
@@ -179,6 +202,20 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
     logger.warn(`Download folder request missing orderId or foldername`);
     return res.status(400).json({ ok: false, message: "orderId and foldername are required" });
   }
+
+  // Track state so cleanup helpers can reference them
+  let archive = null;
+  let currentStream = null;
+  let aborted = false;
+
+  // Central cleanup — safe to call multiple times
+  const cleanup = (reason) => {
+    if (aborted) return;
+    aborted = true;
+    logger.info(`[download cleanup] ${reason} — folder '${foldername}' order ${orderId}`);
+    try { if (currentStream && !currentStream.destroyed) currentStream.destroy(); } catch (_) {}
+    try { if (archive) archive.abort(); } catch (_) {}
+  };
 
   try {
     // Use aggregation to fetch only media items belonging to this folder
@@ -209,102 +246,102 @@ router.get("/:orderId/:foldername/download", async (req, res) => {
       return res.status(404).json({ ok: false, message: `No media found in folder '${foldername}'` });
     }
 
-    logger.info(`Starting streaming zip download for folder '${foldername}' in order ${orderId} (${mediaInFolder.length} files)`);
+    logger.info(`Starting streaming zip for '${foldername}' in order ${orderId} (${mediaInFolder.length} files)`);
 
     // Set response headers for zip download
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${foldername}.zip"`);
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering for streaming
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(foldername)}.zip"`);
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
     res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Transfer-Encoding', 'chunked');
 
-    // Create archiver instance with NO compression for speed
-    const archive = archiver('zip', {
-      zlib: { level: 0 }, // Level 0 is No compression
-      forceZip64: true   // Support for files > 4GB or many files
+    // Level 0 = store-only (no CPU cost), forceZip64 handles >4 GB folders
+    archive = archiver('zip', { zlib: { level: 0 }, forceZip64: true });
+
+    // Archiver error → cleanup and close
+    archive.on('error', (err) => {
+      logger.error(`Archiver error for '${foldername}': ${err.message}`);
+      cleanup('archiver error');
+      if (!res.headersSent) res.status(500).json({ ok: false, message: 'Zip creation failed' });
+      else if (!res.writableEnded) res.end();
     });
 
-    // Pipe archive to response
+    // Pipe: archiver → HTTP response (chunks flow directly, nothing buffered in full)
     archive.pipe(res);
 
-    // Handle archiver errors
-    archive.on('error', (err) => {
-      logger.error(`Archiver error for folder '${foldername}' in order ${orderId}: ${err.message}`);
-      if (!res.headersSent) {
-        res.status(500).json({ ok: false, message: 'Failed to create zip file' });
-      }
-    });
-
-    // Disable timeout for this request as it involves streaming large amount of data
-    req.setTimeout(0);
-
-    // Track abort state and current stream
-    let aborted = false;
-    let currentStream = null;
-
-    // Handle client disconnection — only abort if the response wasn't already fully sent
+    // Client disconnects mid-download — abort everything, nothing lingers on server
     req.on('close', () => {
-      if (res.writableEnded) return; // Normal close after download completed, do nothing
-      logger.info(`Download client disconnected for folder '${foldername}' in order ${orderId}. Aborting archiver.`);
-      aborted = true;
-      if (currentStream) currentStream.destroy();
-      archive.abort();
+      if (res.writableEnded) return; // Normal close after complete download
+      cleanup('client disconnected');
     });
+
+    // Response stream error (e.g. network reset)
+    res.on('error', (err) => {
+      logger.error(`Response stream error for '${foldername}': ${err.message}`);
+      cleanup('response stream error');
+    });
+
+    // Disable HTTP timeout — large folders can take minutes to stream
+    req.setTimeout(0);
+    res.setTimeout && res.setTimeout(0);
 
     // Track progress
     let processedFiles = 0;
 
-    // Process files sequentially to avoid opening too many connections (which causes timeouts)
+    // Sequential: one B2 connection at a time.
+    // Memory peak = one file's in-flight chunk (~KB), not the whole folder.
     for (const media of mediaInFolder) {
       if (aborted) break;
 
-      try {
-        const key = `orders/${orderId}/${media.filename}`;
-        const fileName = media.originalName || media.filename;
+      const key = `orders/${orderId}/${media.filename}`;
+      const fileName = media.originalName || media.filename;
 
-        // Get stream from B2
+      try {
         currentStream = await b2.downloadFileStream(key);
 
-        // Append to archive and wait for it to be consumed
-        // This ensures we don't open the next B2 connection until the current one is done
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
           currentStream.on('end', () => {
+            currentStream = null;
             processedFiles++;
-            // Log every 5 files to avoid spamming logs, or if it's the last one
-            if (processedFiles % 5 === 0 || processedFiles === mediaInFolder.length) {
-              logger.info(`Streamed file ${processedFiles}/${mediaInFolder.length}: ${fileName}`);
+            if (processedFiles % 10 === 0 || processedFiles === mediaInFolder.length) {
+              logger.info(`Streamed ${processedFiles}/${mediaInFolder.length} files for '${foldername}'`);
             }
             resolve();
           });
 
           currentStream.on('error', (err) => {
-            logger.error(`Stream error for ${fileName}: ${err.message}`);
-            // Don't reject, just resolve so we continue to next file (partial zip is better than no zip)
+            logger.error(`B2 stream error for ${fileName}: ${err.message}`);
+            // Skip the broken file — partial zip beats no zip
+            currentStream = null;
             resolve();
           });
 
+          // Append stream; archiver consumes it chunk-by-chunk, forwarding to res
           archive.append(currentStream, { name: fileName });
         });
 
-      } catch (error) {
+      } catch (err) {
         if (aborted) break;
-        logger.error(`Failed to process file ${media.filename}: ${error.message}`);
-        // Continue with other files
+        logger.error(`Failed to fetch ${fileName} from B2: ${err.message}`);
+        // Continue with remaining files
       }
     }
 
-    // Finalize the archive only if not aborted
+    // Finalize only if download was not aborted
     if (!aborted) {
       await archive.finalize();
+      logger.info(`Zip streamed for '${foldername}' (${processedFiles}/${mediaInFolder.length} files) — server RAM freed`);
     }
+    // archive.pipe(res) closes res automatically after finalize flushes.
+    // Nothing to delete from server — streaming leaves zero temp files.
 
-    logger.info(`Successfully streamed zip for folder '${foldername}' in order ${orderId} (${processedFiles}/${mediaInFolder.length} files)`);
-    // No res.end() here - archiver.pipe(res) handles it once finalized and flushed
   } catch (err) {
     logger.error(`GET /:orderId/:foldername/download failed: ${err.stack || err}`);
+    cleanup('unexpected error');
     if (!res.headersSent) {
       return res.status(500).json({ ok: false, message: "Server error", error: err.message });
     }
+    if (!res.writableEnded) res.end();
   }
 });
 

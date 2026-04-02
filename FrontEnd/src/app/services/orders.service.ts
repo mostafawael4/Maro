@@ -15,6 +15,7 @@ export interface OrderImage {
   medium?: string; // 1200w
   hero?: string; // 2000w
   foldername?: string | null;
+  size?: number; // File size in bytes (stored by backend on upload)
 }
 
 export interface OrderFormVendors {
@@ -126,6 +127,8 @@ export interface OrderFoldersResponse {
   ok: boolean;
   count: number;
   folders: string[];
+  /** Total bytes per folder, computed on the server from stored media.size fields. */
+  folderSizes: { [folderName: string]: number };
 }
 
 export interface FolderMediaResponse {
@@ -427,6 +430,22 @@ export class OrdersService {
 
   getFolderDownloadUrl(orderId: string, folderName: string): string {
     return `${this.apiUrl}/folders/${orderId}/${folderName}/download`;
+  }
+
+  /**
+   * Trigger a direct streaming zip download from the server.
+   * The server pipes B2 → archiver → response with no full-zip buffering.
+   * Nothing is stored on the server after the download completes or is aborted.
+   */
+  downloadFolderZip(orderId: string, folderName: string): void {
+    const url = this.getFolderDownloadUrl(orderId, folderName);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${folderName}.zip`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   prepareFolderDownload(orderId: string, folderName: string, clientEmail?: string | null): Observable<{ ok: boolean; jobId: string; totalFiles: number; message: string }> {

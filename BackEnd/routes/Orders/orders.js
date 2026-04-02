@@ -586,24 +586,70 @@ router.delete("/:orderId/background-image", requireAdminAuth, async (req, res) =
 });
 
 // GET /orders/:orderId/download/:filename
-// Redirects client directly to a B2 presigned URL — file bytes never pass through Railway.
-// This eliminates memory pressure and mobile browser timeouts for large files (e.g. 2GB videos).
+// Streams file from B2 through Railway to the client.
+// This forces download headers (especially for videos) and uses the original filename.
+// Memory-safe: pipes B2 chunks directly to response, never buffers in RAM.
 router.get("/:orderId/download/:filename", async (req, res) => {
+  let currentStream = null;
   try {
     const { orderId, filename } = req.params;
     const key = `orders/${orderId}/${filename}`;
 
-    logger.info(`Download requested for: ${key}`);
+    // Fetch original name from DB
+    const order = await Order.findById(orderId).lean();
+    let originalName = filename;
+    if (order && order.media) {
+      const media = order.media.find(m => m.filename === filename);
+      if (media && media.originalName) {
+        originalName = media.originalName;
+      }
+    }
 
-    const presignedUrl = await b2.getPresignedUrl(key);
+    logger.info(`Streaming single file download: ${key} as "${originalName}"`);
 
-    // 302 redirect — browser downloads directly from B2, Railway is out of the data path
-    return res.redirect(302, presignedUrl);
+    // Set headers to force download (critical for videos/images on mobile Safari)
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('Cache-Control', 'no-cache');
+
+    // Fetch size if available to show progress in browser
+    if (order && order.media) {
+      const media = order.media.find(m => m.filename === filename);
+      if (media && media.size) {
+        res.setHeader('Content-Length', media.size);
+      }
+    }
+
+    // Disable timeout for large files
+    req.setTimeout(0);
+
+    // Get stream from B2
+    currentStream = await b2.downloadFileStream(key);
+
+    // Pipe B2 -> Client (Direct chunk forwarding)
+    currentStream.pipe(res);
+
+    // Cleanup on disconnect
+    req.on('close', () => {
+      if (currentStream && !currentStream.destroyed) {
+        currentStream.destroy();
+      }
+    });
+
+    currentStream.on('error', (err) => {
+      logger.error(`B2 Stream error for ${filename}: ${err.message}`);
+      if (!res.headersSent) res.status(500).json({ ok: false, message: "Download failed" });
+      else if (!res.writableEnded) res.end();
+    });
+
   } catch (err) {
     logger.error(`Download failed for ${req.params.filename}: ${err.message}`);
+    if (currentStream) currentStream.destroy();
     if (!res.headersSent) {
-      return res.status(500).json({ ok: false, message: "Download failed" });
+      return res.status(500).json({ ok: false, message: "Server error" });
     }
+    if (!res.writableEnded) res.end();
   }
 });
 
