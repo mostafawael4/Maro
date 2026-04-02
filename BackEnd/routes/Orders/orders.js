@@ -245,6 +245,9 @@ router.put("/:orderId", async (req, res) => {
 
     // Update only the fields sent
     if (updateFields.orderForm) {
+      if (!order.orderForm) {
+        order.orderForm = {};
+      }
       deepMerge(order.orderForm, updateFields.orderForm);
       order.markModified("orderForm");
     }
