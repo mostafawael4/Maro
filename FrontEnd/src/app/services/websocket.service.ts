@@ -36,12 +36,15 @@ export class WebsocketService {
    * Connect to WebSocket server
    */
   connect(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
-    const wsUrl = `${environment.apiUrl}/ws`;
-
+    const wsUrl = `${environment.apiUrl}/ws`.replace(/^http/, 'ws');
 
     try {
       this.socket = new WebSocket(wsUrl);
@@ -80,6 +83,9 @@ export class WebsocketService {
    * Disconnect from WebSocket server
    */
   disconnect(): void {
+    if (!this.isBrowser) {
+      return;
+    }
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -99,6 +105,9 @@ export class WebsocketService {
    * Send message to server
    */
   send(type: string, payload: any): void {
+    if (!this.isBrowser) {
+      return;
+    }
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       const message = JSON.stringify({ type, payload });
       this.socket.send(message);
@@ -154,6 +163,9 @@ export class WebsocketService {
    * Handle WebSocket reconnection
    */
   private handleReconnect(): void {
+    if (!this.isBrowser) {
+      return;
+    }
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnection attempts reached. Giving up.');
       return;
