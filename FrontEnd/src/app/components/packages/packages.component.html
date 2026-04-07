@@ -20,6 +20,75 @@
       <p>{{ errorMessage }}</p>
     </div>
 
+    <!-- Photography Section -->
+    <section *ngIf="!isLoading && !errorMessage && photographyPackage" class="photography-section">
+      <!-- Header -->
+      <div class="section-header">
+        <div class="header-decoration"></div>
+        <h2 class="section-title">{{ photographyPackage.displayName || 'Photography Packages' }}</h2>
+        <p class="section-subtitle">
+          Capture every precious moment with our professional photography services.
+          Unlimited photos to preserve your memories forever.
+        </p>
+        <div class="header-decoration"></div>
+
+        <!-- Edit Package Button (Admin Only) -->
+        <button *ngIf="isAuthenticated && isAdmin" class="edit-package-btn" (click)="openEditModal('photography')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Package
+        </button>
+      </div>
+
+      <!-- Packages Grid -->
+      <div class="packages-container">
+        <div class="packages-grid">
+          <div *ngFor="let package of photographyPackage.collections; let i = index" class="package-card"
+            [class.animate-in]="isPackageVisible('photography', i)" [attr.data-index]="'photography-' + i"
+            [attr.data-type]="'package'">
+            <!-- Package Header -->
+            <div class="package-header">
+              <h3 class="package-name">{{ package.collectionName }}</h3>
+              <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
+              <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
+              <div class="package-price">{{ formatPrice(package.price) }}</div>
+            </div>
+
+            <!-- Package Features -->
+            <ul *ngIf="package.features && package.features.length > 0" class="package-features">
+              <li *ngFor="let feature of package.features" class="feature-item">
+                <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{{ feature }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extras Section -->
+      <div *ngIf="photographyPackage.extras && photographyPackage.extras.length > 0" class="extras-section">
+        <h3 class="extras-title">Extras</h3>
+        <div class="extras-grid">
+          <div *ngFor="let extra of photographyPackage.extras; let i = index" class="extra-card"
+            [class.animate-in]="isExtraVisible('photography', i)" [attr.data-index]="'photography-' + i"
+            [attr.data-type]="'extra'">
+            <div class="extra-name">{{ extra.name }}</div>
+            <div class="extra-price">{{ formatPrice(extra.price) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Package Modal -->
+      <app-edit-package-modal *ngIf="photographyPackage" [package]="photographyPackage" [show]="showPhotographyModal"
+        (close)="closeEditModal('photography')" (saved)="onPackageSaved()">
+      </app-edit-package-modal>
+    </section>
+
     <!-- Cinematography Section -->
     <section *ngIf="!isLoading && !errorMessage && cinematographyPackage" class="cinematography-section">
       <!-- Header -->
@@ -89,74 +158,7 @@
       </app-edit-package-modal>
     </section>
 
-    <!-- Photography Section -->
-    <section *ngIf="!isLoading && !errorMessage && photographyPackage" class="photography-section">
-      <!-- Header -->
-      <div class="section-header">
-        <div class="header-decoration"></div>
-        <h2 class="section-title">{{ photographyPackage.displayName || 'Photography Packages' }}</h2>
-        <p class="section-subtitle">
-          Capture every precious moment with our professional photography services.
-          Unlimited photos to preserve your memories forever.
-        </p>
-        <div class="header-decoration"></div>
-
-        <!-- Edit Package Button (Admin Only) -->
-        <button *ngIf="isAuthenticated && isAdmin" class="edit-package-btn" (click)="openEditModal('photography')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-          Edit Package
-        </button>
-      </div>
-
-      <!-- Packages Grid -->
-      <div class="packages-container">
-        <div class="packages-grid">
-          <div *ngFor="let package of photographyPackage.collections; let i = index" class="package-card"
-            [class.animate-in]="isPackageVisible('photography', i)" [attr.data-index]="'photography-' + i"
-            [attr.data-type]="'package'">
-            <!-- Package Header -->
-            <div class="package-header">
-              <h3 class="package-name">{{ package.collectionName }}</h3>
-              <div *ngIf="package.duration" class="package-duration">{{ package.duration }}</div>
-              <div *ngIf="package.description" class="package-description">{{ package.description }}</div>
-              <div class="package-price">{{ formatPrice(package.price) }}</div>
-            </div>
-
-            <!-- Package Features -->
-            <ul *ngIf="package.features && package.features.length > 0" class="package-features">
-              <li *ngFor="let feature of package.features" class="feature-item">
-                <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{{ feature }}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Extras Section -->
-      <div *ngIf="photographyPackage.extras && photographyPackage.extras.length > 0" class="extras-section">
-        <h3 class="extras-title">Extras</h3>
-        <div class="extras-grid">
-          <div *ngFor="let extra of photographyPackage.extras; let i = index" class="extra-card"
-            [class.animate-in]="isExtraVisible('photography', i)" [attr.data-index]="'photography-' + i"
-            [attr.data-type]="'extra'">
-            <div class="extra-name">{{ extra.name }}</div>
-            <div class="extra-price">{{ formatPrice(extra.price) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Edit Package Modal -->
-      <app-edit-package-modal *ngIf="photographyPackage" [package]="photographyPackage" [show]="showPhotographyModal"
-        (close)="closeEditModal('photography')" (saved)="onPackageSaved()">
-      </app-edit-package-modal>
-    </section>
+    
 
     <!-- Full Recording Section -->
     <section *ngIf="!isLoading && !errorMessage && fullRecordingPackage" class="full-recording-section">

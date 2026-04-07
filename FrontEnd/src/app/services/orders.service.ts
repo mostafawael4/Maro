@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { DirectUploadService } from './direct-upload.service';
 
@@ -432,6 +432,21 @@ export class OrdersService {
     return `${this.apiUrl}/folders/${orderId}/${folderName}/download`;
   }
 
+  private activeZipJobSubject = new Subject<{
+    stage: 'preparing' | 'polling' | 'ready' | 'error';
+    progress?: number;
+    filesProcessed?: number;
+    totalFiles?: number;
+    downloadUrl?: string;
+    error?: string;
+    jobId?: string;
+    folderName?: string;
+    orderId?: string;
+  } | null>();
+
+  public activeZipJob$ = this.activeZipJobSubject.asObservable();
+  private currentJob: any = null;
+
   /** Returns true when running inside iOS Safari (iPhone or iPad). */
   isIOS(): boolean {
     if (typeof navigator === 'undefined') return false;
@@ -439,19 +454,163 @@ export class OrdersService {
   }
 
   /**
-   * Trigger a direct streaming zip download from the server.
-   * On iOS Safari the streaming approach times-out on Railway's Hobby plan,
-   * so we fall back to the background-zip flow (prepare → poll → window.open).
-   *
-   * @param clientEmail  Pass the client's email when the caller is NOT an admin
-   *                     (required for the prepare-download access check on the backend).
+   * Save active job info to localStorage so it can be resumed after refresh/close
+   */
+  private saveActiveJob(job: any) {
+    if (!job) {
+      localStorage.removeItem('activeZipJob');
+      return;
+    }
+    localStorage.setItem('activeZipJob', JSON.stringify(job));
+  }
+
+  /**
+   * Clears the current job state
+   */
+  clearActiveZipJob() {
+    this.currentJob = null;
+    this.activeZipJobSubject.next(null);
+    this.saveActiveJob(null);
+  }
+
+  /**
+   * On app startup, checks if there was a job in progress and resumes polling
+   */
+  resumeActiveJob() {
+    const saved = localStorage.getItem('activeZipJob');
+    if (!saved) return;
+
+    try {
+      const job = JSON.parse(saved);
+      if (job && job.jobId) {
+        this.currentJob = job;
+        // Resume polling
+        this.startPolling(job.orderId, job.folderName, job.jobId);
+      }
+    } catch (e) {
+      localStorage.removeItem('activeZipJob');
+    }
+  }
+
+  /**
+   * Trigger the background-zip flow (prepare → poll → window.open).
+   * Shared by components to start a global background task.
+   */
+  startBackgroundZip(orderId: string, folderName: string, clientEmail?: string | null): void {
+    if (this.currentJob) {
+      // Already running a zip job? We currently support 1 at a time per tab
+      return;
+    }
+
+    this.activeZipJobSubject.next({ stage: 'preparing', progress: 0, folderName, orderId });
+
+    this.prepareFolderDownload(orderId, folderName, clientEmail).subscribe({
+      next: (res) => {
+        if (!res.ok || !res.jobId) {
+          this.activeZipJobSubject.next({ stage: 'error', error: 'Failed to start download preparation.', folderName, orderId });
+          return;
+        }
+
+        const jobId = res.jobId;
+        this.currentJob = { jobId, orderId, folderName, clientEmail };
+        this.saveActiveJob(this.currentJob);
+
+        this.activeZipJobSubject.next({ 
+          stage: 'polling', 
+          jobId, 
+          progress: 0, 
+          totalFiles: res.totalFiles,
+          folderName,
+          orderId
+        });
+
+        this.startPolling(orderId, folderName, jobId);
+      },
+      error: (err) => {
+        this.activeZipJobSubject.next({ 
+          stage: 'error', 
+          error: err?.error?.message || 'Failed to start download.',
+          folderName, 
+          orderId 
+        });
+      }
+    });
+  }
+
+  private startPolling(orderId: string, folderName: string, jobId: string) {
+    let attempts = 0;
+    const maxAttempts = 240; // 20 minutes
+
+    const poll = () => {
+      // If the job was cleared manually by the user
+      if (!this.currentJob || this.currentJob.jobId !== jobId) return;
+
+      if (attempts >= maxAttempts) {
+        this.activeZipJobSubject.next({ 
+          stage: 'error', 
+          error: 'Preparation timed out. Please try again.',
+          jobId,
+          folderName,
+          orderId
+        });
+        return;
+      }
+      attempts++;
+
+      this.pollFolderDownloadStatus(orderId, folderName, jobId).subscribe({
+        next: (status) => {
+          if (status.status === 'ready' && status.downloadUrl) {
+            this.activeZipJobSubject.next({
+              stage: 'ready',
+              downloadUrl: status.downloadUrl,
+              jobId,
+              progress: 100,
+              filesProcessed: status.filesProcessed,
+              totalFiles: status.totalFiles,
+              folderName,
+              orderId
+            });
+            // We keep currentJob so the UI stays in 'ready' stage until user clicks 'Download' or 'Close'
+          } else if (status.status === 'error') {
+            this.activeZipJobSubject.next({ 
+              stage: 'error', 
+              error: status.error || 'Download preparation failed.',
+              jobId,
+              folderName,
+              orderId
+            });
+            this.saveActiveJob(null); // Stop persisting error state
+          } else {
+            // Still pending/building — update progress
+            this.activeZipJobSubject.next({
+              stage: 'polling',
+              jobId,
+              progress: status.progress,
+              filesProcessed: status.filesProcessed,
+              totalFiles: status.totalFiles,
+              folderName,
+              orderId
+            });
+            setTimeout(poll, 5000);
+          }
+        },
+        error: () => {
+          // Network blip — keep polling
+          setTimeout(poll, 5000);
+        }
+      });
+    };
+
+    setTimeout(poll, 1000);
+  }
+
+  /**
+   * legacy method — components should migrate to startBackgroundZip
    */
   downloadFolderZip(orderId: string, folderName: string, clientEmail?: string | null): void {
     if (this.isIOS()) {
-      // iOS: use background-zip + polling then open the presigned URL
-      this.downloadFolderZipViaBackground(orderId, folderName, clientEmail);
+      this.startBackgroundZip(orderId, folderName, clientEmail);
     } else {
-      // PC / Android: direct streaming works reliably
       const url = this.getFolderDownloadUrl(orderId, folderName);
       const link = document.createElement('a');
       link.href = url;
@@ -461,105 +620,6 @@ export class OrdersService {
       link.click();
       document.body.removeChild(link);
     }
-  }
-
-  /**
-   * iOS-safe download: POST prepare-download → poll status every 5 s → navigate pre-opened window to URL.
-   * Returns an observable so callers can surface progress/errors in the UI.
-   *
-   * @param downloadWindow  A Window reference opened synchronously inside a user-gesture handler
-   *                        (required so Safari's popup-blocker doesn't kill it). If null/undefined,
-   *                        falls back to window.open at the ready stage (may be blocked by Safari).
-   */
-  downloadFolderZipViaBackground(
-    orderId: string,
-    folderName: string,
-    clientEmail?: string | null,
-    downloadWindow?: Window | null
-  ): Observable<{
-    stage: 'preparing' | 'polling' | 'ready' | 'error';
-    progress?: number;
-    filesProcessed?: number;
-    totalFiles?: number;
-    downloadUrl?: string;
-    error?: string;
-    jobId?: string
-  }> {
-    return new Observable(observer => {
-      observer.next({ stage: 'preparing', progress: 0 });
-
-      this.prepareFolderDownload(orderId, folderName, clientEmail).subscribe({
-        next: (res) => {
-          if (!res.ok || !res.jobId) {
-            observer.next({ stage: 'error', error: 'Failed to start download preparation.' });
-            observer.complete();
-            return;
-          }
-
-          const jobId = res.jobId;
-          observer.next({ stage: 'polling', jobId, progress: 0, totalFiles: res.totalFiles });
-
-          // Poll every 5 seconds for up to 20 minutes
-          const maxAttempts = 240;
-          let attempts = 0;
-
-          const poll = () => {
-            if (attempts >= maxAttempts) {
-              observer.next({ stage: 'error', error: 'Download preparation timed out. Please try again.' });
-              observer.complete();
-              return;
-            }
-            attempts++;
-
-            this.pollFolderDownloadStatus(orderId, folderName, jobId).subscribe({
-              next: (status) => {
-                if (status.status === 'ready' && status.downloadUrl) {
-                  observer.next({
-                    stage: 'ready',
-                    downloadUrl: status.downloadUrl,
-                    jobId,
-                    progress: 100,
-                    filesProcessed: status.filesProcessed,
-                    totalFiles: status.totalFiles
-                  });
-                  observer.complete();
-                  // Navigate the pre-opened window to the presigned B2 URL.
-                  // Using the pre-opened window satisfies Safari's user-gesture requirement.
-                  if (downloadWindow && !downloadWindow.closed) {
-                    downloadWindow.location.href = status.downloadUrl;
-                  } else {
-                    window.open(status.downloadUrl, '_blank');
-                  }
-                } else if (status.status === 'error') {
-                  observer.next({ stage: 'error', error: status.error || 'Download preparation failed.' });
-                  observer.complete();
-                } else {
-                  // Still pending/building — poll again
-                  observer.next({
-                    stage: 'polling',
-                    jobId,
-                    progress: status.progress,
-                    filesProcessed: status.filesProcessed,
-                    totalFiles: status.totalFiles
-                  });
-                  setTimeout(poll, 5000);
-                }
-              },
-              error: () => {
-                // Network blip — keep polling
-                setTimeout(poll, 5000);
-              }
-            });
-          };
-
-          setTimeout(poll, 5000);
-        },
-        error: (err) => {
-          observer.next({ stage: 'error', error: err?.error?.message || 'Failed to start download.' });
-          observer.complete();
-        }
-      });
-    });
   }
 
   prepareFolderDownload(orderId: string, folderName: string, clientEmail?: string | null): Observable<{ ok: boolean; jobId: string; totalFiles: number; message: string }> {

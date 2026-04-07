@@ -1,0 +1,48 @@
+<div class="floating-container" *ngIf="job" [class.minimized]="minimized">
+    <!-- Header/Title -->
+    <div class="header">
+        <span class="title">
+            <span *ngIf="job.stage === 'ready'" class="icon">✅</span>
+            <span *ngIf="job.stage !== 'ready' && job.stage !== 'error'" class="spinner"></span>
+            <span *ngIf="job.stage === 'error'" class="icon">⚠️</span>
+            {{ job.folderName }}
+        </span>
+        <div class="actions">
+            <button (click)="toggleMinimize()" title="Minimize">
+                {{ minimized ? '▲' : '▼' }}
+            </button>
+            <button (click)="close()" title="Dismiss">×</button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content" *ngIf="!minimized">
+        <div class="status-text">
+            <ng-container [ngSwitch]="job.stage">
+                <span *ngSwitchCase="'preparing'">Starting build...</span>
+                <span *ngSwitchCase="'polling'">
+                    Building Zip: {{ job.filesProcessed || 0 }} / {{ job.totalFiles || '?' }} files
+                </span>
+                <span *ngSwitchCase="'ready'">Your album is ready!</span>
+                <span *ngSwitchCase="'error'" class="error-text">
+                    {{ job.error || 'Failed to prepare zip' }}
+                </span>
+            </ng-container>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container" *ngIf="job.stage === 'polling' || job.stage === 'ready'">
+            <div class="progress-bar" [style.width.%]="job.progress || 0"></div>
+        </div>
+
+        <!-- Footer / Download Button -->
+        <div class="footer" *ngIf="job.stage === 'ready' || job.stage === 'error'">
+            <button *ngIf="job.stage === 'ready'" class="download-btn" (click)="download()">
+                Save to Device
+            </button>
+            <button *ngIf="job.stage === 'error'" class="retry-btn" (click)="close()">
+                Dismiss
+            </button>
+        </div>
+    </div>
+</div>

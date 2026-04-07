@@ -10,9 +10,12 @@ import { filter, takeUntil } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
 import { Title, Meta } from '@angular/platform-browser';
 
+import { FloatingZipProgressComponent } from './components/floating-zip-progress/floating-zip-progress.component';
+import { OrdersService } from './services/orders.service';
+ 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, NavbarComponent, FooterComponent, LoadingOverlayComponent],
+  imports: [CommonModule, RouterOutlet, NavbarComponent, FooterComponent, LoadingOverlayComponent, FloatingZipProgressComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -20,9 +23,10 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'Maro Weddings';
   showOverlay = true;
   private destroy$ = new Subject<void>();
-
+ 
   constructor(
     private authService: AuthService,
+    private ordersService: OrdersService,
     private router: Router,
     private activatedRoute: ActivatedRoute,
     private titleService: Title,
@@ -35,6 +39,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.showOverlay = false;
       return;
     }
+
+    // Resume any active background zip jobs (iPhone resilience)
+    this.ordersService.resumeActiveJob();
 
     this.authService.isAuthenticated$
       .pipe(takeUntil(this.destroy$))

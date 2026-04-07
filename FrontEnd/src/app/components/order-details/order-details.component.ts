@@ -630,81 +630,11 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     if (!this.order?._id) return;
 
     if (this.ordersService.isIOS()) {
-      // iOS Safari: use background-zip flow to avoid Railway's 100-second timeout
-      if (this.zippingFolder) return; // prevent double-tap
-      this.zippingFolder = true;
-      this.zippingFolderMessage = 'Preparing download\u2026';
-      this.zippingProgress = 0;
-
-      // IMPORTANT: window.open must be called synchronously within a user-gesture handler,
-      // otherwise Safari's popup blocker will prevent it. We open a blank tab immediately
-      // and navigate it to the download URL once polling finishes.
-      const downloadWindow = window.open('', '_blank');
-      if (downloadWindow) {
-        downloadWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Preparing Your Download | Maro</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-              body { 
-                background: #1a0105; 
-                color: #ffdab9; 
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                height: 100vh; margin: 0; text-align: center; padding: 2rem; box-sizing: border-box;
-              }
-              .spinner {
-                width: 50px; height: 50px; border: 3px solid rgba(255, 218, 185, 0.1);
-                border-top: 3px solid #ffdab9; border-radius: 50%;
-                animation: spin 1s linear infinite; margin-bottom: 2rem;
-              }
-              h1 { font-size: 1.5rem; margin-bottom: 1rem; font-weight: 500; }
-              p { font-size: 1rem; opacity: 0.8; line-height: 1.5; color: #fff; }
-              .hint { font-size: 0.85rem; margin-top: 2rem; opacity: 0.5; font-style: italic; }
-              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            </style>
-          </head>
-          <body>
-            <div class="spinner"></div>
-            <h1>Building Your Album</h1>
-            <p>Please keep this tab open. Your download will start automatically here as soon as the collection is ready.</p>
-            <p class="hint">You can switch back to the main app tab to see detailed progress.</p>
-          </body>
-          </html>
-        `);
-        downloadWindow.document.close(); // Important to finish loading the stream
-      }
-
-      this.ordersService.downloadFolderZipViaBackground(this.order._id, folderName, this.clientEmail, downloadWindow)
-        .subscribe({
-          next: (event) => {
-            if (event.stage === 'polling') {
-              this.zippingProgress = event.progress || 0;
-              if (event.filesProcessed !== undefined && event.totalFiles !== undefined) {
-                this.zippingFolderMessage = `Building zip: ${event.filesProcessed} / ${event.totalFiles} files\u2026`;
-              } else {
-                this.zippingFolderMessage = 'Building zip, please wait\u2026';
-              }
-            } else if (event.stage === 'ready') {
-              this.zippingProgress = 100;
-              this.zippingFolderMessage = 'Download ready!';
-              setTimeout(() => { this.zippingFolder = false; }, 800);
-            } else if (event.stage === 'error') {
-              if (downloadWindow && !downloadWindow.closed) downloadWindow.close();
-              this.error = event.error || 'Download failed. Please try again.';
-              this.zippingFolder = false;
-              setTimeout(() => { this.error = ''; }, 8000);
-            }
-          },
-          error: () => {
-            if (downloadWindow && !downloadWindow.closed) downloadWindow.close();
-            this.error = 'Download failed. Please try again.';
-            this.zippingFolder = false;
-            setTimeout(() => { this.error = ''; }, 8000);
-          }
-        });
+      // Start the global background zip process (iPhone resilience)
+      this.ordersService.startBackgroundZip(this.order._id, folderName, this.clientEmail);
+      
+      // Immediately redirect to home as requested
+      this.router.navigate(['/home']);
     } else {
       // PC / Android: direct streaming
       this.ordersService.downloadFolderZip(this.order._id, folderName, this.clientEmail);
