@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -49,15 +50,11 @@ export class CurrencyService {
       return;
     }
 
-    // Use free IP geolocation API
-    this.http.get<any>('https://ipapi.co/json/')
+    // Use backend proxy for geolocation
+    this.http.get<any>(`${environment.apiUrl}/currency/location`)
       .pipe(
         catchError(() => {
-          // Fallback to another service if first fails
-          return this.http.get<any>('https://ip-api.com/json/');
-        }),
-        catchError(() => {
-          // If both fail, default to Egypt
+          // If backend fails, default to Egypt
           this.setCachedLocation(true);
           return of({ country_code: 'EG' });
         }),
@@ -119,8 +116,8 @@ export class CurrencyService {
       // Still fetch fresh in background
     }
 
-    // Fetch REAL-TIME exchange rate from API - NO FIXED PRICES, NO FALLBACKS
-    this.http.get<any>('https://api.exchangerate-api.com/v4/latest/USD')
+    // Fetch REAL-TIME exchange rate from our backend proxy
+    this.http.get<any>(`${environment.apiUrl}/currency/exchange-rate`)
       .pipe(
         map((response: any) => {
           // Extract EGP rate from API response: { rates: { EGP: 47.36 } }
