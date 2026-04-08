@@ -185,28 +185,31 @@
 
     <!-- Packages & Pricing Section -->
     <div class="details-card" *ngIf="order.orderForm?.pricing">
-      <h2 class="section-title">Packages & Pricing</h2>
+      <div class="section-title-row">
+        <h2 class="section-title">Packages &amp; Pricing</h2>
+        <span class="currency-badge currency-{{ getOrderCurrency(order) | lowercase }}">{{ getOrderCurrency(order) }}</span>
+      </div>
 
       <div class="pricing-summary">
         <div class="summary-row">
           <span>Subtotal</span>
-          <strong>{{ formatCurrency(order.orderForm?.pricing?.subtotal) }}</strong>
+          <strong>{{ formatOrderPrice(order.orderForm?.pricing?.subtotal, order) }}</strong>
         </div>
         <div class="summary-row" *ngIf="order.orderForm?.pricing?.discount">
           <span>Discount</span>
-          <strong>-{{ formatCurrency(order.orderForm?.pricing?.discount) }}</strong>
+          <strong>-{{ formatOrderPrice(order.orderForm?.pricing?.discount, order) }}</strong>
         </div>
         <div class="summary-row total" *ngIf="order.orderForm?.pricing?.discount">
           <span>Total after Discount</span>
-          <strong>{{ formatCurrency(order.orderForm?.pricing?.total) }}</strong>
+          <strong>{{ formatOrderPrice(order.orderForm?.pricing?.total, order) }}</strong>
         </div>
         <div class="summary-row">
           <span>Deposit Paid (50%)</span>
-          <strong>{{ formatCurrency(getDepositPaid(order.orderForm?.pricing)) }}</strong>
+          <strong>{{ formatOrderPrice(getDepositPaid(order.orderForm?.pricing), order) }}</strong>
         </div>
         <div class="summary-row remaining">
           <span>Remaining Balance</span>
-          <strong>{{ formatCurrency(getRemainingBalance(order.orderForm?.pricing)) }}</strong>
+          <strong>{{ formatOrderPrice(getRemainingBalance(order.orderForm?.pricing), order) }}</strong>
         </div>
       </div>
 

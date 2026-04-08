@@ -2,22 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { CurrencyService } from './currency.service';
 
 // Interface for Package Collection
 export interface PackageCollection {
   _id: string;
   collectionName: string;
-  price: string;
-  duration?: string; // Used by Cinematography & Photography only
+  price: string;          // EGP price (base)
+  priceAED?: string;      // AED price (optional, set by admin)
+  hiddenInUAE?: boolean;  // if true, filtered out for UAE users
+  duration?: string;
   description?: string;
-  features: string[]; // Always present (can be empty [])
+  features: string[];
 }
 
 // Interface for Package Extra
 export interface PackageExtra {
   _id: string;
   name: string;
-  price: string;
+  price: string;          // EGP price (base)
+  priceAED?: string;      // AED price (optional)
+  hiddenInUAE?: boolean;
 }
 
 // Interface for Package
@@ -36,19 +41,26 @@ export interface Package {
 export class PackagesService {
   private apiUrl = `${environment.apiUrl}/packages`;
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private currencyService: CurrencyService
+  ) { }
 
-  // Get all packages
+  // Get all packages, automatically passing country for UAE visibility filtering
   getAllPackages(): Observable<Package[]> {
-    return this.http.get<Package[]>(this.apiUrl);
+    const country = this.currencyService.country;
+    const params = country ? `?country=${encodeURIComponent(country)}` : '';
+    return this.http.get<Package[]>(`${this.apiUrl}${params}`);
   }
 
-  // Get a specific package by packageName (cinematography, photography, fullRecording)
+  // Get a specific package by packageName
   getPackageByName(packageName: string): Observable<Package> {
-    return this.http.get<Package>(`${this.apiUrl}/${packageName}`);
+    const country = this.currencyService.country;
+    const params = country ? `?country=${encodeURIComponent(country)}` : '';
+    return this.http.get<Package>(`${this.apiUrl}/${packageName}${params}`);
   }
 
-  // Save/Update a package (requires authentication)
+  // Save/Update a package (requires authentication — always sends all fields)
   savePackage(packageData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/save`, packageData, { withCredentials: true });
   }

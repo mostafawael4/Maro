@@ -28,7 +28,7 @@ import { sendBookingConfirmationEmail } from "../../services/orderEmailService.j
 // POST /orders - create a new order (public)
 router.post("/", async (req, res) => {
   try {
-    const { email, clientName, notes, orderForm } = req.body;
+    const { email, clientName, notes, orderForm, currency } = req.body;
     if (!email) {
       logger.warn("Attempt to create order without email", { body: req.body });
       return res.status(400).json({ ok: false, message: "Email required" });
@@ -36,25 +36,36 @@ router.post("/", async (req, res) => {
     if (orderForm && typeof orderForm !== "object") {
       return res.status(400).json({ ok: false, message: "Invalid order form format" });
     }
-    // create an order; you may want to check duplicates or generate a separate order code
+
+    // currency is sent by the frontend (derived from server-side geo detection)
+    // Validate and default — never trust arbitrary input
+    const validCurrencies = ['EGP', 'AED', 'USD'];
+    const orderCurrency = validCurrencies.includes((currency || '').toUpperCase())
+      ? currency.toUpperCase()
+      : 'EGP';
+
     let normalizedOrderForm = orderForm;
     if (orderForm?.pricing) {
-      const normalizedPricing = await normalizePricingSelections(orderForm.pricing);
+      // Pass detected currency so prices are stored in the correct currency
+      const normalizedPricing = await normalizePricingSelections(orderForm.pricing, orderCurrency);
       normalizedOrderForm = { ...orderForm };
       if (normalizedPricing) {
         normalizedOrderForm.pricing = normalizedPricing;
       } else {
         delete normalizedOrderForm.pricing;
       }
+    } else if (orderCurrency !== 'EGP') {
+      // Even without pricing selections, store the currency so it's known
+      normalizedOrderForm = { ...(orderForm || {}), pricing: { currency: orderCurrency } };
     }
 
     const order = await Order.create({
       email,
       clientName,
       notes,
-      orderForm: normalizedOrderForm, // store all wedding form data here
+      orderForm: normalizedOrderForm,
     });
-    logger.info(`Order created: ${order._id} for email ${email}`);
+    logger.info(`Order created: ${order._id} for email ${email} (currency: ${orderCurrency})`);
 
     // Send booking confirmation email asynchronously
     sendBookingConfirmationEmail(order).catch(err => {
@@ -281,7 +292,13 @@ router.put("/:orderId", async (req, res) => {
     }
 
     if (updateFields.orderForm?.pricing) {
-      const normalizedPricing = await normalizePricingSelections(updateFields.orderForm.pricing);
+      // IMPORTANT: Use the currency STORED on the order, not from the request body.
+      // Admin location must never change the order's currency.
+      const storedCurrency = order.orderForm?.pricing?.currency || 'EGP';
+      const normalizedPricing = await normalizePricingSelections(
+        updateFields.orderForm.pricing,
+        storedCurrency
+      );
       if (normalizedPricing) {
         updateFields.orderForm.pricing = normalizedPricing;
       } else {

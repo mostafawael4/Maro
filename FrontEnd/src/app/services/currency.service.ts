@@ -5,20 +5,43 @@ import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+export type Currency = 'EGP' | 'AED' | 'USD';
+
 @Injectable({
   providedIn: 'root'
 })
 export class CurrencyService {
   private isBrowser: boolean;
+
+  // ── Three-state currency (EGP / AED / USD) ──────────────────────────────────
+  private currencySubject = new BehaviorSubject<Currency>('EGP');
+  public currency$ = this.currencySubject.asObservable();
+
+  private countrySubject = new BehaviorSubject<string>('EG');
+  public country$ = this.countrySubject.asObservable();
+
+  // ── Currency ready signal ─────────────────────────────────────────────────────
+  // Starts false; flips to true once the server-side geo-detect call completes
+  // (success OR error/fallback). Components should wait for this before fetching
+  // packages so that currencyService.country is already the final detected value.
+  private currencyReadySubject = new BehaviorSubject<boolean>(false);
+  /** Emits true once the initial geo detection round-trip has finished. */
+  public currencyReady$ = this.currencyReadySubject.asObservable();
+
+  // ── Legacy aliases (kept for backward compatibility) ─────────────────────────
+  /** @deprecated Use currency$ instead. True only for EGP. */
   private isInEgyptSubject = new BehaviorSubject<boolean | null>(null);
   public isInEgypt$ = this.isInEgyptSubject.asObservable();
-  private readonly STORAGE_KEY = 'maro_currency_location';
-  private readonly EXCHANGE_RATE_STORAGE_KEY = 'maro_exchange_rate';
-  private readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-  private readonly EXCHANGE_RATE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes - short cache for real-time rates
-  private exchangeRate: number = 50; // Temporary initial value, will be replaced by API
+
+  // ── Exchange rate (EGP per 1 USD) ────────────────────────────────────────────
+  private exchangeRate: number = 50;
   private exchangeRateSubject = new BehaviorSubject<number>(50);
   public exchangeRate$ = this.exchangeRateSubject.asObservable();
+
+  private readonly EXCHANGE_RATE_STORAGE_KEY = 'maro_exchange_rate';
+  private readonly EXCHANGE_RATE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private readonly CURRENCY_CACHE_KEY = 'maro_currency_v2';
+  private readonly CURRENCY_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
   constructor(
     private http: HttpClient,
@@ -26,114 +49,110 @@ export class CurrencyService {
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
     if (this.isBrowser) {
-      this.detectLocation();
       this.fetchExchangeRate();
+      // Always detect currency fresh from server on every page load
+      // No localStorage cache — VPN/location changes are detected immediately
+      this.fetchCurrency();
     } else {
-      // Default to Egypt for SSR
-      this.isInEgyptSubject.next(true);
+      // SSR: default to EGP — mark ready immediately (no HTTP call on server)
+      this.applyCurrency('EGP', 'EG');
+      this.currencyReadySubject.next(true);
     }
   }
 
+  // ── Public getters ────────────────────────────────────────────────────────────
+
+  get currency(): Currency {
+    return this.currencySubject.value;
+  }
+
+  get country(): string {
+    return this.countrySubject.value;
+  }
+
+  /** @deprecated Use currency getter instead */
   get isInEgyptValue(): boolean {
-    return this.isInEgyptSubject.value ?? true; // Default to Egypt if not detected yet
+    return this.currencySubject.value === 'EGP';
   }
 
   get currentExchangeRate(): number {
     return this.exchangeRateSubject.value;
   }
 
-  private detectLocation(): void {
-    // Check cache first
-    const cached = this.getCachedLocation();
-    if (cached !== null) {
-      this.isInEgyptSubject.next(cached);
-      return;
-    }
+  // ── Detection ─────────────────────────────────────────────────────────────────
 
-    // Use backend proxy for geolocation
-    this.http.get<any>(`${environment.apiUrl}/currency/location`)
+  /** Called from AppComponent on init and from create-order on every open. */
+  public detectCurrency(): void {
+    if (!this.isBrowser) return;
+    // Reset the ready signal so components that wait on currencyReady$
+    // will correctly block until THIS fresh HTTP call resolves.
+    this.currencyReadySubject.next(false);
+    this.fetchCurrency();
+  }
+
+  private fetchCurrency(): void {
+    this.http.get<{ currency: string; country: string }>(`${environment.apiUrl}/currency/detect`)
       .pipe(
-        catchError(() => {
-          // If backend fails, default to Egypt
-          this.setCachedLocation(true);
-          return of({ country_code: 'EG' });
-        }),
-        map((response: any) => {
-          // Check if country is Egypt
-          const countryCode = response.country_code || response.countryCode || 'EG';
-          const isEgypt = countryCode.toUpperCase() === 'EG';
-          this.setCachedLocation(isEgypt);
-          return isEgypt;
-        })
+        catchError(() => of({ currency: 'EGP', country: 'UNKNOWN' }))
       )
       .subscribe({
-        next: (isEgypt: boolean) => {
-          this.isInEgyptSubject.next(isEgypt);
+        next: (res) => {
+          const currency = this.validateCurrency(res.currency);
+          const country = res.country || 'UNKNOWN';
+          this.applyCurrency(currency, country);
+          this.currencyReadySubject.next(true); // unblock components waiting for currency
+          // Do NOT cache to localStorage — always re-detect from IP
         },
         error: () => {
-          // Default to Egypt on error
-          this.isInEgyptSubject.next(true);
+          this.applyCurrency('EGP', 'UNKNOWN');
+          this.currencyReadySubject.next(true); // unblock on error too (EGP fallback)
         }
       });
   }
 
-  private getCachedLocation(): boolean | null {
-    if (!this.isBrowser) return null;
-    try {
-      const cached = localStorage.getItem(this.STORAGE_KEY);
-      if (!cached) return null;
-      const { isEgypt, timestamp } = JSON.parse(cached);
-      const now = Date.now();
-      if (now - timestamp < this.CACHE_DURATION) {
-        return isEgypt;
-      }
-      return null;
-    } catch {
-      return null;
-    }
+  private applyCurrency(currency: Currency, country: string): void {
+    this.currencySubject.next(currency);
+    this.countrySubject.next(country);
+    this.isInEgyptSubject.next(currency === 'EGP');
   }
 
-  private setCachedLocation(isEgypt: boolean): void {
-    if (!this.isBrowser) return;
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
-        isEgypt,
-        timestamp: Date.now()
-      }));
-    } catch {
-      // Ignore localStorage errors
-    }
+  private validateCurrency(raw: string): Currency {
+    const upper = (raw || '').toUpperCase();
+    if (upper === 'EGP' || upper === 'AED' || upper === 'USD') return upper as Currency;
+    return 'EGP';
   }
+
+  // ── Cache (exchange rate only — currency is never cached) ────────────────────
+
+  private getCachedCurrency(): null {
+    // Currency caching removed — always detect from IP
+    return null;
+  }
+
+  private setCachedCurrency(_currency: Currency, _country: string): void {
+    // No-op — currency is not cached in localStorage
+  }
+
+  // ── Exchange rate ─────────────────────────────────────────────────────────────
 
   private fetchExchangeRate(): void {
     if (!this.isBrowser) return;
-
-    // Check for very recent cache (less than 5 minutes) to avoid too many API calls
     const cached = this.getCachedExchangeRate();
     if (cached !== null) {
       this.exchangeRate = cached;
       this.exchangeRateSubject.next(cached);
-      // Still fetch fresh in background
     }
 
-    // Fetch REAL-TIME exchange rate from our backend proxy
     this.http.get<any>(`${environment.apiUrl}/currency/exchange-rate`)
       .pipe(
         map((response: any) => {
-          // Extract EGP rate from API response: { rates: { EGP: 47.36 } }
-          if (response.rates && response.rates.EGP) {
-            const egpRate = parseFloat(response.rates.EGP);
-            if (!isNaN(egpRate) && egpRate > 0 && egpRate <= 1000) {
-              return egpRate;
-            }
+          if (response.rates?.EGP) {
+            const rate = parseFloat(response.rates.EGP);
+            if (!isNaN(rate) && rate > 0 && rate <= 1000) return rate;
           }
-          throw new Error('Invalid rate from API');
+          throw new Error('Invalid rate');
         }),
-        catchError((error) => {
-          console.error('❌ Failed to fetch exchange rate from API:', error);
-          // Don't use any fixed rate - return null
-          return of(null);
-        })
+        catchError(() => of(null))
       )
       .subscribe({
         next: (rate: number | null) => {
@@ -141,13 +160,7 @@ export class CurrencyService {
             this.exchangeRate = rate;
             this.exchangeRateSubject.next(rate);
             this.setCachedExchangeRate(rate);
-            
-          } else {
-            console.error('❌ Could not get exchange rate from API. Prices may not convert correctly.');
           }
-        },
-        error: (error) => {
-          console.error('❌ Exchange rate API error:', error);
         }
       });
   }
@@ -155,138 +168,121 @@ export class CurrencyService {
   private getCachedExchangeRate(): number | null {
     if (!this.isBrowser) return null;
     try {
-      const cached = localStorage.getItem(this.EXCHANGE_RATE_STORAGE_KEY);
-      if (!cached) return null;
-      const { rate, timestamp } = JSON.parse(cached);
-      const now = Date.now();
-      if (now - timestamp < this.EXCHANGE_RATE_CACHE_DURATION) {
-        // Validate rate is reasonable (should be around 47-48 currently)
-        if (rate >= 40 && rate <= 60) {
-          return rate;
-        } else {
-          console.warn('⚠️ Cached rate seems invalid:', rate, '- clearing cache');
-          this.clearExchangeRateCache();
-          return null;
-        }
+      const raw = localStorage.getItem(this.EXCHANGE_RATE_STORAGE_KEY);
+      if (!raw) return null;
+      const { rate, timestamp } = JSON.parse(raw);
+      if (Date.now() - timestamp < this.EXCHANGE_RATE_CACHE_DURATION && rate >= 10 && rate <= 1000) {
+        return rate;
       }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  private getCachedExchangeRateData(): { rate: number; timestamp: number } | null {
-    if (!this.isBrowser) return null;
-    try {
-      const cached = localStorage.getItem(this.EXCHANGE_RATE_STORAGE_KEY);
-      if (!cached) return null;
-      return JSON.parse(cached);
-    } catch {
-      return null;
-    }
-  }
-
-  private clearExchangeRateCache(): void {
-    if (!this.isBrowser) return;
-    try {
-      localStorage.removeItem(this.EXCHANGE_RATE_STORAGE_KEY);
-      
-    } catch {
-      // Ignore errors
-    }
-  }
-
-  // Public method to force refresh exchange rate (clears cache and fetches fresh)
-  public forceRefreshExchangeRate(): void {
-    if (!this.isBrowser) return;
-    
-    this.clearExchangeRateCache();
-    this.fetchExchangeRate();
+    } catch { /* ignore */ }
+    return null;
   }
 
   private setCachedExchangeRate(rate: number): void {
     if (!this.isBrowser) return;
     try {
-      localStorage.setItem(this.EXCHANGE_RATE_STORAGE_KEY, JSON.stringify({
-        rate,
-        timestamp: Date.now()
-      }));
-    } catch {
-      // Ignore localStorage errors
-    }
+      localStorage.setItem(this.EXCHANGE_RATE_STORAGE_KEY, JSON.stringify({ rate, timestamp: Date.now() }));
+    } catch { /* ignore */ }
   }
 
+  public forceRefreshExchangeRate(): void {
+    if (!this.isBrowser) return;
+    try { localStorage.removeItem(this.EXCHANGE_RATE_STORAGE_KEY); } catch { /* ignore */ }
+    this.fetchExchangeRate();
+  }
+
+  // ── Formatting ────────────────────────────────────────────────────────────────
+
+  /**
+   * Format a numeric value using the CURRENT user's detected currency.
+   * For EGP: value is EGP → "12,500 LE"
+   * For AED: value is AED → "AED 12,500"  (no conversion)
+   * For USD: value is EGP → converted and displayed as "$250"
+   */
   formatCurrency(value: number | string | null | undefined): string {
-    if (value === null || value === undefined) {
-      return this.isInEgyptValue ? '0 LE' : '$0';
-    }
+    return this.formatByCurrency(value, this.currency);
+  }
 
-    const numValue = typeof value === 'string' ? this.parsePriceValue(value) : value;
-    
-    if (isNaN(numValue) || numValue === 0) {
-      return this.isInEgyptValue ? '0 LE' : '$0';
-    }
+  /**
+   * Format a value using a SPECIFIC currency code — used for displaying stored order prices.
+   * The admin sees the order in whatever currency was used when it was created.
+   */
+  formatOrderCurrency(value: number | string | null | undefined, storedCurrency: string): string {
+    const currency = this.validateCurrency(storedCurrency);
+    return this.formatByCurrency(value, currency);
+  }
 
-    if (this.isInEgyptValue) {
-      // Display in LE (Egyptian Pounds)
-      return `${numValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} LE`;
-    } else {
-      // Convert LE to USD using current exchange rate
-      // exchangeRate is EGP per 1 USD, so divide LE by rate to get USD
-      const usdValue = numValue / this.exchangeRate;
-      // Round to nearest whole number for USD
-      const roundedUsd = Math.round(usdValue);
-      
-      
+  private formatByCurrency(value: number | string | null | undefined, currency: Currency): string {
+    if (value === null || value === undefined) return this.zeroFor(currency);
+    const num = typeof value === 'string' ? this.parsePriceValue(value) : value;
+    if (isNaN(num) || num === 0) return this.zeroFor(currency);
 
-      return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    switch (currency) {
+      case 'EGP':
+        return `${num.toLocaleString('en-US', { maximumFractionDigits: 0 })} LE`;
+      case 'AED':
+        // Value is already in AED — display directly
+        return `AED ${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+      case 'USD':
+        // Value is in EGP — convert to USD
+        const usd = Math.round(num / this.exchangeRate);
+        return `$${usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     }
   }
 
+  /**
+   * Format a price string (e.g. "12500 LE") using the current user's currency.
+   * Parses numeric value first, then formats.
+   */
   formatPriceString(priceString: string | null | undefined): string {
-    if (!priceString) {
-      return this.isInEgyptValue ? '0 LE' : '$0';
-    }
+    if (!priceString) return this.zeroFor(this.currency);
+    const num = this.parsePriceValue(priceString);
+    if (isNaN(num) || num === 0) return this.zeroFor(this.currency);
+    return this.formatByCurrency(num, this.currency);
+  }
 
-    // Extract numeric value from price string
-    const numValue = this.parsePriceValue(priceString);
-    
-    if (isNaN(numValue) || numValue === 0) {
-      return this.isInEgyptValue ? '0 LE' : '$0';
+  /**
+   * Format an AED-first price for packages.
+   * If the item has a priceAED and the user is in UAE → show priceAED directly.
+   * Otherwise fall through to normal formatPriceString (EGP or USD).
+   */
+  formatPackagePrice(priceEGP: string | null | undefined, priceAED: string | null | undefined): string {
+    if (this.currency === 'AED' && priceAED) {
+      const val = this.parsePriceValue(priceAED);
+      return `AED ${val.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     }
+    return this.formatPriceString(priceEGP);
+  }
 
-    if (this.isInEgyptValue) {
-      // Display in LE (Egyptian Pounds)
-      return `${numValue.toLocaleString('en-US', { maximumFractionDigits: 0 })} LE`;
-    } else {
-      // Convert LE to USD using current exchange rate
-      // exchangeRate is EGP per 1 USD, so divide LE by rate to get USD
-      const usdValue = numValue / this.exchangeRate;
-      // Round to nearest whole number for USD
-      const roundedUsd = Math.round(usdValue);
-      
-      
-      
-      return `$${roundedUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  getCurrencyCode(): Currency {
+    return this.currency;
+  }
+
+  getCurrencyLabel(): string {
+    switch (this.currency) {
+      case 'EGP': return 'LE';
+      case 'AED': return 'AED';
+      case 'USD': return '$';
     }
   }
 
-  getCurrencySymbol(): string {
-    return this.isInEgyptValue ? 'LE' : '$';
-  }
+  /** @deprecated Use getCurrencyLabel() */
+  getCurrencySymbol(): string { return this.getCurrencyLabel(); }
 
-  getCurrencySuffix(): string {
-    return this.isInEgyptValue ? 'LE' : '$';
+  /** @deprecated Use getCurrencyLabel() */
+  getCurrencySuffix(): string { return this.getCurrencyLabel(); }
+
+  private zeroFor(currency: Currency): string {
+    switch (currency) {
+      case 'EGP': return '0 LE';
+      case 'AED': return 'AED 0';
+      case 'USD': return '$0';
+    }
   }
 
   private parsePriceValue(price: string | number): number {
-    if (typeof price === 'number') {
-      return price;
-    }
-    if (!price) {
-      return 0;
-    }
-    // Remove all non-numeric characters except decimal point and minus sign
+    if (typeof price === 'number') return price;
+    if (!price) return 0;
     const numeric = parseFloat(price.toString().replace(/[^\d.-]/g, ''));
     return isNaN(numeric) ? 0 : numeric;
   }

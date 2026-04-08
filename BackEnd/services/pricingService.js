@@ -1,6 +1,5 @@
 import Packages from "../models/Package.js";
 
-
 const parsePriceValue = (price) => {
   if (typeof price === "number" && Number.isFinite(price)) {
     return price;
@@ -17,6 +16,7 @@ const PROMO_CODES = {
   harmony: 2000,
   celebration: 3000,
 };
+
 const fetchPackagesMaps = async () => {
   const packagesFromDb = await Packages.find({}).lean();
   const packageMapById = new Map();
@@ -30,7 +30,7 @@ const fetchPackagesMaps = async () => {
   });
 
   return { packageMapById, packageMapByName };
-}
+};
 
 const resolvePackage = (selection, packageMapById, packageMapByName) => {
   if (!selection) return null;
@@ -41,7 +41,7 @@ const resolvePackage = (selection, packageMapById, packageMapByName) => {
     return packageMapByName.get(selection.packageName);
   }
   return null;
-}
+};
 
 const appendPackage = (pkg, packagesMap) => {
   const key = pkg._id?.toString();
@@ -51,9 +51,37 @@ const appendPackage = (pkg, packagesMap) => {
     packageName: pkg.packageName,
     packageDisplayName: pkg.displayName,
   });
-}
+};
 
-const processCollections = (collectionSelections, resolve, append, subtotal) => {
+/**
+ * Resolve the stored price value for an item given the order's currency.
+ *
+ * - EGP / USD: use item.price (EGP string from DB) — existing unchanged behavior.
+ *   For USD orders the frontend handles conversion display; backend always stores EGP values.
+ * - AED: use item.priceAED if set (exact AED price); otherwise return 0 so
+ *   admins are prompted to set priceAED on the package.
+ */
+const resolvePriceForCurrency = (item, currency) => {
+  if (currency === 'AED') {
+    if (item.priceAED) {
+      return parsePriceValue(item.priceAED);
+    }
+    // No priceAED set — return 0 (admin needs to configure priceAED)
+    return 0;
+  }
+  // EGP or USD: use existing EGP price (unchanged behavior)
+  return parsePriceValue(item.price);
+};
+
+const resolvePriceLabelForCurrency = (item, currency, priceValue) => {
+  if (currency === 'AED') {
+    return item.priceAED ? `AED ${priceValue}` : 'AED —';
+  }
+  // EGP/USD: keep existing label (the original price string from DB)
+  return item.price || String(priceValue);
+};
+
+const processCollections = (collectionSelections, resolve, append, currency) => {
   const collections = [];
   let collectionsSubtotal = 0;
   if (Array.isArray(collectionSelections)) {
@@ -65,7 +93,7 @@ const processCollections = (collectionSelections, resolve, append, subtotal) => 
         || (selection.collectionName && col.collectionName === selection.collectionName)
       );
       if (!collectionMatch) return;
-      const priceValue = parsePriceValue(collectionMatch.price);
+      const priceValue = resolvePriceForCurrency(collectionMatch, currency);
       collectionsSubtotal += priceValue;
       append(pkg);
       collections.push({
@@ -74,15 +102,15 @@ const processCollections = (collectionSelections, resolve, append, subtotal) => 
         packageDisplayName: pkg.displayName,
         collectionId: collectionMatch._id,
         collectionName: collectionMatch.collectionName,
-        priceLabel: collectionMatch.price,
+        priceLabel: resolvePriceLabelForCurrency(collectionMatch, currency, priceValue),
         priceValue,
       });
     });
   }
   return { collections, collectionsSubtotal };
-}
+};
 
-const processExtras = (extraSelections, resolve, append, subtotal) => {
+const processExtras = (extraSelections, resolve, append, currency) => {
   const extras = [];
   let extrasSubtotal = 0;
   if (Array.isArray(extraSelections)) {
@@ -94,7 +122,7 @@ const processExtras = (extraSelections, resolve, append, subtotal) => {
         || (selection.extraName && extra.name === selection.extraName)
       );
       if (!extraMatch) return;
-      const priceValue = parsePriceValue(extraMatch.price);
+      const priceValue = resolvePriceForCurrency(extraMatch, currency);
       extrasSubtotal += priceValue;
       append(pkg);
       extras.push({
@@ -103,13 +131,13 @@ const processExtras = (extraSelections, resolve, append, subtotal) => {
         packageDisplayName: pkg.displayName,
         extraId: extraMatch._id,
         extraName: extraMatch.name,
-        priceLabel: extraMatch.price,
+        priceLabel: resolvePriceLabelForCurrency(extraMatch, currency, priceValue),
         priceValue,
       });
     });
   }
   return { extras, extrasSubtotal };
-}
+};
 
 const processPackages = (packageSelections, resolve, append) => {
   if (Array.isArray(packageSelections)) {
@@ -118,22 +146,17 @@ const processPackages = (packageSelections, resolve, append) => {
       if (pkg) append(pkg);
     });
   }
-}
+};
 
 const handlePromoCode = (code, subtotal) => {
   let promoCode, discount = 0;
   if (code) {
     const normalizedCode = code.toString().trim().toLowerCase();
-
-    // Check if the code represents a numeric value (manual discount)
     const numericValue = parseFloat(normalizedCode);
     if (!isNaN(numericValue) && numericValue > 0) {
       promoCode = normalizedCode;
-      // We store the numeric discount amount.
-      // It's used in calculations up to the subtotal amount, but we preserve the value.
       discount = numericValue;
     } else {
-      // Fallback to legacy promo code lookup
       const promoValue = PROMO_CODES[normalizedCode];
       if (promoValue) {
         promoCode = normalizedCode;
@@ -142,14 +165,13 @@ const handlePromoCode = (code, subtotal) => {
     }
   }
   return { promoCode, discount };
-}
+};
 
 const computeTotals = (pricingInput, subtotal, discount) => {
   const rawDeposit = parsePriceValue(pricingInput.depositPaid);
   let depositPaid = rawDeposit > 0 ? rawDeposit : 0;
   let total = subtotal - discount;
   if (!Number.isFinite(total) || total < 0) total = 0;
-  // Fallback if total is 0, but provided total input exists
   if (total === 0 && pricingInput.total !== undefined && pricingInput.total !== null) {
     const providedTotal = parsePriceValue(pricingInput.total);
     if (Number.isFinite(providedTotal) && providedTotal > 0) {
@@ -158,9 +180,8 @@ const computeTotals = (pricingInput, subtotal, discount) => {
   }
   if (depositPaid > total) depositPaid = total;
   const remainingBalance = Math.max(total - depositPaid, 0);
-
   return { total, depositPaid, remainingBalance };
-}
+};
 
 const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput) => {
   return (
@@ -170,10 +191,23 @@ const hasPricingNumbers = (subtotal, discount, total, depositPaid, pricingInput)
     depositPaid > 0 ||
     (pricingInput.remainingBalance !== undefined && pricingInput.remainingBalance !== null)
   );
-}
+};
 
-const normalizePricingSelections = async (pricingInput = {}) => {
+/**
+ * Normalize and validate a pricing payload from the request body.
+ *
+ * @param {object} pricingInput  - Raw pricing data from the request body
+ * @param {string} [currency]    - 'EGP' | 'AED' | 'USD' (default: 'EGP')
+ *   For order creation: pass the currency detected from the user's IP.
+ *   For order updates:  pass the currency already stored on the order (NOT the admin's location).
+ */
+const normalizePricingSelections = async (pricingInput = {}, currency = 'EGP') => {
   if (!pricingInput || typeof pricingInput !== "object") return undefined;
+
+  // Prefer explicit param; fall back to whatever is stored in the payload
+  const resolvedCurrency = ((currency || pricingInput.currency || 'EGP') + '')
+    .trim().toUpperCase();
+
   const { packageMapById, packageMapByName } = await fetchPackagesMaps();
   if (!packageMapById.size && !packageMapByName.size) return undefined;
 
@@ -181,25 +215,19 @@ const normalizePricingSelections = async (pricingInput = {}) => {
   const resolve = (selection) => resolvePackage(selection, packageMapById, packageMapByName);
   const append = (pkg) => appendPackage(pkg, packagesMap);
 
-  // Process packages
   processPackages(pricingInput.packages, resolve, append);
 
-  // Process collections
-  const { collections, collectionsSubtotal } = processCollections(pricingInput.collections, resolve, append);
+  const { collections, collectionsSubtotal } = processCollections(
+    pricingInput.collections, resolve, append, resolvedCurrency
+  );
+  const { extras, extrasSubtotal } = processExtras(
+    pricingInput.extras, resolve, append, resolvedCurrency
+  );
 
-  // Process extras
-  const { extras, extrasSubtotal } = processExtras(pricingInput.extras, resolve, append);
-
-  // Calculate subtotal
   let subtotal = (collectionsSubtotal || 0) + (extrasSubtotal || 0);
-
-  // Promo code handling
   const { promoCode, discount } = handlePromoCode(pricingInput.promoCode, subtotal);
-
-  // Compute financials
   const { total, depositPaid, remainingBalance } = computeTotals(pricingInput, subtotal, discount);
 
-  // Should we output anything?
   const hasNumbers = hasPricingNumbers(subtotal, discount, total, depositPaid, pricingInput);
   if (
     packagesMap.size === 0 &&
@@ -211,8 +239,9 @@ const normalizePricingSelections = async (pricingInput = {}) => {
     return undefined;
   }
 
-  // Build response object
   const normalized = {};
+  // Always persist the currency so the order knows its original pricing currency
+  normalized.currency = resolvedCurrency;
   const packagesArray = Array.from(packagesMap.values());
   if (packagesArray.length) normalized.packages = packagesArray;
   if (collections && collections.length) normalized.collections = collections;
@@ -231,6 +260,6 @@ const normalizePricingSelections = async (pricingInput = {}) => {
   }
 
   return normalized;
-}
+};
 
 export { normalizePricingSelections };

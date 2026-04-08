@@ -407,12 +407,46 @@
 
   .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr 1fr auto;
     gap: 1rem;
     align-items: center;
     margin-bottom: 0;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 }
+
+// Checkbox label
+.form-group--checkbox {
+  margin-bottom: 0;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #5A5A5A;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #6B1F1F;
+    cursor: pointer;
+  }
+}
+
+.optional-hint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #999;
+  margin-left: 4px;
+}
+
 
 // Modal Footer
 .modal-footer {

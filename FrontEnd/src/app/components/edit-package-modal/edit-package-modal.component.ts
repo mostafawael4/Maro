@@ -42,7 +42,6 @@ export class EditPackageModalComponent implements OnInit {
 
   initializeEditedPackage() {
     if (this.package) {
-      // Deep copy the package data
       this.editedPackage = {
         packageName: this.package.packageName,
         displayName: this.package.displayName,
@@ -50,24 +49,23 @@ export class EditPackageModalComponent implements OnInit {
           const collectionData: any = {
             collectionName: col.collectionName,
             price: col.price,
+            priceAED: col.priceAED || '',
+            hiddenInUAE: col.hiddenInUAE || false,
             description: col.description || ''
           };
-          
-          // Package-specific fields
           if (this.package.packageName !== 'fullRecording') {
-            // Cinematography & Photography: include duration and features
             collectionData.duration = col.duration || '';
             collectionData.features = col.features ? [...col.features] : [];
           } else {
-            // Full Recording: empty features array for backend compatibility
             collectionData.features = [];
           }
-          
           return collectionData;
         }))),
         extras: JSON.parse(JSON.stringify(this.package.extras.map(extra => ({
           name: extra.name,
-          price: extra.price
+          price: extra.price,
+          priceAED: extra.priceAED || '',
+          hiddenInUAE: extra.hiddenInUAE || false
         }))))
       };
     }
@@ -100,19 +98,16 @@ export class EditPackageModalComponent implements OnInit {
     const newCollection: any = {
       collectionName: '',
       price: '',
+      priceAED: '',
+      hiddenInUAE: false,
       description: ''
     };
-    
-    // Add package-specific fields
     if (!this.isFullRecording()) {
-      // Cinematography & Photography: duration and features
       newCollection.duration = '';
       newCollection.features = [];
     } else {
-      // Full Recording: empty features array for backend
       newCollection.features = [];
     }
-    
     this.editedPackage.collections.push(newCollection);
   }
 
@@ -137,7 +132,9 @@ export class EditPackageModalComponent implements OnInit {
   addExtra() {
     this.editedPackage.extras.push({
       name: '',
-      price: ''
+      price: '',
+      priceAED: '',
+      hiddenInUAE: false
     });
   }
 
@@ -167,21 +164,24 @@ export class EditPackageModalComponent implements OnInit {
         const cleanedCol: any = {
           collectionName: col.collectionName,
           price: col.price,
+          priceAED: col.priceAED || null,
+          hiddenInUAE: col.hiddenInUAE || false,
           description: col.description || ''
         };
-        
-        // Include package-specific fields
         if (!this.isFullRecording()) {
-          // Cinematography & Photography: duration and features
           if (col.duration) cleanedCol.duration = col.duration;
           cleanedCol.features = col.features ? col.features.filter((f: string) => f.trim() !== '') : [];
         } else {
-          // Full Recording: always send empty features array
           cleanedCol.features = [];
         }
-        
         return cleanedCol;
-      })
+      }),
+      extras: this.editedPackage.extras.map((extra: any) => ({
+        name: extra.name,
+        price: extra.price,
+        priceAED: extra.priceAED || null,
+        hiddenInUAE: extra.hiddenInUAE || false
+      }))
     };
 
     this.packagesService.savePackage(packageToSave).subscribe({

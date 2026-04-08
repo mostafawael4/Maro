@@ -156,7 +156,7 @@
                       (change)="toggleCollection(pkg, collection)" />
                     <span class="checkbox-text">
                       {{ collection.collectionName }}
-                      <small *ngIf="collection.price">- {{ currencyService.formatPriceString(collection.price)
+                      <small *ngIf="collection.price || collection.priceAED">- {{ currencyService.formatPackagePrice(collection.price, collection.priceAED)
                         }}</small>
                     </span>
                   </label>
@@ -170,7 +170,7 @@
                     <input type="checkbox" [checked]="isExtraSelected(extra._id)" (change)="toggleExtra(pkg, extra)" />
                     <span class="checkbox-text">
                       {{ extra.name }}
-                      <small *ngIf="extra.price">- {{ currencyService.formatPriceString(extra.price) }}</small>
+                      <small *ngIf="extra.price || extra.priceAED">- {{ currencyService.formatPackagePrice(extra.price, extra.priceAED) }}</small>
                     </span>
                   </label>
                 </div>

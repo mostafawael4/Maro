@@ -5,6 +5,7 @@ import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { LoadingOverlayComponent } from './components/loading-overlay/loading-overlay.component';
 import { AuthService } from './services/auth.service';
+import { CurrencyService } from './services/currency.service';
 import { Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 import { isPlatformBrowser } from '@angular/common';
@@ -26,6 +27,7 @@ export class AppComponent implements OnInit, OnDestroy {
  
   constructor(
     private authService: AuthService,
+    private currencyService: CurrencyService,
     private ordersService: OrdersService,
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -39,6 +41,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.showOverlay = false;
       return;
     }
+
+    // Trigger server-side geo currency detection (sets currency$ and country$ for whole app)
+    this.currencyService.detectCurrency();
 
     // Resume any active background zip jobs (iPhone resilience)
     this.ordersService.resumeActiveJob();

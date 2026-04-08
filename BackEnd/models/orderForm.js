@@ -58,6 +58,7 @@ const OrderFormSchema = new Schema({
   },
   socialMediaInspiration: [{ type: String }],
   pricing: {
+    currency: { type: String, enum: ['EGP', 'AED', 'USD'], default: 'EGP' }, // currency at time of order
     packages: [pricingPackageSchema],
     collections: [pricingCollectionSchema],
     extras: [pricingExtraSchema],

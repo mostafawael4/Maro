@@ -41,15 +41,29 @@ router.post('/save', requireAdminAuth, async (req, res) => {
 });
 
 /**
+ * Filter UAE-hidden items from a package when country=AE.
+ */
+const applyUAEVisibility = (packages, country) => {
+  if (!country || country.toUpperCase() !== 'AE') return packages;
+  return packages.map(pkg => ({
+    ...pkg,
+    collections: (pkg.collections || []).filter(c => !c.hiddenInUAE),
+    extras: (pkg.extras || []).filter(e => !e.hiddenInUAE),
+  }));
+};
+
+/**
  * ✅ Get all package categories
- * GET /packages
+ * GET /packages?country=AE  (optional — filters hiddenInUAE items for UAE users)
  */
 router.get('/', async (req, res) => {
   logger.info("GET /packages requested");
   try {
     const all = await Packages.find().lean();
-    logger.info(`Fetched ${all.length} package categories.`);
-    res.json(all);
+    const country = req.query.country || '';
+    const filtered = applyUAEVisibility(all, country);
+    logger.info(`Fetched ${all.length} package categories (country=${country || 'none'}).`);
+    res.json(filtered);
   } catch (err) {
     logger.error('Error fetching packages:', err);
     console.error('Error fetching packages:', err);
@@ -59,7 +73,7 @@ router.get('/', async (req, res) => {
 
 /**
  * ✅ Get a single category by packageName
- * GET /packages/:packageName
+ * GET /packages/:packageName?country=AE
  */
 router.get('/:packageName', async (req, res) => {
   logger.info(`GET /packages/${req.params.packageName} requested`);
@@ -69,8 +83,10 @@ router.get('/:packageName', async (req, res) => {
       logger.warn(`Package category not found: ${req.params.packageName}`);
       return res.status(404).json({ error: 'Package category not found' });
     }
+    const country = req.query.country || '';
+    const [filtered] = applyUAEVisibility([pkg], country);
     logger.info(`Fetched package category: ${req.params.packageName}`);
-    res.json(pkg);
+    res.json(filtered);
   } catch (err) {
     logger.error('Error fetching package:', err);
     console.error('Error fetching package:', err);

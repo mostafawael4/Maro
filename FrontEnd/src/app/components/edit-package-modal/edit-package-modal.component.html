@@ -83,13 +83,30 @@
               />
             </div>
             <div class="form-group">
-              <label>Price</label>
+              <label>Price (EGP)</label>
               <input 
                 type="text" 
                 [(ngModel)]="collection.price" 
                 class="form-input"
                 placeholder="e.g., 20,000 LE"
               />
+            </div>
+            <div class="form-group">
+              <label>Price (AED) <span class="optional-hint">optional</span></label>
+              <input 
+                type="text" 
+                [(ngModel)]="collection.priceAED" 
+                class="form-input"
+                placeholder="e.g., 2000"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group form-group--checkbox">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="collection.hiddenInUAE" />
+                <span>Hide from UAE users</span>
+              </label>
             </div>
           </div>
 
@@ -175,7 +192,15 @@
                 type="text" 
                 [(ngModel)]="extra.price" 
                 class="form-input"
-                placeholder="Price..."
+                placeholder="Price (EGP)..."
+              />
+            </div>
+            <div class="form-group">
+              <input 
+                type="text" 
+                [(ngModel)]="extra.priceAED" 
+                class="form-input"
+                placeholder="AED price (optional)"
               />
             </div>
             <button type="button" class="remove-btn-icon" (click)="removeExtra(i)">
@@ -184,6 +209,14 @@
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </button>
+          </div>
+          <div class="form-row">
+            <div class="form-group form-group--checkbox">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="extra.hiddenInUAE" />
+                <span>Hide from UAE users</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>

@@ -4,6 +4,8 @@ import { PackagesService, PackageCollection, PackageExtra, Package } from '../..
 import { AuthService } from '../../services/auth.service';
 import { CurrencyService } from '../../services/currency.service';
 import { EditPackageModalComponent } from '../edit-package-modal/edit-package-modal.component';
+import { Subject } from 'rxjs';
+import { filter, take, skip, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-packages',
@@ -38,6 +40,7 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   visibleExtras: Set<string> = new Set();
   private intersectionObserver?: IntersectionObserver;
   private isBrowser: boolean;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private packagesService: PackagesService,
@@ -49,7 +52,22 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadAllPackages();
+    // BUG FIX: defer package load until geo-detect HTTP call resolves.
+    // This ensures ?country=AE is sent for UAE users (hiddenInUAE filtered server-side)
+    // and that prices use currencyService.currency which is already the detected value.
+    this.currencyService.currencyReady$.pipe(
+      filter((ready) => ready),
+      take(1)
+    ).subscribe(() => {
+      this.loadAllPackages();
+      // After the initial load, reactively reload whenever currency changes
+      // (e.g. user switches VPN mid-session). skip(1) avoids a duplicate load
+      // from the BehaviorSubject replaying the current value on subscribe.
+      this.currencyService.currency$.pipe(
+        skip(1),
+        takeUntil(this.destroy$)
+      ).subscribe(() => this.loadAllPackages());
+    });
 
     // Check authentication status
     this.authService.isAuthenticated$.subscribe(isAuth => {
@@ -76,7 +94,8 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Clean up observer
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
     }
@@ -223,8 +242,8 @@ export class PackagesComponent implements OnInit, AfterViewInit, OnDestroy {
     window.open('https://wa.me/201025641261', '_blank');
   }
 
-  // Format price using currency service
-  formatPrice(price: string | null | undefined): string {
-    return this.currencyService.formatPriceString(price);
+  // Format price using currency service — AED-aware
+  formatPrice(price: string | null | undefined, priceAED?: string | null): string {
+    return this.currencyService.formatPackagePrice(price, priceAED);
   }
 }

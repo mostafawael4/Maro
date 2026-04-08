@@ -63,6 +63,7 @@ export interface SelectedExtraOption {
 }
 
 export interface OrderPricing {
+  currency?: 'EGP' | 'AED' | 'USD';    // stored at order-creation time
   packages?: SelectedPackageOption[];
   collections?: SelectedCollectionOption[];
   extras?: SelectedExtraOption[];

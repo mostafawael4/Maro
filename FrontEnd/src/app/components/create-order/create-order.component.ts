@@ -7,6 +7,7 @@ import { SuccessModalComponent } from '../success-modal/success-modal.component'
 import { PackagesService, Package, PackageCollection, PackageExtra } from '../../services/packages.service';
 import { AuthService } from '../../services/auth.service';
 import { CurrencyService } from '../../services/currency.service';
+import { filter, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-create-order',
@@ -101,7 +102,19 @@ export class CreateOrderComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadPackages();
+    // Requirement: "Order creation step — fetch latest currency from backend".
+    // detectCurrency() resets currencyReady$ to false and fires a fresh HTTP
+    // call, so the pipe below waits for THIS fresh result (not a stale cached one).
+    this.currencyService.detectCurrency();
+
+    // Wait for the fresh detect above to complete before loading packages.
+    // Ensures ?country=AE is sent for UAE users so hiddenInUAE items are
+    // filtered and prices display in the correct currency.
+    this.currencyService.currencyReady$.pipe(
+      filter((ready) => ready),
+      take(1)
+    ).subscribe(() => this.loadPackages());
+
     this.authService.isAuthenticated$.subscribe(isAuth => {
       this.isAdminUser = isAuth ?? false;
       this.isStrictAdmin = this.authService.isAdmin();
@@ -328,13 +341,15 @@ export class CreateOrderComponent implements OnInit {
       });
     }
 
+    // In edit mode use the STORED order currency for display (not current user currency)
+    const displayCurrency = pricing?.currency || this.currencyService.currency;
+
     if (pricing?.collections?.length) {
       pricing.collections.forEach(collection => {
         if (collection.collectionId) {
-          // Reformat priceLabel based on current location to ensure correct currency display
           const formattedCollection = {
             ...collection,
-            priceLabel: this.currencyService.formatCurrency(collection.priceValue)
+            priceLabel: this.currencyService.formatOrderCurrency(collection.priceValue, displayCurrency)
           };
           this.selectedCollections.set(collection.collectionId, formattedCollection);
         }
@@ -344,10 +359,9 @@ export class CreateOrderComponent implements OnInit {
     if (pricing?.extras?.length) {
       pricing.extras.forEach(extra => {
         if (extra.extraId) {
-          // Reformat priceLabel based on current location to ensure correct currency display
           const formattedExtra = {
             ...extra,
-            priceLabel: this.currencyService.formatCurrency(extra.priceValue)
+            priceLabel: this.currencyService.formatOrderCurrency(extra.priceValue, displayCurrency)
           };
           this.selectedExtras.set(extra.extraId, formattedExtra);
         }
@@ -356,8 +370,6 @@ export class CreateOrderComponent implements OnInit {
 
     const pricingGroup = this.getPricingFormGroup();
 
-    // Use promoCode field to store the discount for compatibility
-    // If promoCode is numeric, it's our manual discount amount
     let discountForDisplay = 0;
     if (pricing?.promoCode && !isNaN(Number(pricing.promoCode))) {
       discountForDisplay = Number(pricing.promoCode);
@@ -365,7 +377,8 @@ export class CreateOrderComponent implements OnInit {
       discountForDisplay = pricing?.discount ?? 0;
     }
 
-    if (!this.currencyService.isInEgyptValue && discountForDisplay > 0) {
+    // For non-EGP stored orders, show discount as-is (already in stored currency)
+    if (displayCurrency === 'USD' && discountForDisplay > 0) {
       const rate = this.currencyService.currentExchangeRate;
       if (rate > 0) {
         discountForDisplay = Math.round(discountForDisplay / rate);
@@ -373,9 +386,8 @@ export class CreateOrderComponent implements OnInit {
     }
     pricingGroup?.get('promoCode')?.setValue(discountForDisplay.toString(), { emitEvent: false });
 
-    // Convert deposit from EGP to USD for display if outside Egypt
     let depositForDisplay = pricing?.depositPaid ?? 0;
-    if (!this.currencyService.isInEgyptValue && depositForDisplay > 0) {
+    if (displayCurrency === 'USD' && depositForDisplay > 0) {
       const rate = this.currencyService.currentExchangeRate;
       if (rate > 0) {
         depositForDisplay = Math.round(depositForDisplay / rate);
@@ -759,28 +771,39 @@ export class CreateOrderComponent implements OnInit {
   }
 
   private buildCollectionSelection(pkg: Package, collection: PackageCollection): SelectedCollectionOption {
-    const priceValue = this.parsePriceValue(collection.price);
+    // For AED users: use priceAED if available, otherwise fall back to EGP base price
+    let priceValue: number;
+    if (this.currencyService.currency === 'AED' && collection.priceAED) {
+      priceValue = this.parsePriceValue(collection.priceAED);
+    } else {
+      priceValue = this.parsePriceValue(collection.price);
+    }
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       collectionId: collection._id,
       collectionName: collection.collectionName,
-      priceLabel: this.currencyService.formatCurrency(priceValue),
-      priceValue: priceValue
+      priceLabel: this.currencyService.formatPackagePrice(collection.price, collection.priceAED),
+      priceValue
     };
   }
 
   private buildExtraSelection(pkg: Package, extra: PackageExtra): SelectedExtraOption {
-    const priceValue = this.parsePriceValue(extra.price);
+    let priceValue: number;
+    if (this.currencyService.currency === 'AED' && extra.priceAED) {
+      priceValue = this.parsePriceValue(extra.priceAED);
+    } else {
+      priceValue = this.parsePriceValue(extra.price);
+    }
     return {
       packageId: pkg._id,
       packageName: pkg.packageName,
       packageDisplayName: pkg.displayName,
       extraId: extra._id,
       extraName: extra.name,
-      priceLabel: this.currencyService.formatCurrency(priceValue),
-      priceValue: priceValue
+      priceLabel: this.currencyService.formatPackagePrice(extra.price, extra.priceAED),
+      priceValue
     };
   }
 
@@ -985,8 +1008,6 @@ export class CreateOrderComponent implements OnInit {
     const pricingGroup = this.getPricingFormGroup();
     let depositPaid = Number(pricingGroup?.get('depositPaid')?.value || 0);
 
-    // Note: depositPaid is already in EGP because we set it in updatePricingSummary
-    // but we'll keep the safety check logic if needed for different currencies.
     if (depositPaid > 0) {
       pricing.depositPaid = depositPaid;
       pricing.remainingBalance = this.pricingSummary.remaining;
@@ -995,6 +1016,13 @@ export class CreateOrderComponent implements OnInit {
     if (this.pricingSummary.discount > 0) {
       pricing.discount = this.pricingSummary.discount;
       pricing.promoCode = this.pricingSummary.discount.toString();
+    }
+
+    // In edit mode, use stored currency; for new orders use detected currency
+    if (this.isEditMode && this.editingOrder?.orderForm?.pricing?.currency) {
+      pricing.currency = this.editingOrder.orderForm.pricing.currency;
+    } else {
+      pricing.currency = this.currencyService.getCurrencyCode();
     }
 
     if (!hasSelections && !(pricing.discount && pricing.discount > 0)) {
@@ -1087,10 +1115,12 @@ export class CreateOrderComponent implements OnInit {
       email: formValue.email,
       clientName: formValue.clientName || undefined,
       notes: formValue.notes || undefined,
-      orderForm: orderFormData
+      orderForm: orderFormData,
+      currency: this.currencyService.getCurrencyCode() // pass detected currency to backend
     };
 
     this.ordersService.createOrder(orderData).subscribe({
+
       next: () => {
         this.isSubmitting = false;
         this.submitSuccess = true;

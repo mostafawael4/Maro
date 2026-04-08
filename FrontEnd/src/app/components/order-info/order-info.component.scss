@@ -186,7 +186,6 @@
     font-weight: 400;
     color: #ffdab9;
     margin-bottom: 0.75rem;
-    // font-style: italic;
     letter-spacing: 1px;
 
     @media (max-width: 768px) {
@@ -194,6 +193,49 @@
     }
   }
 }
+
+// Section title row with currency badge
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+
+  h2 {
+    margin-bottom: 0 !important;
+  }
+}
+
+// Currency badge on order-info pricing
+.currency-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  &.currency-egp {
+    background: rgba(255, 165, 0, 0.15);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+
+  &.currency-aed {
+    background: rgba(0, 188, 212, 0.15);
+    color: #4dd0e1;
+    border: 1px solid rgba(0, 188, 212, 0.3);
+  }
+
+  &.currency-usd {
+    background: rgba(76, 175, 80, 0.15);
+    color: #81c784;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+}
+
 
 .pricing-summary {
   margin-top: 1.5rem;

@@ -103,6 +103,20 @@ export class OrderInfoComponent implements OnInit {
     return this.currencyService.formatCurrency(value);
   }
 
+  /**
+   * Format a price using the currency stored on the order — not the admin's current location.
+   * This ensures UAE orders always show AED prices, Egypt orders show EGP, etc.
+   */
+  formatOrderPrice(value?: number | null, order?: any): string {
+    if (value === null || value === undefined) return '—';
+    const storedCurrency = order?.orderForm?.pricing?.currency || 'EGP';
+    return this.currencyService.formatOrderCurrency(value, storedCurrency);
+  }
+
+  getOrderCurrency(order?: any): string {
+    return order?.orderForm?.pricing?.currency || 'EGP';
+  }
+
   hasPricingSelections(pricing?: OrderPricing | null): boolean {
     if (!pricing) {
       return false;
