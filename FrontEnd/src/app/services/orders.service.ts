@@ -78,6 +78,7 @@ export interface OrderPricing {
 export interface OrderForm {
   _id?: string;
   brideAndGroomNames?: string;
+  assignedPhotographers?: string[];
   eventDate?: string;
   eventType?: string[];
   eventVenue?: string;

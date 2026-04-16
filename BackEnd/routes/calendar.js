@@ -73,6 +73,10 @@ router.get('/feed', async (req, res) => {
             details.push(`📍 Venue: ${venue}`);
             details.push(`📋 Status: ${order.status.toUpperCase()}`);
 
+            if (order.orderForm?.assignedPhotographers?.length) {
+                details.push(`📷 Photographers: ${order.orderForm.assignedPhotographers.join(', ')}`);
+            }
+
             if (order.orderForm?.eventType && order.orderForm.eventType.length > 0) {
                 details.push(`✨ Type: ${order.orderForm.eventType.join(', ')}`);
             }

@@ -85,6 +85,20 @@
           </span>
         </div>
 
+        <div class="form-group" *ngIf="isStrictAdmin">
+          <label>Assigned Photographers</label>
+          <div formArrayName="assignedPhotographers" class="array-input-group">
+            <div *ngFor="let ctrl of assignedPhotographersArray.controls; let i = index" class="array-item">
+              <input type="text" [formControlName]="i" class="form-control"
+                placeholder="Photographer name from your team" />
+              <button type="button" class="btn-remove" (click)="removeAssignedPhotographer(i)">Remove</button>
+            </div>
+            <button type="button" class="btn-add" (click)="addAssignedPhotographer()">
+              + Add Photographer
+            </button>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="clientName" class="required">Groom's Number</label>

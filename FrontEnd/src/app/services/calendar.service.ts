@@ -9,6 +9,7 @@ export interface WeddingCalendarEvent {
   brideName?: string;
   title: string;
   location?: string;
+  assignedPhotographers?: string;
   color?: string;
   notes?: string;
   editingNotes?: string;
@@ -53,6 +54,7 @@ export class CalendarService {
           brideName,
           title,
           location,
+          assignedPhotographers: order.orderForm?.assignedPhotographers?.filter(p => p).join(', ') || undefined,
           color: this.getStatusColor(order.status),
           notes: order.notes,
           editingNotes: this.buildEditingNotes(order.orderForm?.filmEditing),

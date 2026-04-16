@@ -79,6 +79,10 @@
                 <span class="event-key">Venue</span>
                 <span class="event-value">{{ event.location }}</span>
               </div>
+              <div class="event-field" *ngIf="event.assignedPhotographers">
+                <span class="event-key">Photographers</span>
+                <span class="event-value">{{ event.assignedPhotographers }}</span>
+              </div>
               <div class="event-field" *ngIf="event.notes">
                 <span class="event-key">Notes</span>
                 <span class="event-value multi-line">{{ event.notes }}</span>
@@ -140,6 +144,10 @@
                 <div class="event-field" *ngIf="event.location">
                   <span class="event-key">Venue</span>
                   <span class="event-value">{{ event.location }}</span>
+                </div>
+                <div class="event-field" *ngIf="event.assignedPhotographers">
+                  <span class="event-key">Photographers</span>
+                  <span class="event-value">{{ event.assignedPhotographers }}</span>
                 </div>
 
                 <div class="event-field">

@@ -80,6 +80,10 @@
           <span class="info-label">Bride & Groom's names</span>
           <span class="info-value">{{ order.orderForm.brideAndGroomNames }}</span>
         </div>
+        <div class="info-item" *ngIf="order.orderForm.assignedPhotographers && order.orderForm.assignedPhotographers.length > 0">
+          <span class="info-label">Assigned Photographers</span>
+          <span class="info-value">{{ order.orderForm.assignedPhotographers.join(', ') }}</span>
+        </div>
         <div class="info-item" *ngIf="order.orderForm.eventDate">
           <span class="info-label">Event Date</span>
           <span class="info-value">{{ formatDate(order.orderForm.eventDate) }}</span>

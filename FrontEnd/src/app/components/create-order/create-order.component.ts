@@ -151,6 +151,7 @@ export class CreateOrderComponent implements OnInit {
 
       // Order form fields
       brideAndGroomNames: ['', Validators.required],
+      assignedPhotographers: this.fb.array([this.fb.control('')]),
       eventDate: ['', Validators.required],
       eventType: this.fb.array([], Validators.required),
       eventTypeOther: [''],
@@ -478,6 +479,7 @@ export class CreateOrderComponent implements OnInit {
       eventTypeOther: ''
     }, { emitEvent: false });
 
+    this.setFormArrayValues(this.assignedPhotographersArray, formData.assignedPhotographers || []);
     this.setFormArrayValues(this.eventTypeArray, formData.eventType || [], false);
     this.setFormArrayValues(this.socialMediaInspirationArray, formData.socialMediaInspiration || []);
     this.setFormArrayValues(this.teaserStyleLinksArray, formData.filmEditing?.teaserStyleLinks || [], false);
@@ -576,6 +578,10 @@ export class CreateOrderComponent implements OnInit {
   }
 
 
+  get assignedPhotographersArray(): FormArray {
+    return this.orderForm.get('assignedPhotographers') as FormArray;
+  }
+
   get photographersArray(): FormArray {
     return (this.orderForm.get('vendors') as FormGroup).get('photographers') as FormArray;
   }
@@ -627,6 +633,17 @@ export class CreateOrderComponent implements OnInit {
     return this.isEventTypeSelected('Other');
   }
 
+
+  addAssignedPhotographer(): void {
+    this.assignedPhotographersArray.push(this.fb.control(''));
+  }
+
+  removeAssignedPhotographer(index: number): void {
+    this.assignedPhotographersArray.removeAt(index);
+    if (this.assignedPhotographersArray.length === 0) {
+      this.addAssignedPhotographer();
+    }
+  }
 
   addPhotographer(): void {
     this.photographersArray.push(this.fb.control(''));
@@ -1068,6 +1085,7 @@ export class CreateOrderComponent implements OnInit {
     // Build orderForm object
     const orderFormData: OrderForm = {
       brideAndGroomNames: formValue.brideAndGroomNames || undefined,
+      assignedPhotographers: formValue.assignedPhotographers?.filter((p: string) => p) || undefined,
       eventDate: formValue.eventDate || undefined,
       eventType: eventTypes.length > 0 ? eventTypes : undefined,
       eventVenue: formValue.eventVenue || undefined,

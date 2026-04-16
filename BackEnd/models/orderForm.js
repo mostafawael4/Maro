@@ -29,6 +29,7 @@ const pricingExtraSchema = new Schema({
 
 const OrderFormSchema = new Schema({
   brideAndGroomNames: { type: String },
+  assignedPhotographers: [{ type: String }],
   eventDate: { type: Date },
   eventType: [{ type: String }], // wedding, engagement, etc.
   eventVenue: { type: String },
