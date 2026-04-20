@@ -58,7 +58,7 @@ export async function sendOrderReadyEmail(order) {
                   <div style="max-width:600px; margin:0 auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
                     <div style="background:#7b2e2f; color:#fff; padding:20px 30px;">
                       <h2 style="margin:0; font-weight:500;">Event Successfully Completed</h2>
-                      <p style="margin:5px 0 0;">Order ID: ${order._id}</p>
+                      <p style="margin:5px 0 0;">Event ID: ${order._id}</p>
                     </div>
                     <div style="padding:30px;">
                       <p style="margin:0 0 10px;"><strong>Brides & Groom:</strong> ${brideAndGroom}</p>
