@@ -891,6 +891,51 @@
   }
 }
 
+// Extra row: checkbox + quantity on the same line
+.extra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.extra-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+
+  .qty-label {
+    font-size: 0.8rem;
+    color: #ffdab9;
+    font-weight: 500;
+  }
+
+  .qty-input {
+    width: 56px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.85rem;
+    text-align: center;
+    background: rgba(255, 218, 185, 0.1);
+    border: 1px solid rgba(255, 218, 185, 0.3);
+    border-radius: 6px;
+    color: #fdf9f2;
+    outline: none;
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+
+    &:focus {
+      border-color: #ffdab9;
+      box-shadow: 0 0 0 2px rgba(255, 218, 185, 0.15);
+    }
+  }
+}
+
 // Form Actions
 .form-actions {
   display: flex;

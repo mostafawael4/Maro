@@ -50,6 +50,7 @@ export interface SelectedCollectionOption {
   collectionName: string;
   priceLabel: string;
   priceValue: number;
+  quantity: number;
 }
 
 export interface SelectedExtraOption {
@@ -60,6 +61,7 @@ export interface SelectedExtraOption {
   extraName: string;
   priceLabel: string;
   priceValue: number;
+  quantity: number;
 }
 
 export interface OrderPricing {

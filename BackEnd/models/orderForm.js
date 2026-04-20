@@ -15,6 +15,7 @@ const pricingCollectionSchema = new Schema({
   collectionName: { type: String },
   priceLabel: { type: String },
   priceValue: { type: Number },
+  quantity: { type: Number, default: 1 },
 }, { _id: false });
 
 const pricingExtraSchema = new Schema({
@@ -25,6 +26,7 @@ const pricingExtraSchema = new Schema({
   extraName: { type: String },
   priceLabel: { type: String },
   priceValue: { type: Number },
+  quantity: { type: Number, default: 1 },
 }, { _id: false });
 
 const OrderFormSchema = new Schema({

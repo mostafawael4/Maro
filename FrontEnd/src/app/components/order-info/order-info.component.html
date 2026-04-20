@@ -233,10 +233,10 @@
             <li *ngFor="let collection of order.orderForm?.pricing?.collections">
               <div>
                 <span class="item-title">{{ collection.packageDisplayName || collection.packageName }}</span>
-                <span class="item-subtitle">{{ collection.collectionName }}</span>
+                <span class="item-subtitle">{{ collection.collectionName }}<span *ngIf="collection.quantity && collection.quantity > 1"> &times;{{ collection.quantity }}</span></span>
               </div>
               <span class="price-pill">
-                {{ collection.priceLabel || formatCurrency(collection.priceValue) }}
+                {{ collection.priceLabel || formatCurrency(collection.priceValue) }}{{ collection.quantity && collection.quantity > 1 ? ' each' : '' }}
               </span>
             </li>
           </ul>
@@ -248,10 +248,10 @@
             <li *ngFor="let extra of order.orderForm?.pricing?.extras">
               <div>
                 <span class="item-title">{{ extra.packageDisplayName || extra.packageName }}</span>
-                <span class="item-subtitle">{{ extra.extraName }}</span>
+                <span class="item-subtitle">{{ extra.extraName }}<span *ngIf="extra.quantity && extra.quantity > 1"> &times;{{ extra.quantity }}</span></span>
               </div>
               <span class="price-pill">
-                {{ extra.priceLabel || formatCurrency(extra.priceValue) }}
+                {{ extra.priceLabel || formatCurrency(extra.priceValue) }}{{ extra.quantity && extra.quantity > 1 ? ' each' : '' }}
               </span>
             </li>
           </ul>

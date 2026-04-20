@@ -165,28 +165,44 @@
                 <h4>Collections</h4>
                 <p class="empty-text" *ngIf="!pkg.collections?.length">No collections available.</p>
                 <div class="checkbox-group vertical" *ngIf="pkg.collections?.length">
-                  <label *ngFor="let collection of pkg.collections" class="checkbox-label">
-                    <input type="checkbox" [checked]="isCollectionSelected(collection._id)"
-                      (change)="toggleCollection(pkg, collection)" />
-                    <span class="checkbox-text">
-                      {{ collection.collectionName }}
-                      <small *ngIf="collection.price || collection.priceAED">- {{ currencyService.formatPackagePrice(collection.price, collection.priceAED)
-                        }}</small>
-                    </span>
-                  </label>
+                  <div *ngFor="let collection of pkg.collections" class="extra-row">
+                    <label class="checkbox-label">
+                      <input type="checkbox" [checked]="isCollectionSelected(collection._id)"
+                        (change)="toggleCollection(pkg, collection)" />
+                      <span class="checkbox-text">
+                        {{ collection.collectionName }}
+                        <small *ngIf="collection.price || collection.priceAED">- {{ currencyService.formatPackagePrice(collection.price, collection.priceAED)
+                          }}</small>
+                      </span>
+                    </label>
+                    <div class="extra-quantity" *ngIf="isCollectionSelected(collection._id) && pkg.packageName === 'fullRecording'">
+                      <label class="qty-label">Qty:</label>
+                      <input type="number" class="qty-input" min="1" [value]="getCollectionQuantity(collection._id)"
+                        (change)="updateCollectionQuantity(pkg, collection, $event)"
+                        (click)="$event.stopPropagation()" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="package-section" *ngIf="pkg.extras?.length">
                 <h4>Extras</h4>
                 <div class="checkbox-group vertical">
-                  <label *ngFor="let extra of pkg.extras" class="checkbox-label">
-                    <input type="checkbox" [checked]="isExtraSelected(extra._id)" (change)="toggleExtra(pkg, extra)" />
-                    <span class="checkbox-text">
-                      {{ extra.name }}
-                      <small *ngIf="extra.price || extra.priceAED">- {{ currencyService.formatPackagePrice(extra.price, extra.priceAED) }}</small>
-                    </span>
-                  </label>
+                  <div *ngFor="let extra of pkg.extras" class="extra-row">
+                    <label class="checkbox-label">
+                      <input type="checkbox" [checked]="isExtraSelected(extra._id)" (change)="toggleExtra(pkg, extra)" />
+                      <span class="checkbox-text">
+                        {{ extra.name }}
+                        <small *ngIf="extra.price || extra.priceAED">- {{ currencyService.formatPackagePrice(extra.price, extra.priceAED) }}</small>
+                      </span>
+                    </label>
+                    <div class="extra-quantity" *ngIf="isExtraSelected(extra._id)">
+                      <label class="qty-label">Qty:</label>
+                      <input type="number" class="qty-input" min="1" [value]="getExtraQuantity(extra._id)"
+                        (change)="updateExtraQuantity(pkg, extra, $event)"
+                        (click)="$event.stopPropagation()" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -233,13 +249,15 @@
             <ul>
               <li *ngFor="let collection of getSelectedCollectionsList()">
                 {{ collection.packageDisplayName }} — {{ collection.collectionName }}
+                <span *ngIf="collection.quantity > 1"> &times;{{ collection.quantity }}</span>
                 <span class="price-tag">{{ collection.priceLabel ||
-                  currencyService.formatCurrency(collection.priceValue) }}</span>
+                  currencyService.formatCurrency(collection.priceValue) }}{{ collection.quantity > 1 ? ' each' : '' }}</span>
               </li>
               <li *ngFor="let extra of getSelectedExtrasList()">
                 {{ extra.packageDisplayName }} — {{ extra.extraName }}
+                <span *ngIf="extra.quantity > 1"> &times;{{ extra.quantity }}</span>
                 <span class="price-tag">{{ extra.priceLabel || currencyService.formatCurrency(extra.priceValue)
-                  }}</span>
+                  }}{{ extra.quantity > 1 ? ' each' : '' }}</span>
               </li>
             </ul>
           </div>

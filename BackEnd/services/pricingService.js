@@ -94,7 +94,8 @@ const processCollections = (collectionSelections, resolve, append, currency) => 
       );
       if (!collectionMatch) return;
       const priceValue = resolvePriceForCurrency(collectionMatch, currency);
-      collectionsSubtotal += priceValue;
+      const quantity = parseInt(selection.quantity, 10) || 1;
+      collectionsSubtotal += priceValue * quantity;
       append(pkg);
       collections.push({
         packageId: pkg._id,
@@ -104,6 +105,7 @@ const processCollections = (collectionSelections, resolve, append, currency) => 
         collectionName: collectionMatch.collectionName,
         priceLabel: resolvePriceLabelForCurrency(collectionMatch, currency, priceValue),
         priceValue,
+        quantity,
       });
     });
   }
@@ -123,7 +125,8 @@ const processExtras = (extraSelections, resolve, append, currency) => {
       );
       if (!extraMatch) return;
       const priceValue = resolvePriceForCurrency(extraMatch, currency);
-      extrasSubtotal += priceValue;
+      const quantity = parseInt(selection.quantity, 10) || 1;
+      extrasSubtotal += priceValue * quantity;
       append(pkg);
       extras.push({
         packageId: pkg._id,
@@ -133,6 +136,7 @@ const processExtras = (extraSelections, resolve, append, currency) => {
         extraName: extraMatch.name,
         priceLabel: resolvePriceLabelForCurrency(extraMatch, currency, priceValue),
         priceValue,
+        quantity,
       });
     });
   }

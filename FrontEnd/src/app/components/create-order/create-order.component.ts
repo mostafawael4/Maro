@@ -350,6 +350,7 @@ export class CreateOrderComponent implements OnInit {
         if (collection.collectionId) {
           const formattedCollection = {
             ...collection,
+            quantity: collection.quantity || 1,
             priceLabel: this.currencyService.formatOrderCurrency(collection.priceValue, displayCurrency)
           };
           this.selectedCollections.set(collection.collectionId, formattedCollection);
@@ -362,6 +363,7 @@ export class CreateOrderComponent implements OnInit {
         if (extra.extraId) {
           const formattedExtra = {
             ...extra,
+            quantity: extra.quantity || 1,
             priceLabel: this.currencyService.formatOrderCurrency(extra.priceValue, displayCurrency)
           };
           this.selectedExtras.set(extra.extraId, formattedExtra);
@@ -742,6 +744,30 @@ export class CreateOrderComponent implements OnInit {
     return this.selectedCollections.has(collectionId);
   }
 
+  getCollectionQuantity(collectionId: string): number {
+    return this.selectedCollections.get(collectionId)?.quantity || 1;
+  }
+
+  updateCollectionQuantity(pkg: Package, collection: PackageCollection, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let quantity = parseInt(input.value, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      quantity = 1;
+      input.value = '1';
+    }
+
+    const existing = this.selectedCollections.get(collection._id);
+    if (existing) {
+      existing.quantity = quantity;
+      this.selectedCollections.set(collection._id, existing);
+    } else {
+      this.ensurePackageSelected(pkg);
+      this.selectedCollections.set(collection._id, this.buildCollectionSelection(pkg, collection, quantity));
+    }
+    this.updatePricingSummary();
+    this.validatePackageSelections();
+  }
+
   toggleExtra(pkg: Package, extra: PackageExtra): void {
     if (!extra?._id) {
       return;
@@ -759,6 +785,30 @@ export class CreateOrderComponent implements OnInit {
 
   isExtraSelected(extraId: string): boolean {
     return this.selectedExtras.has(extraId);
+  }
+
+  getExtraQuantity(extraId: string): number {
+    return this.selectedExtras.get(extraId)?.quantity || 1;
+  }
+
+  updateExtraQuantity(pkg: Package, extra: PackageExtra, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let quantity = parseInt(input.value, 10);
+    if (isNaN(quantity) || quantity < 1) {
+      quantity = 1;
+      input.value = '1';
+    }
+
+    const existing = this.selectedExtras.get(extra._id);
+    if (existing) {
+      existing.quantity = quantity;
+      this.selectedExtras.set(extra._id, existing);
+    } else {
+      this.ensurePackageSelected(pkg);
+      this.selectedExtras.set(extra._id, this.buildExtraSelection(pkg, extra, quantity));
+    }
+    this.updatePricingSummary();
+    this.validatePackageSelections();
   }
 
   get hasSelectedPhotographyPackage(): boolean {
@@ -787,8 +837,7 @@ export class CreateOrderComponent implements OnInit {
     };
   }
 
-  private buildCollectionSelection(pkg: Package, collection: PackageCollection): SelectedCollectionOption {
-    // For AED users: use priceAED if available, otherwise fall back to EGP base price
+  private buildCollectionSelection(pkg: Package, collection: PackageCollection, quantity: number = 1): SelectedCollectionOption {
     let priceValue: number;
     if (this.currencyService.currency === 'AED' && collection.priceAED) {
       priceValue = this.parsePriceValue(collection.priceAED);
@@ -802,11 +851,12 @@ export class CreateOrderComponent implements OnInit {
       collectionId: collection._id,
       collectionName: collection.collectionName,
       priceLabel: this.currencyService.formatPackagePrice(collection.price, collection.priceAED),
-      priceValue
+      priceValue,
+      quantity
     };
   }
 
-  private buildExtraSelection(pkg: Package, extra: PackageExtra): SelectedExtraOption {
+  private buildExtraSelection(pkg: Package, extra: PackageExtra, quantity: number = 1): SelectedExtraOption {
     let priceValue: number;
     if (this.currencyService.currency === 'AED' && extra.priceAED) {
       priceValue = this.parsePriceValue(extra.priceAED);
@@ -820,7 +870,8 @@ export class CreateOrderComponent implements OnInit {
       extraId: extra._id,
       extraName: extra.name,
       priceLabel: this.currencyService.formatPackagePrice(extra.price, extra.priceAED),
-      priceValue
+      priceValue,
+      quantity
     };
   }
 
@@ -855,11 +906,13 @@ export class CreateOrderComponent implements OnInit {
   }
 
   public updatePricingSummary(): void {
-    const subtotal =
-      [...this.selectedCollections.values(), ...this.selectedExtras.values()].reduce(
-        (sum, item) => sum + (item.priceValue || 0),
-        0
-      );
+    const collectionsTotal = [...this.selectedCollections.values()].reduce(
+      (sum, item) => sum + (item.priceValue || 0) * (item.quantity || 1), 0
+    );
+    const extrasTotal = [...this.selectedExtras.values()].reduce(
+      (sum, item) => sum + (item.priceValue || 0) * (item.quantity || 1), 0
+    );
+    const subtotal = collectionsTotal + extrasTotal;
 
     const pricingGroup = this.getPricingFormGroup();
     let discount = Number(pricingGroup?.get('promoCode')?.value || 0);
