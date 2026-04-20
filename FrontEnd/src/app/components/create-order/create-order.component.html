@@ -23,8 +23,8 @@
 
     <!-- Success Modal -->
     <app-success-modal [isOpen]="submitSuccess"
-      [title]="isEditMode ? 'Order Updated Successfully!' : 'Order Created Successfully!'"
-      [message]="isEditMode ? 'Your changes have been saved successfully.' : 'Your order has been created successfully. You will be redirected to the orders page.'"
+      [title]="isEditMode ? 'Event Updated Successfully!' : 'Event Created Successfully!'"
+      [message]="isEditMode ? 'Your changes have been saved successfully.' : 'Your event has been created successfully. You will be redirected to the events page.'"
       (close)="onSuccessModalClose()"></app-success-modal>
 
     <!-- Error Modal -->
@@ -33,7 +33,7 @@
 
     <div *ngIf="isEditMode && loadingOrderData" class="loading-container">
       <div class="spinner"></div>
-      <p>Loading order details...</p>
+      <p>Loading event details...</p>
     </div>
 
     <div *ngIf="loadOrderError" class="error-message">
@@ -53,7 +53,7 @@
         <line x1="12" y1="8" x2="12" y2="12" />
         <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
-      <p>Sorry, this order can’t be edited anymore as its time has already started or passed.</p>
+      <p>Sorry, this event can’t be edited anymore as its time has already started or passed.</p>
     </div>
 
     <!-- Order Form -->
@@ -210,7 +210,7 @@
         </div>
 
         <div class="pricing-summary-card" *ngIf="packages.length">
-          <h3>Order Total</h3>
+          <h3>Event Total</h3>
           <div class="summary-row">
             <span>Subtotal</span>
             <strong>{{ currencyService.formatCurrency(pricingSummary.subtotal) }}</strong>
