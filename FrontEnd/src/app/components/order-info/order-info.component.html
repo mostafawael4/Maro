@@ -12,7 +12,7 @@
   <!-- Loading State -->
   <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>
-    <p>Loading order information...</p>
+    <p>Loading event information...</p>
   </div>
 
   <!-- Error State -->
@@ -32,7 +32,7 @@
     <div class="order-header">
       <div class="header-top">
         <div>
-          <h1>Order Information</h1>
+          <h1>Event Information</h1>
           <p class="order-id">Order #{{ order._id }}</p>
         </div>
         <span class="status-badge" [ngClass]="getStatusClass(order.status)">

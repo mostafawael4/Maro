@@ -3,11 +3,11 @@
     <!-- Header -->
     <div class="page-header">
       <h1 class="page-title">
-        {{ isEditMode ? 'Edit Order' : 'Create New Order' }}
+        {{ isEditMode ? 'Edit Event' : 'Create New Event' }}
       </h1>
       <p class="page-description">
-        {{ isEditMode ? 'Review the order form details below and make any necessary changes.' : 'Fill in the details
-        below to create a new order' }}
+        {{ isEditMode ? 'Review the event form details below and make any necessary changes.' : 'Fill in the details
+        below to create a new event' }}
       </p>
     </div>
 
@@ -463,8 +463,8 @@
       <div class="form-actions">
         <button type="submit" class="btn-submit" [disabled]="isSubmitting || (formLockedForDate && !isStrictAdmin)"
           *ngIf="!formLockedForDate || isStrictAdmin">
-          <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Create Order' }}</span>
-          <span *ngIf="isSubmitting">{{ isEditMode ? 'Saving Changes...' : 'Creating Order...' }}</span>
+          <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Create Event' }}</span>
+          <span *ngIf="isSubmitting">{{ isEditMode ? 'Saving Changes...' : 'Creating Event...' }}</span>
         </button>
         <button type="button" class="btn-cancel" (click)="onCancel()">
           Cancel
