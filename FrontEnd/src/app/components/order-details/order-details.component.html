@@ -105,4 +105,71 @@
     [images]="getImageOnlyMedia()" [currentBackgroundImage]="order.orderBackground?.image"
     (imageSelected)="onBackgroundImageSelected($event)" (close)="onCloseBackgroundImageSelector()">
   </app-background-image-selector>
+
+  <!-- Feedback Popup Modal (Client Only) -->
+  <div *ngIf="showFeedbackPopup" class="feedback-popup-overlay">
+    <div class="feedback-popup">
+      <!-- Success state -->
+      <ng-container *ngIf="feedbackSubmitted; else feedbackForm">
+        <div class="feedback-success-state">
+          <div class="feedback-success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <h2>Thank You!</h2>
+          <p>Your feedback means a lot to us.</p>
+          <button class="feedback-continue-btn" (click)="closeFeedbackPopup()">
+            Continue Viewing
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- Feedback form -->
+      <ng-template #feedbackForm>
+        <div class="feedback-popup-header">
+          <div class="feedback-header-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <h2>We'd Love Your Feedback</h2>
+          <p>How do you feel about your photos? Share your thoughts with us.</p>
+        </div>
+
+        <div class="feedback-popup-body">
+          <textarea [(ngModel)]="feedbackText" placeholder="Tell us what you think about your photos..."
+            class="feedback-textarea" rows="4" [disabled]="submittingFeedback"
+            maxlength="1000"></textarea>
+          <div class="feedback-char-count">{{ feedbackText.length }} / 1000</div>
+
+          <p *ngIf="feedbackError" class="feedback-popup-error">{{ feedbackError }}</p>
+
+          <button class="feedback-submit-btn" (click)="submitFeedback()"
+            [disabled]="!feedbackText.trim() || submittingFeedback">
+            <ng-container *ngIf="!submittingFeedback; else submittingState">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+              Submit Feedback
+            </ng-container>
+            <ng-template #submittingState>
+              <div class="feedback-spinner"></div>
+              Submitting...
+            </ng-template>
+          </button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
 </div>

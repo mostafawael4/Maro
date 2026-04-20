@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrdersService, Order, OrderImage } from '../../services/orders.service';
 import { AuthService } from '../../services/auth.service';
@@ -21,6 +22,7 @@ import { SortingUtils } from '../../utils/sorting-utils';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ImageSliderComponent,
     DeleteModalComponent,
     VideoPosterSelectorComponent,
@@ -62,6 +64,16 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   zippingFolder: boolean = false;
   zippingFolderMessage: string = 'Preparing download\u2026';
   zippingProgress: number = 0;
+
+  // Feedback popup state
+  showFeedbackPopup = false;
+  feedbackText = '';
+  submittingFeedback = false;
+  feedbackSubmitted = false;
+  feedbackError = '';
+  private feedbackTimerId: any = null;
+  private readonly FEEDBACK_DELAY_MS = 60_000; // 1 minute
+
   private foldersInitialized = false;
   private destroy$ = new Subject<void>();
 
@@ -117,6 +129,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.clearFeedbackTimer();
   }
 
   get currentMedia(): OrderImage[] {
@@ -413,6 +426,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.selectedFolder = null;
     this.folderMediaError = '';
     this.folderMediaLoading = false;
+    this.clearFeedbackTimer();
 
     if (!this.isAuthenticated) {
       this.folderMedia = this.order?.media || [];
@@ -468,6 +482,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
       const media = this.order?.media || [];
       this.folderMedia = media.filter(item => item.foldername === folderName);
       this.folderMediaLoading = false;
+      this.startFeedbackTimer();
       return;
     }
 
@@ -630,15 +645,75 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     if (!this.order?._id) return;
 
     if (this.ordersService.isIOS()) {
-      // Start the global background zip process (iPhone resilience)
       this.ordersService.startBackgroundZip(this.order._id, folderName, this.clientEmail);
-      
-      // Immediately redirect to home as requested
       this.router.navigate(['/home']);
     } else {
-      // PC / Android: direct streaming
       this.ordersService.downloadFolderZip(this.order._id, folderName, this.clientEmail);
     }
+  }
+
+  // ─── Feedback Popup ──────────────────────────────────────────────────────────
+
+  private hasFeedbackBeenGiven(): boolean {
+    if (!this.order?._id) return false;
+    try {
+      return localStorage.getItem(`maro_feedback_${this.order._id}`) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  private markFeedbackGiven(): void {
+    if (!this.order?._id) return;
+    try {
+      localStorage.setItem(`maro_feedback_${this.order._id}`, 'true');
+    } catch { /* ignore storage errors */ }
+  }
+
+  private startFeedbackTimer(): void {
+    if (this.isAuthenticated || this.hasFeedbackBeenGiven()) return;
+    this.clearFeedbackTimer();
+
+    this.feedbackTimerId = setTimeout(() => {
+      if (this.selectedFolder && !this.isAuthenticated && !this.hasFeedbackBeenGiven()) {
+        this.showFeedbackPopup = true;
+      }
+    }, this.FEEDBACK_DELAY_MS);
+  }
+
+  private clearFeedbackTimer(): void {
+    if (this.feedbackTimerId) {
+      clearTimeout(this.feedbackTimerId);
+      this.feedbackTimerId = null;
+    }
+  }
+
+  submitFeedback(): void {
+    if (!this.order?._id || !this.feedbackText.trim() || this.submittingFeedback) return;
+
+    this.submittingFeedback = true;
+    this.feedbackError = '';
+
+    this.ordersService.submitFeedback(this.order._id, this.feedbackText.trim()).subscribe({
+      next: () => {
+        this.submittingFeedback = false;
+        this.feedbackSubmitted = true;
+        this.markFeedbackGiven();
+      },
+      error: (err) => {
+        this.submittingFeedback = false;
+        this.feedbackError = 'Failed to submit feedback. Please try again.';
+        console.error('Error submitting feedback:', err);
+      }
+    });
+  }
+
+  closeFeedbackPopup(): void {
+    if (!this.feedbackSubmitted) return;
+    this.showFeedbackPopup = false;
+    this.feedbackText = '';
+    this.feedbackSubmitted = false;
+    this.feedbackError = '';
   }
 }
 
