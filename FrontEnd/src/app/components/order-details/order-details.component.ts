@@ -709,7 +709,6 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   }
 
   closeFeedbackPopup(): void {
-    if (!this.feedbackSubmitted) return;
     this.showFeedbackPopup = false;
     this.feedbackText = '';
     this.feedbackSubmitted = false;

@@ -39,15 +39,20 @@ router.get('/all', async (req, res) => {
     // Get from Feedbacks collection
     const generalFeedbacks = await Feedbacks.find({}).lean();
 
-    // Get feedbacks embedded in each order
-    const orders = await Order.find({}, { feedbacks: 1, _id: 1 }).lean();
+    // Get feedbacks embedded in each order (include background + names)
+    const orders = await Order.find(
+      {},
+      { feedbacks: 1, _id: 1, orderBackground: 1, 'orderForm.brideAndGroomNames': 1 }
+    ).lean();
     const orderFeedbacks = [];
     orders.forEach(order => {
       if (order.feedbacks && Array.isArray(order.feedbacks)) {
         order.feedbacks.forEach(fb => {
           orderFeedbacks.push({
             ...fb,
-            orderId: order._id
+            orderId: order._id,
+            backgroundImage: order.orderBackground?.thumbnail || order.orderBackground?.image || null,
+            brideAndGroomNames: order.orderForm?.brideAndGroomNames || null
           });
         });
       }

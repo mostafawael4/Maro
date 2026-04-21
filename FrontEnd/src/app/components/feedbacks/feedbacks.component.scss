@@ -1,404 +1,617 @@
-.feedbacks-container {
-  background: #580111; // Dark burgundy
+$burgundy: #580111;
+$deep: #1a0105;
+$peach: #ffdab9;
+$peach-soft: rgba(255, 218, 185, 0.12);
+$glass-bg: rgba(26, 1, 5, 0.55);
+$glass-border: rgba(255, 218, 185, 0.15);
+
+$font-heading: 'Playfair Display', serif;
+$font-body: 'Inter', system-ui, sans-serif;
+
+// ─── Page ──────────────────────────────────────────
+.feedbacks-page {
+  background: $burgundy;
   min-height: 100vh;
-  padding: 40px 20px;
-  font-family: 'Georgia', serif;
+  font-family: $font-body;
+  overflow-x: hidden;
 }
 
-.header {
+// ─── Hero Header ───────────────────────────────────
+.hero-header {
+  position: relative;
   text-align: center;
-  margin-bottom: 50px;
-  animation: fadeIn 0.8s ease-out;
+  padding: 64px 24px 40px;
+  overflow: hidden;
 
-  h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.5rem;
-    font-weight: 400;
-    color: #ffdab9; // Light peach
-    margin-bottom: 0.75rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    // font-style: italic;
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    animation: fadeDown 0.7s ease-out;
   }
 
-  p {
-    color: rgba(255, 255, 255, 0.9); // Light text
-    font-size: 1rem;
-    font-style: italic;
+  .hero-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: $peach;
+    background: $peach-soft;
+    border: 1px solid $glass-border;
+    padding: 6px 20px;
+    border-radius: 40px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(6px);
+    font-family: $font-body;
+  }
+
+  h1 {
+    font-family: $font-heading;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 400;
+    color: #fff;
+    margin: 0 0 12px;
     letter-spacing: 0.5px;
   }
 
-  @media (max-width: 768px) {
-    h1 {
-      font-size: 2rem;
-    }
+  p {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.95rem;
+    font-weight: 300;
+    max-width: 460px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .hero-decoration {
+    position: absolute;
+    top: -120px;
+    right: -80px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 218, 185, 0.06) 0%, transparent 70%);
+    pointer-events: none;
   }
 }
 
-.feedback-form-card {
-  max-width: 700px;
-  margin: 0 auto 40px;
-  background: rgba(26, 1, 5, 0.8);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 15px 40px rgba(139, 58, 58, 0.12);
-  border: 1px solid rgba(255, 218, 185, 0.3);
+// ─── Form Section ──────────────────────────────────
+.form-section {
+  max-width: 640px;
+  margin: 0 auto 48px;
+  padding: 0 20px;
+  animation: fadeUp 0.6s 0.2s ease-out both;
+}
 
-  h2 {
-    font-family: 'Playfair Display', serif;
-    color: #ffdab9;
-    margin-bottom: 0.5rem;
-    font-size: 1.5rem;
-  }
+.glass-form {
+  background: $glass-bg;
+  backdrop-filter: blur(20px);
+  border: 1px solid $glass-border;
+  border-radius: 20px;
+  padding: 28px;
 
-  p {
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 1rem;
-    font-style: italic;
-  }
+  .form-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
 
-  .feedback-textarea {
-    width: 100%;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    font-size: 1rem;
-    font-family: 'Georgia', serif;
-    resize: none;
-    background: rgba(26, 1, 5, 0.6);
-    color: #fdf9f2;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &:focus {
-      outline: none;
-      border-color: #ffdab9;
-      box-shadow: 0 0 0 3px rgba(197, 106, 106, 0.25);
+    .form-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: $peach-soft;
+      border: 1px solid $glass-border;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $peach;
+      flex-shrink: 0;
     }
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    h2 {
+      font-family: $font-body;
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.82rem;
+      font-weight: 300;
+      margin: 2px 0 0;
     }
   }
 
-  .form-messages {
+  .textarea-wrapper {
+    position: relative;
+
+    textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px 16px 32px;
+      font-family: $font-body;
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: #f5f0ea;
+      resize: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+
+      &:focus {
+        outline: none;
+        border-color: rgba(255, 218, 185, 0.4);
+        box-shadow: 0 0 0 3px rgba(255, 218, 185, 0.08);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .char-counter {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+    }
+  }
+
+  .form-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.75rem;
+    margin-top: 14px;
+    gap: 12px;
+
+    .form-messages {
+      flex: 1;
+      font-size: 0.82rem;
+      font-weight: 400;
+
+      .msg {
+        &.success { color: #4ade80; }
+        &.error { color: #f87171; }
+      }
+    }
+
+    .btn-send {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #8B3A3A 0%, #a04848 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 500;
+      font-family: $font-body;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.2s, box-shadow 0.2s;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(139, 58, 58, 0.35);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .spinner-sm {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+    }
+  }
+}
+
+// ─── States ────────────────────────────────────────
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 40px 20px;
+
+  p {
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 300;
+    margin-top: 24px;
     font-size: 0.9rem;
+  }
 
-    .char-count {
-      color: rgba(255, 255, 255, 0.6);
+  &.error-state {
+    .error-icon-wrap {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(248, 113, 113, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f87171;
     }
 
-    .success {
-      color: #15803d;
+    p {
+      color: #f87171;
+      margin-bottom: 20px;
     }
-
-    .error {
-      color: #b91c1c;
-    }
-  }
-
-  .btn-submit {
-    margin-top: 1.25rem;
-    width: 100%;
-    padding: 0.85rem 1rem;
-    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-    &:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 12px 24px rgba(139, 58, 58, 0.22);
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-// Loading State
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-
-  .spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(139, 58, 58, 0.1);
-    border-top: 4px solid #ffdab9;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  p {
-    margin-top: 20px;
-    color: rgba(255, 255, 255, 0.9);
-    font-style: italic;
-  }
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-// Error State
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  color: #dc2626;
-  text-align: center;
-
-  svg {
-    margin-bottom: 20px;
-    opacity: 0.7;
-  }
-
-  p {
-    font-size: 1.1rem;
-    font-style: italic;
-    margin-bottom: 1.5rem;
   }
 
   .btn-retry {
-    padding: 0.9rem 2rem;
-    background: linear-gradient(135deg, #6B1F1F 0%, #8B3A3A 100%);
-    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #6B1F1F, #8B3A3A);
     border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 600;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: $font-body;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(107, 31, 31, 0.2);
-    font-family: 'Georgia', serif;
+    transition: all 0.25s;
 
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(107, 31, 31, 0.3);
     }
+  }
+}
 
-    &:active {
-      transform: translateY(0);
+// Loader
+.loader {
+  position: relative;
+  width: 50px;
+  height: 50px;
+
+  .loader-ring {
+    position: absolute;
+    inset: 0;
+    border: 3px solid transparent;
+    border-radius: 50%;
+
+    &:nth-child(1) {
+      border-top-color: $peach;
+      animation: spin 1.2s linear infinite;
+    }
+
+    &:nth-child(2) {
+      inset: 5px;
+      border-right-color: rgba(255, 218, 185, 0.5);
+      animation: spin 1.6s linear infinite reverse;
+    }
+
+    &:nth-child(3) {
+      inset: 10px;
+      border-bottom-color: rgba(255, 218, 185, 0.25);
+      animation: spin 2s linear infinite;
     }
   }
 }
 
-// Feedbacks List
-.feedbacks-list {
-  max-width: 800px;
+// ─── Feedbacks Grid ────────────────────────────────
+.feedbacks-grid {
+  max-width: 1100px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  padding: 0 20px 60px;
+  columns: 3 320px;
+  column-gap: 20px;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  @media (max-width: 700px) {
+    columns: 1;
   }
 
-  // Center empty state
   &:has(.empty-state) {
+    columns: unset;
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 400px;
+    min-height: 320px;
   }
 }
 
-// Feedback Card - Simple & Creative
-.feedback-card {
-  background: rgba(26, 1, 5, 0.8);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(107, 31, 31, 0.08);
-  border-left: 3px solid #ffdab9;
-  transition: all 0.3s ease;
-  animation: slideUp 0.4s ease-out;
+// ─── Card Base ─────────────────────────────────────
+.card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  animation: fadeUp 0.5s ease-out both;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  break-inside: avoid;
+  margin-bottom: 20px;
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(107, 31, 31, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
   }
 
-  .feedback-quote {
-    position: relative;
+  // ─── ORDER CARD ────────────────────────────────
+  &--order {
+    min-height: 340px;
+    display: flex;
 
-    // Delete Icon (Admin Only) - Shows when hovering the feedback card body
-    .action-icon {
+    .card__image {
       position: absolute;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 2px solid white;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+      transition: transform 0.6s ease;
+
+      &--placeholder {
+        background: linear-gradient(135deg, #2a0510 0%, #4a0a1a 50%, #2a0510 100%);
+      }
+    }
+
+    .card__overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.3) 40%,
+        rgba(0, 0, 0, 0.78) 100%
+      );
+      transition: background 0.4s ease;
+    }
+
+    .card__body {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 28px 24px;
+    }
+
+    .card__quote-mark {
+      font-family: $font-heading;
+      font-size: 4rem;
+      line-height: 1;
+      color: rgba(255, 218, 185, 0.25);
+      position: absolute;
+      top: 16px;
+      left: 20px;
+    }
+
+    .card__message {
+      color: #fff;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .card__footer {
       display: flex;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      z-index: 10;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-      opacity: 0;
-      transform: scale(0.8);
-      top: 8px;
-      right: 8px;
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      pointer-events: auto;
+      gap: 12px;
+      margin-top: 16px;
 
-      svg {
-        color: white;
-        width: 18px;
-        height: 18px;
+      .card__divider {
+        flex: 0 0 28px;
+        height: 1px;
+        background: $peach;
+        opacity: 0.5;
       }
 
-      // When hovering directly on the icon (after it's already visible from card hover)
-      &:hover:not(:disabled) {
-        transform: scale(1.1);
-        box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
-      }
-
-      &:active:not(:disabled) {
-        transform: scale(1.05);
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
+      .card__couple {
+        font-family: $font-body;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: $peach;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: capitalize;
       }
     }
 
-    // Show delete icon with bright red background
-    .delete-icon {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    }
+    &:hover {
+      .card__image:not(.card__image--placeholder) {
+        transform: scale(1.06);
+      }
 
-    .quote-icon {
-      color: rgba(139, 58, 58, 0.25);
-      opacity: 0.5;
-      transition: all 0.3s ease;
-    }
-
-    .quote-open {
-      position: absolute;
-      top: -8px;
-      left: -8px;
-      width: 24px;
-      height: 24px;
-    }
-
-    .quote-close {
-      position: absolute;
-      bottom: -8px;
-      right: -8px;
-      width: 24px;
-      height: 24px;
-      transform: rotate(180deg);
-    }
-
-    .feedback-message {
-      font-family: 'Georgia', serif;
-      font-size: 1rem;
-      line-height: 1.7;
-      color: #e0e0e0;
-      font-style: italic;
-      margin: 0;
-      padding: 0.5rem 0;
-      text-align: center;
+      .card__overlay {
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.1) 0%,
+          rgba(0, 0, 0, 0.25) 40%,
+          rgba(0, 0, 0, 0.72) 100%
+        );
+      }
     }
   }
 
-  // Show action icon when hovering anywhere on the feedback card body
-  &:hover .feedback-quote .action-icon {
+  // ─── VISITOR CARD ──────────────────────────────
+  &--visitor {
+    background: $glass-bg;
+    backdrop-filter: blur(16px);
+    border: 1px solid $glass-border;
+
+    .card__glow {
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      right: -1px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, $peach, transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .card__body {
+      position: relative;
+      padding: 28px 24px;
+    }
+
+    .card__badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      font-family: $font-body;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: $peach;
+      background: $peach-soft;
+      border: 1px solid $glass-border;
+      padding: 5px 14px;
+      border-radius: 30px;
+      margin-bottom: 16px;
+    }
+
+    .card__quote-mark {
+      font-family: $font-heading;
+      font-size: 3.5rem;
+      line-height: 1;
+      color: rgba(255, 218, 185, 0.08);
+      position: absolute;
+      top: 14px;
+      right: 20px;
+    }
+
+    .card__message {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    &:hover .card__glow {
+      opacity: 1;
+    }
+  }
+
+  // ─── Shared card elements ──────────────────────
+  .card__text-area {
+    position: relative;
+  }
+
+  .card__message {
+    font-family: $font-body;
+    font-size: 0.92rem;
+    font-weight: 300;
+    line-height: 1.8;
+    margin: 0;
+  }
+
+  .btn-delete {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: all 0.25s ease;
+    z-index: 10;
+
+    &:hover {
+      background: #ef4444;
+      transform: scale(1);
+    }
+  }
+
+  &:hover .btn-delete {
     opacity: 1;
     transform: scale(1);
   }
+}
 
-  // Keep icon visible when hovering directly on it
-  &:hover .feedback-quote .action-icon:hover {
-    opacity: 1;
-    transform: scale(1.1);
+// ─── Empty State ───────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 24px;
+  animation: fadeUp 0.5s ease-out;
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: $peach-soft;
+    border: 1px solid $glass-border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $peach;
+    margin-bottom: 20px;
   }
 
-  &:hover .quote-icon {
-    opacity: 0.7;
-    color: rgba(139, 58, 58, 0.4);
+  h3 {
+    font-family: $font-heading;
+    font-size: 1.6rem;
+    color: #fff;
+    font-weight: 400;
+    margin: 0 0 8px;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 300;
+    font-size: 0.9rem;
+    max-width: 360px;
   }
 }
 
-@keyframes slideUp {
+// ─── Animations ────────────────────────────────────
+@keyframes fadeDown {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-16px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-// Empty State
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.9);
-  padding: 40px 20px;
-  width: 100%;
-  grid-column: 1 / -1;
-
-  svg {
-    margin-bottom: 20px;
-    opacity: 0.5;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-
-  h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    color: #ffdab9;
-    margin-bottom: 0.75rem;
-    font-style: italic;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
-  p {
-    font-size: 1.05rem;
-    line-height: 1.6;
-    font-style: italic;
-    max-width: 500px;
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

@@ -11,6 +11,9 @@ interface FeedbackItem {
   email: string;
   feedbackText: string;
   feedbackId?: string;
+  backgroundImage?: string | null;
+  brideAndGroomNames?: string | null;
+  isOrderFeedback: boolean;
 }
 
 @Component({
@@ -64,22 +67,28 @@ export class FeedbacksComponent implements OnInit {
           const generalFeedbacks = response.generalFeedbacks || [];
           const orderFeedbacks = response.orderFeedbacks || [];
           
-          // Map general feedbacks
+          // Map general feedbacks (visitor)
           const mappedGeneralFeedbacks: FeedbackItem[] = generalFeedbacks.map((fb: any) => ({
             orderId: '',
             clientName: undefined,
             email: '',
             feedbackText: fb.feedback || '',
-            feedbackId: fb._id
+            feedbackId: fb._id,
+            backgroundImage: null,
+            brideAndGroomNames: null,
+            isOrderFeedback: false
           }));
           
-          // Map order feedbacks
+          // Map order feedbacks (with background + names)
           const mappedOrderFeedbacks: FeedbackItem[] = orderFeedbacks.map((fb: any) => ({
             orderId: fb.orderId || '',
             clientName: undefined,
             email: '',
             feedbackText: fb.feedback || '',
-            feedbackId: fb._id
+            feedbackId: fb._id,
+            backgroundImage: fb.backgroundImage || null,
+            brideAndGroomNames: fb.brideAndGroomNames || null,
+            isOrderFeedback: true
           }));
           
           // Combine both arrays
@@ -175,7 +184,10 @@ export class FeedbacksComponent implements OnInit {
           clientName: undefined,
           email: '',
           feedbackText: response.feedback || trimmedFeedback,
-          feedbackId: response._id
+          feedbackId: response._id,
+          backgroundImage: null,
+          brideAndGroomNames: null,
+          isOrderFeedback: false
         };
         this.feedbacks = [newEntry, ...this.feedbacks];
         this.newFeedback = '';

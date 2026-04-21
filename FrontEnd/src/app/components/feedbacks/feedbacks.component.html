@@ -1,94 +1,170 @@
-<div class="feedbacks-container">
-  <div class="header">
-    <h1>Client Feedbacks</h1>
-    <p>Read what our clients have to say about their experience</p>
+<div class="feedbacks-page">
+
+  <!-- Hero Header -->
+  <header class="hero-header">
+    <div class="hero-content">
+      <h1>What Our Clients Say</h1>
+      <p>Real stories from couples who trusted us with their special day</p>
+    </div>
+    <div class="hero-decoration"></div>
+  </header>
+
+  <!-- Feedback Form -->
+  <section class="form-section">
+    <div class="glass-form">
+      <div class="form-header">
+        <span class="form-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </span>
+        <div>
+          <h2>Share Your Experience</h2>
+          <p>Your words inspire future couples</p>
+        </div>
+      </div>
+      
+      <div class="textarea-wrapper">
+        <textarea
+          name="generalFeedback"
+          [(ngModel)]="newFeedback"
+          [disabled]="submittingFeedback"
+          maxlength="500"
+          rows="3"
+          placeholder="Tell us about your experience..."
+        ></textarea>
+        <span class="char-counter">{{ newFeedback.length || 0 }}/500</span>
+      </div>
+
+      <div class="form-footer">
+        <div class="form-messages">
+          <span class="msg success" *ngIf="submitSuccess">{{ submitSuccess }}</span>
+          <span class="msg error" *ngIf="submitError">{{ submitError }}</span>
+        </div>
+        <button
+          class="btn-send"
+          (click)="onSubmitFeedback()"
+          [disabled]="submittingFeedback"
+        >
+          <svg *ngIf="!submittingFeedback" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          <span class="spinner-sm" *ngIf="submittingFeedback"></span>
+          {{ submittingFeedback ? 'Sending...' : 'Send' }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="state-container">
+    <div class="loader">
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+    </div>
+    <p>Loading stories...</p>
   </div>
 
-  <div class="feedback-form-card">
-    <h2>Share Your Experience</h2>
-    <p>Your message helps us improve and inspires future couples.</p>
-    
-    <textarea
-      class="feedback-textarea"
-      name="generalFeedback"
-      [(ngModel)]="newFeedback"
-      [disabled]="submittingFeedback"
-      maxlength="500"
-      rows="4"
-      placeholder="Write your feedback here..."
-    ></textarea>
-
-    <div class="form-messages">
-      <span class="char-count">{{ newFeedback.length || 0 }}/500</span>
-      <span class="success" *ngIf="submitSuccess">{{ submitSuccess }}</span>
-      <span class="error" *ngIf="submitError">{{ submitError }}</span>
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="state-container error-state">
+    <div class="error-icon-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
     </div>
-
-    <button
-      class="btn-submit"
-      (click)="onSubmitFeedback()"
-      [disabled]="submittingFeedback"
-    >
-      {{ submittingFeedback ? 'Sending...' : 'Send Feedback' }}
+    <p>{{ error }}</p>
+    <button class="btn-retry" (click)="loadFeedbacks()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      Retry
     </button>
   </div>
 
-  <!-- Loading State -->
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading feedbacks...</p>
-  </div>
+  <!-- Feedbacks Grid -->
+  <section *ngIf="!loading && !error" class="feedbacks-grid">
 
-  <!-- Error State -->
-  <div *ngIf="error && !loading" class="error-container">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-    <p>{{ error }}</p>
-    <button class="btn-retry" (click)="loadFeedbacks()">Try Again</button>
-  </div>
-
-  <!-- Feedbacks List -->
-  <div *ngIf="!loading && !error" class="feedbacks-list">
+    <!-- Empty State -->
     <div *ngIf="feedbacks.length === 0" class="empty-state">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      <h3>No Feedbacks Yet</h3>
-      <p>Feedbacks from clients will appear here once they submit them.</p>
-    </div>
-
-    <div *ngFor="let feedback of feedbacks" class="feedback-card">
-      <div class="feedback-quote">
-        <!-- Delete Icon (Admin Only) -->
-        <button 
-          *ngIf="isAuthenticated && isAdmin"
-          class="action-icon delete-icon"
-          (click)="onDeleteClick($event, feedback)"
-          title="Delete this feedback"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            <line x1="10" y1="11" x2="10" y2="17"/>
-            <line x1="14" y1="11" x2="14" y2="17"/>
-          </svg>
-        </button>
-
-        <svg class="quote-icon quote-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
-          <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
-        </svg>
-        <p class="feedback-message">{{ feedback.feedbackText }}</p>
-        <svg class="quote-icon quote-close" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 3c-3 0-7 1-7 8v8c0 1.25.756 2.017 2 2h4c1.25 0 2-.75 2-1.972V13c0-1.25-.75-2-2-2h-.75c0-2.25-.25-4 2.75-4V3c0-1 0-1-1-1z"/>
-          <path d="M9 3C6 3 2 4 2 11v8c0 1.25.757 2.017 2 2h4c1.25 0 2-.75 2-1.972V13c0-1.25-.75-2-2-2h-.75c0-2.25.25-4-2.75-4V3c0-1 0-1 1-1z"/>
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
       </div>
+      <h3>No Stories Yet</h3>
+      <p>Be the first to share your experience with us.</p>
     </div>
-  </div>
+
+    <!-- ===== ORDER FEEDBACK CARD ===== -->
+    <div *ngFor="let feedback of feedbacks; let i = index"
+         class="card"
+         [class.card--order]="feedback.isOrderFeedback"
+         [class.card--visitor]="!feedback.isOrderFeedback"
+         [style.animationDelay]="(i * 0.08) + 's'">
+
+      <!-- ORDER CARD: full image hero -->
+      <ng-container *ngIf="feedback.isOrderFeedback">
+        <div class="card__image" *ngIf="feedback.backgroundImage"
+             [style.backgroundImage]="'url(' + feedback.backgroundImage + ')'">
+        </div>
+        <div class="card__image card__image--placeholder" *ngIf="!feedback.backgroundImage"></div>
+        <div class="card__overlay"></div>
+
+        <div class="card__body">
+          <!-- Admin delete -->
+          <button *ngIf="isAuthenticated && isAdmin"
+                  class="btn-delete"
+                  (click)="onDeleteClick($event, feedback)"
+                  title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+
+          <div class="card__text-area">
+            <span class="card__quote-mark">&ldquo;</span>
+            <p class="card__message">{{ feedback.feedbackText }}</p>
+          </div>
+
+          <div class="card__footer" *ngIf="feedback.brideAndGroomNames">
+            <span class="card__divider"></span>
+            <span class="card__couple">{{ feedback.brideAndGroomNames }}</span>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- VISITOR CARD: glassmorphism -->
+      <ng-container *ngIf="!feedback.isOrderFeedback">
+        <div class="card__glow"></div>
+        <div class="card__body">
+          <!-- Admin delete -->
+          <button *ngIf="isAuthenticated && isAdmin"
+                  class="btn-delete"
+                  (click)="onDeleteClick($event, feedback)"
+                  title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+
+          <span class="card__badge">Visitor</span>
+
+          <div class="card__text-area">
+            <span class="card__quote-mark">&ldquo;</span>
+            <p class="card__message">{{ feedback.feedbackText }}</p>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+  </section>
 
   <!-- Delete Modal -->
   <app-delete-modal
