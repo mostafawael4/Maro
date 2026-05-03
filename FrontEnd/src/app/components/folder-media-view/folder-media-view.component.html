@@ -14,7 +14,7 @@
     <!-- Right actions: Sort + Set Background + Download Album -->
     <div class="toolbar-right" *ngIf="hasMedia">
       <!-- Download Album Button -->
-      <button *ngIf="folderName" class="download-album-btn" (click)="downloadFolder.emit()" [disabled]="zippingFolder">
+      <button *ngIf="folderName && !hideDownload" class="download-album-btn" (click)="downloadFolder.emit()" [disabled]="zippingFolder">
         <!-- Progress Bar Overlay -->
         <div *ngIf="zippingFolder" class="download-progress-bar" [style.width.%]="zippingProgress"></div>
 
@@ -64,8 +64,16 @@
     <p>{{ error }}</p>
   </div>
 
-  <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia">
-    <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item">
+  <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia" [class.selection-mode]="selectionMode">
+    <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item" [class.selected]="selectionMode && isSelected(item)" (click)="selectionMode ? onToggleSelection(item, $event) : null">
+
+      <!-- Selection Checkbox (admin selection mode) -->
+      <div *ngIf="selectionMode" class="selection-checkbox" (click)="onToggleSelection(item, $event)">
+        <input type="checkbox" [checked]="isSelected(item)" />
+        <svg *ngIf="isSelected(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
 
       <div *ngIf="isVideo(item)" class="video-preview-wrapper" (click)="onOpenMedia(i, $event)">
         <video [src]="item.url" [poster]="getVideoThumbnailUrl(item)" preload="metadata" muted

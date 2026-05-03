@@ -226,6 +226,134 @@ router.get("/view/orders-by-email",
 );
 
 
+// PUT /orders/:orderId/select-media - admin only: set selected media + password for client sharing
+router.put("/:orderId/select-media", requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { selectedMediaIds, password } = req.body;
+
+    if (!Array.isArray(selectedMediaIds)) {
+      return res.status(400).json({ ok: false, message: "selectedMediaIds must be an array" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ ok: false, message: "Order not found" });
+    }
+
+    // Validate that all IDs exist in the order's media
+    const orderMediaIds = order.media.map(m => m._id.toString());
+    const invalidIds = selectedMediaIds.filter(id => !orderMediaIds.includes(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ ok: false, message: "Some media IDs are not in this order", invalidIds });
+    }
+
+    order.selectedMedia = selectedMediaIds.map(id => new mongoose.Types.ObjectId(id));
+
+    if (password && password.trim()) {
+      const bcrypt = (await import('bcryptjs')).default;
+
+      // Prevent duplicate passwords across orders
+      const otherOrders = await Order.find({
+        _id: { $ne: order._id },
+        mediaPassword: { $ne: null }
+      }).select('mediaPassword').lean();
+
+      for (const other of otherOrders) {
+        const isDuplicate = await bcrypt.compare(password.trim(), other.mediaPassword);
+        if (isDuplicate) {
+          return res.status(409).json({ ok: false, message: "This password is already in use by another order. Please choose a different one." });
+        }
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      order.mediaPassword = await bcrypt.hash(password.trim(), salt);
+    } else if (selectedMediaIds.length === 0) {
+      order.mediaPassword = null;
+    }
+
+    await order.save();
+    logger.info(`Order ${orderId}: admin set ${selectedMediaIds.length} selected media with password`);
+    return res.json({
+      ok: true,
+      selectedMedia: order.selectedMedia,
+      hasPassword: !!order.mediaPassword
+    });
+  } catch (err) {
+    logger.error(`PUT /orders/${req.params.orderId}/select-media failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+// GET /orders/view/by-password?password=... (public) - returns order with only selected media
+router.get("/view/by-password", async (req, res) => {
+  try {
+    const { password } = req.query;
+    if (!password || !password.trim()) {
+      return res.status(400).json({ ok: false, message: "Password required" });
+    }
+
+    const bcrypt = (await import('bcryptjs')).default;
+
+    // Find all orders that have a mediaPassword set
+    const candidates = await Order.find({
+      mediaPassword: { $ne: null }
+    }).lean();
+
+    if (!candidates || candidates.length === 0) {
+      return res.status(404).json({ ok: false, message: "No order found for this password" });
+    }
+
+    let matchedOrder = null;
+    for (const order of candidates) {
+      const isMatch = await bcrypt.compare(password.trim(), order.mediaPassword);
+      if (isMatch) {
+        matchedOrder = order;
+        break;
+      }
+    }
+
+    if (!matchedOrder) {
+      return res.status(404).json({ ok: false, message: "No order found for this password" });
+    }
+
+    // Filter media to only include selectedMedia items
+    const selectedIds = (matchedOrder.selectedMedia || []).map(id => id.toString());
+    if (selectedIds.length > 0 && matchedOrder.media) {
+      matchedOrder.media = matchedOrder.media.filter(m => selectedIds.includes(m._id.toString()));
+    }
+
+    const signedOrder = await signOrderMedia(matchedOrder);
+
+    // Aggregate folder sizes for selected media only
+    const sizeAgg = await Order.aggregate([
+      { $match: { _id: matchedOrder._id } },
+      { $unwind: "$media" },
+      { $match: {
+        "media._id": { $in: matchedOrder.media.map(m => m._id) },
+        "media.foldername": { $ne: null }
+      }},
+      {
+        $group: {
+          _id: "$media.foldername",
+          totalSize: { $sum: { $ifNull: ["$media.size", 0] } }
+        }
+      }
+    ]);
+
+    const folderSizes = {};
+    sizeAgg.forEach(item => {
+      folderSizes[item._id] = item.totalSize;
+    });
+
+    logger.info(`Order viewed by password (order id: ${matchedOrder._id})`);
+    return res.json({ ok: true, order: signedOrder, folderSizes });
+  } catch (err) {
+    logger.error(`GET /orders/view/by-password failed: ${err.stack || err}`);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 // --- PARAMETERIZED ROUTES (Move to bottom to prevent shadowing) ---
 
 // GET /orders/:orderId - admin only: fetch specific order

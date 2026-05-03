@@ -55,6 +55,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
   authLoaded = false;
   userEmail = '';
   emailError = '';
+  modalTab: 'email' | 'password' = 'email';
+  userPassword = '';
+  passwordError = '';
 
   // Delete modal
   showDeleteModal = false;
@@ -181,8 +184,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   openOrderDetails(orderId: string): void {
-    // Pass user email in query params for normal users
-    if (!this.isAuthenticated && this.userEmail) {
+    if (!this.isAuthenticated && this.userPassword.trim()) {
+      this.router.navigate(['/order-details', orderId], {
+        queryParams: { password: this.userPassword.trim() }
+      });
+    } else if (!this.isAuthenticated && this.userEmail) {
       this.router.navigate(['/order-details', orderId], {
         queryParams: { email: this.userEmail }
       });
@@ -658,6 +664,45 @@ export class OrdersComponent implements OnInit, OnDestroy {
           this.emailError = 'No orders found for this email address. Please check and try again.';
         } else {
           this.emailError = err.error?.message || 'Failed to load orders. Please check your connection and try again.';
+        }
+        this.loading = false;
+        this.showEmailModal = true;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  submitPassword(): void {
+    this.passwordError = '';
+    const password = this.userPassword.trim();
+
+    if (!password) {
+      this.passwordError = 'Please enter a password';
+      return;
+    }
+
+    this.loading = true;
+    this.showEmailModal = false;
+
+    this.ordersService.getOrderByPassword(password).subscribe({
+      next: (response) => {
+        if (response.order) {
+          this.orders = [response.order];
+          this.filteredOrders = this.orders;
+          this.showEmailModal = false;
+          this.loading = false;
+        } else {
+          this.passwordError = 'No order found for this password';
+          this.showEmailModal = true;
+          this.loading = false;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.passwordError = 'No order found for this password. Please check and try again.';
+        } else {
+          this.passwordError = err.error?.message || 'Failed to load order. Please try again.';
         }
         this.loading = false;
         this.showEmailModal = true;

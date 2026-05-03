@@ -35,6 +35,9 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   @Input() zippingFolder: boolean = false;
   @Input() zippingFolderMessage: string = 'Preparing...';
   @Input() zippingProgress: number = 0;
+  @Input() selectionMode: boolean = false;
+  @Input() selectedMediaIds: Set<string> = new Set();
+  @Input() hideDownload: boolean = false;
 
   @Output() back = new EventEmitter<void>();
   @Output() openMedia = new EventEmitter<{ index: number, sortedMedia: OrderImage[] }>();
@@ -43,6 +46,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   @Output() selectVideoThumbnail = new EventEmitter<OrderImage>();
   @Output() selectBackground = new EventEmitter<void>();
   @Output() downloadFolder = new EventEmitter<void>();
+  @Output() toggleMediaSelection = new EventEmitter<OrderImage>();
 
 
   downloadingItems: Set<string> = new Set();
@@ -135,10 +139,21 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     return !!this.filteredMedia && this.filteredMedia.length > 0;
   }
 
+  isSelected(media: OrderImage): boolean {
+    return this.selectedMediaIds.has(media._id || '');
+  }
+
+  onToggleSelection(media: OrderImage, event: Event): void {
+    event.stopPropagation();
+    this.toggleMediaSelection.emit(media);
+  }
+
   onOpenMedia(index: number, event?: Event): void {
-    // Since visibleMedia is a slice of filteredMedia (from index 0),
-    // the index in visibleMedia is the same as index in filteredMedia
-    // Just emit it directly like gallery/home components do
+    if (this.selectionMode) {
+      const item = this.visibleMedia[index];
+      if (item) this.toggleMediaSelection.emit(item);
+      return;
+    }
     this.openMedia.emit({ index, sortedMedia: this.filteredMedia });
   }
 

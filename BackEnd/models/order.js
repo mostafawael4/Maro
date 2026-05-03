@@ -27,6 +27,8 @@ const OrderSchema = new mongoose.Schema({
     hero: { type: String, default: null }, // Hero URL (2000w)
   }],
   feedbacks: [FeedbackSchema],
+  selectedMedia: [{ type: mongoose.Schema.Types.ObjectId }],
+  mediaPassword: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   orderForm: OrderFormSchema,

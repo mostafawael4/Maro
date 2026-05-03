@@ -103,13 +103,15 @@ export interface Order {
   notes?: string;
   status: 'pending' | 'in-progress' | 'done';
   orderBackground?: {
-    image?: string; // Background image URL for order (original)
-    thumbnail?: string; // Background image thumbnail URL (400w)
-    filename?: string; // Background image filename
-    selectedAt?: string | Date; // When background was selected
+    image?: string;
+    thumbnail?: string;
+    filename?: string;
+    selectedAt?: string | Date;
   };
-  media?: OrderImage[]; // Made optional to handle cases where backend might not send it
-  mediaCount?: number; // Count of media files (used in list view to avoid loading full media array)
+  media?: OrderImage[];
+  mediaCount?: number;
+  selectedMedia?: string[];
+  mediaPassword?: string | null;
   orderForm?: OrderForm;
   feedbacks?: Feedback[];
   createdAt: string;
@@ -325,6 +327,20 @@ export class OrdersService {
 
   getOrdersByEmail(email: string): Observable<OrdersResponse> {
     return this.http.get<OrdersResponse>(`${this.apiUrl}/view/orders-by-email?email=${email}`);
+  }
+
+  setMediaPassword(orderId: string, selectedMediaIds: string[], password: string): Observable<{ ok: boolean; selectedMedia: string[]; hasPassword: boolean }> {
+    return this.http.put<{ ok: boolean; selectedMedia: string[]; hasPassword: boolean }>(
+      `${this.apiUrl}/${orderId}/select-media`,
+      { selectedMediaIds, password },
+      { withCredentials: true }
+    );
+  }
+
+  getOrderByPassword(password: string): Observable<{ ok: boolean; order: Order; folderSizes: { [key: string]: number } }> {
+    return this.http.get<{ ok: boolean; order: Order; folderSizes: { [key: string]: number } }>(
+      `${this.apiUrl}/view/by-password?password=${encodeURIComponent(password)}`
+    );
   }
 
   updateOrderStatus(orderId: string, status: string): Observable<any> {

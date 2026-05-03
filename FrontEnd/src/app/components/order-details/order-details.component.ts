@@ -61,9 +61,21 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
   /** Folder sizes in bytes, keyed by folder name. Populated from getOrderFolders() response. */
   folderSizes: { [folderName: string]: number } = {};
   clientEmail: string | null = null;
+  isPasswordAccess: boolean = false;
   zippingFolder: boolean = false;
   zippingFolderMessage: string = 'Preparing download\u2026';
   zippingProgress: number = 0;
+
+  // Media selection + password (admin)
+  selectionMode = false;
+  selectedMediaIds: Set<string> = new Set();
+  hasExistingPassword = false;
+  showPasswordModal = false;
+  mediaPassword = '';
+  savingPassword = false;
+  savingSelection = false;
+  passwordError = '';
+  passwordSuccess = '';
 
   // Feedback popup state
   showFeedbackPopup = false;
@@ -103,8 +115,7 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
 
         const orderId = this.route.snapshot.paramMap.get('id');
         const userEmail = this.route.snapshot.queryParamMap.get('email');
-
-        console.log('OrderDetails Init:', { orderId, userEmail, isAuthenticated: this.isAuthenticated });
+        const userPassword = this.route.snapshot.queryParamMap.get('password');
 
         if (!orderId) {
           this.error = 'Order ID not found';
@@ -112,9 +123,11 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Load order data
         if (this.isAuthenticated) {
           this.loadOrderById(orderId);
+        } else if (userPassword) {
+          this.isPasswordAccess = true;
+          this.loadOrderByPassword(userPassword, orderId);
         } else if (userEmail) {
           this.clientEmail = userEmail;
           this.loadOrderByEmail(userEmail, orderId);
@@ -143,13 +156,17 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     if (showLoader) {
       this.loading = true;
     }
-    // Don't clear error here - let it persist if it was set by a previous operation
     this.ordersService.getOrderById(orderId).subscribe({
       next: (response: any) => {
         this.order = response.order || response;
         if (this.order && this.order.media) {
           this.order.media = SortingUtils.sortMedia(this.order.media);
         }
+
+        if (this.order?.selectedMedia?.length) {
+          this.selectedMediaIds = new Set(this.order.selectedMedia.map((id: any) => id.toString()));
+        }
+        this.hasExistingPassword = !!this.order?.mediaPassword;
 
         if (this.isAuthenticated && this.order?._id) {
           this.loadFolders(this.order._id);
@@ -205,6 +222,31 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
+
+  loadOrderByPassword(password: string, orderId: string): void {
+    this.loading = true;
+    this.ordersService.getOrderByPassword(password).subscribe({
+      next: (response: any) => {
+        if (response.order && response.order._id === orderId) {
+          this.order = response.order;
+          if (this.order && this.order.media) {
+            this.order.media = SortingUtils.sortMedia(this.order.media);
+          }
+          if (response.folderSizes) {
+            this.folderSizes = response.folderSizes;
+          }
+          this.buildClientFoldersFromMedia();
+        } else {
+          this.error = 'Order not found or access denied';
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to load order. Invalid password.';
+        this.loading = false;
+      }
+    });
+  }
 
   getImageUrl(image: OrderImage): string {
     return image.thumbnail ? image.thumbnail : image.url;
@@ -650,6 +692,137 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     } else {
       this.ordersService.downloadFolderZip(this.order._id, folderName, this.clientEmail);
     }
+  }
+
+  // ─── Media Selection + Password ──────────────────────────────────────────────
+
+  toggleSelectionMode(): void {
+    this.selectionMode = !this.selectionMode;
+    if (!this.selectionMode) {
+      // Keep selections when exiting selection mode (they persist on server)
+    }
+  }
+
+  onToggleMediaSelection(media: OrderImage): void {
+    const id = media._id;
+    if (!id) return;
+    if (this.selectedMediaIds.has(id)) {
+      this.selectedMediaIds.delete(id);
+    } else {
+      this.selectedMediaIds.add(id);
+    }
+    this.selectedMediaIds = new Set(this.selectedMediaIds);
+  }
+
+  selectAllMedia(): void {
+    const allMedia = this.currentMedia || [];
+    allMedia.forEach(m => {
+      if (m._id) this.selectedMediaIds.add(m._id);
+    });
+    this.selectedMediaIds = new Set(this.selectedMediaIds);
+  }
+
+  deselectAllMedia(): void {
+    this.selectedMediaIds.clear();
+    this.selectedMediaIds = new Set(this.selectedMediaIds);
+  }
+
+  onSaveSelection(): void {
+    if (this.selectedMediaIds.size === 0) return;
+
+    if (this.hasExistingPassword) {
+      this.saveSelectionOnly();
+    } else {
+      this.openPasswordModal();
+    }
+  }
+
+  saveSelectionOnly(): void {
+    if (!this.order?._id || this.savingSelection) return;
+
+    this.savingSelection = true;
+    const ids = Array.from(this.selectedMediaIds);
+
+    this.ordersService.setMediaPassword(this.order._id, ids, '').subscribe({
+      next: (response) => {
+        this.savingSelection = false;
+        if (response.ok) {
+          this.selectionMode = false;
+        }
+      },
+      error: (err) => {
+        this.savingSelection = false;
+        console.error('Failed to update selection:', err);
+      }
+    });
+  }
+
+  clearMediaPassword(): void {
+    if (!this.order?._id || this.savingSelection) return;
+
+    this.savingSelection = true;
+    this.ordersService.setMediaPassword(this.order._id, [], '').subscribe({
+      next: (response) => {
+        this.savingSelection = false;
+        if (response.ok) {
+          this.selectedMediaIds.clear();
+          this.selectedMediaIds = new Set();
+          this.hasExistingPassword = false;
+          this.selectionMode = false;
+        }
+      },
+      error: (err) => {
+        this.savingSelection = false;
+        console.error('Failed to clear password:', err);
+      }
+    });
+  }
+
+  openPasswordModal(): void {
+    if (this.selectedMediaIds.size === 0) return;
+    this.showPasswordModal = true;
+    this.mediaPassword = '';
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
+
+  closePasswordModal(): void {
+    this.showPasswordModal = false;
+    this.mediaPassword = '';
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
+
+  saveMediaPassword(): void {
+    if (!this.order?._id) return;
+    if (!this.mediaPassword.trim()) {
+      this.passwordError = 'Please enter a password';
+      return;
+    }
+    if (this.mediaPassword.trim().length < 4) {
+      this.passwordError = 'Password must be at least 4 characters';
+      return;
+    }
+
+    this.savingPassword = true;
+    this.passwordError = '';
+
+    const ids = Array.from(this.selectedMediaIds);
+    this.ordersService.setMediaPassword(this.order._id, ids, this.mediaPassword.trim()).subscribe({
+      next: (response) => {
+        this.savingPassword = false;
+        if (response.ok) {
+          this.hasExistingPassword = true;
+          this.passwordSuccess = `Password set for ${ids.length} selected media`;
+          this.selectionMode = false;
+          setTimeout(() => this.closePasswordModal(), 1500);
+        }
+      },
+      error: (err) => {
+        this.savingPassword = false;
+        this.passwordError = err.error?.message || 'Failed to save password';
+      }
+    });
   }
 
   // ─── Feedback Popup ──────────────────────────────────────────────────────────
