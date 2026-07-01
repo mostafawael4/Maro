@@ -16,8 +16,9 @@ import { DeleteModalComponent } from '../delete-modal/delete-modal.component';
 })
 export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
   images: GalleryImage[] = [];
-  loadedImages: Set<number> = new Set();
-  visibleImages: Set<number> = new Set();
+  loadedImages: Set<string> = new Set();
+  visibleImages: Set<string> = new Set();
+  sortOrder: 'asc' | 'desc' = 'desc';
   isLoading: boolean = true;
   errorMessage: string = '';
   isAuthenticated: boolean = false;
@@ -105,11 +106,13 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const element = entry.target as HTMLElement;
-          const index = parseInt(element.getAttribute('data-index') || '0', 10);
-          // Add to visible set to trigger animation
-          setTimeout(() => {
-            this.visibleImages.add(index);
-          }, 0);
+          const id = element.getAttribute('data-id') || '';
+          if (id) {
+            // Add to visible set to trigger animation
+            setTimeout(() => {
+              this.visibleImages.add(id);
+            }, 0);
+          }
         }
       });
     }, options);
@@ -121,8 +124,8 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  isImageVisible(index: number): boolean {
-    return this.visibleImages.has(index);
+  isImageVisible(id: string): boolean {
+    return this.visibleImages.has(id);
   }
 
   loadGalleryImages() {
@@ -130,6 +133,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     this.galleryService.getAllImages(1, this.pageSize).subscribe({
       next: (response) => {
         this.images = response.items;
+        this.applySort();
         this.hasMore = response.hasMore;
         this.currentPage = 1;
         this.isLoading = false;
@@ -160,6 +164,7 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response) => {
         const currentLength = this.images.length;
         this.images = [...this.images, ...response.items];
+        this.applySort();
         this.hasMore = response.hasMore;
         this.currentPage = nextPage;
         this.isLoadingMore = false;
@@ -190,17 +195,17 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  onImageLoad(index: number) {
-    this.loadedImages.add(index);
+  onImageLoad(id: string) {
+    this.loadedImages.add(id);
   }
 
-  onImageError(index: number, image: GalleryImage) {
+  onImageError(id: string, image: GalleryImage) {
     console.error(`Failed to load image:`, this.getImageUrl(image));
-    this.loadedImages.add(index);
+    this.loadedImages.add(id);
   }
 
-  isImageLoaded(index: number): boolean {
-    return this.loadedImages.has(index);
+  isImageLoaded(id: string): boolean {
+    return this.loadedImages.has(id);
   }
 
   getImageUrl(image: GalleryImage): string {
@@ -209,6 +214,26 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
       return `${environment.apiUrl}${image.url}`;
     }
     return image.url;
+  }
+
+  toggleSortOrder() {
+    this.sortOrder = this.sortOrder === 'desc' ? 'asc' : 'desc';
+    this.applySort();
+
+    // Re-observe all images to ensure the IntersectionObserver gets attached to newly ordered elements
+    if (this.isBrowser) {
+      setTimeout(() => {
+        this.observeAllImages();
+      }, 50);
+    }
+  }
+
+  applySort() {
+    this.images.sort((a, b) => {
+      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return this.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
   }
 
   // Upload Modal methods
@@ -280,24 +305,8 @@ export class GalleryComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showDeleteModal = false;
 
         // Clean up loaded/visible images tracking
-        // Clean up loaded/visible images tracking
-        if (index !== -1) {
-          // Shift indices for loaded images
-          const newLoaded = new Set<number>();
-          this.loadedImages.forEach(i => {
-            if (i < index) newLoaded.add(i);
-            else if (i > index) newLoaded.add(i - 1);
-          });
-          this.loadedImages = newLoaded;
-
-          // Shift indices for visible images
-          const newVisible = new Set<number>();
-          this.visibleImages.forEach(i => {
-            if (i < index) newVisible.add(i);
-            else if (i > index) newVisible.add(i - 1);
-          });
-          this.visibleImages = newVisible;
-        }
+        this.loadedImages.delete(image._id);
+        this.visibleImages.delete(image._id);
 
         // Re-observe images after deletion (browser only)
         if (this.isBrowser) {

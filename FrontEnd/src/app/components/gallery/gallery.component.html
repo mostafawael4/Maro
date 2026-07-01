@@ -9,16 +9,26 @@
     <h1>Our Gallery</h1>
     <p>"Capturing the magic of love, one frame at a time."</p>
 
-    <!-- Upload Button (Admin Only) -->
-    <button *ngIf="isAuthenticated && isAdmin" class="upload-btn" (click)="openUploadModal()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-        <polyline points="17 8 12 3 7 8"></polyline>
-        <line x1="12" y1="3" x2="12" y2="15"></line>
-      </svg>
-      Upload Images
-    </button>
+    <!-- Admin Actions (Admin Only) -->
+    <div *ngIf="isAuthenticated && isAdmin" class="admin-actions">
+      <button class="upload-btn" (click)="openUploadModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Upload Images
+      </button>
+      <button class="sort-btn" (click)="toggleSortOrder()" aria-label="Toggle image sort order">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path *ngIf="sortOrder === 'desc'" d="m3 16 4 4 4-4M7 20V4M21 12H11M21 6H11M21 18H15"/>
+          <path *ngIf="sortOrder === 'asc'" d="m3 8 4-4 4 4M7 4v16M21 12H11M21 6H15M21 18H11"/>
+        </svg>
+        Sort ({{ sortOrder === 'desc' ? 'Newest' : 'Oldest' }})
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -40,12 +50,12 @@
 
   <!-- Photo Grid -->
   <div *ngIf="!isLoading && !errorMessage && images.length > 0" class="photo-grid">
-    <div *ngFor="let image of images; let i = index" class="photo-item" [attr.data-index]="i"
-      [class.animate-in]="isImageVisible(i)" (click)="openImageSlider(i)">
+    <div *ngFor="let image of images; let i = index" class="photo-item" [attr.data-index]="i" [attr.data-id]="image._id"
+      [class.animate-in]="isImageVisible(image._id)" (click)="openImageSlider(i)">
       <img [src]="image.medium || image.url" [alt]="image.filename"
         [srcset]="(image.thumbnail || image.url) + ' 400w, ' + (image.medium || image.url) + ' 1200w, ' + (image.hero || image.url) + ' 2000w'"
-        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw" (load)="onImageLoad(i)"
-        (error)="onImageError(i, image)" [class.loaded]="isImageLoaded(i)" [attr.loading]="i > 9 ? 'lazy' : 'eager'"
+        sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw" (load)="onImageLoad(image._id)"
+        (error)="onImageError(image._id, image)" [class.loaded]="isImageLoaded(image._id)" [attr.loading]="i > 9 ? 'lazy' : 'eager'"
         [attr.fetchpriority]="i <= 9 ? 'high' : 'auto'" />
       <!-- Delete Button (Admin Only) -->
       <button *ngIf="isAuthenticated && isAdmin" class="delete-btn" (click)="onDeleteClick(image, $event)"
