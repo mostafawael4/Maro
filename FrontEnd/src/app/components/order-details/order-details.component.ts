@@ -714,6 +714,21 @@ export class OrderDetailsComponent implements OnInit, OnDestroy {
     this.selectedMediaIds = new Set(this.selectedMediaIds);
   }
 
+  /** Handle range selection (shift+click) from folder-media-view */
+  onRangeSelectMedia(range: { from: number; to: number }): void {
+    const allMedia = this.currentMedia || [];
+    const sorted = SortingUtils.sortMedia(allMedia);
+    const visible = sorted.slice(0, sorted.length); // all visible items
+
+    for (let i = range.from; i <= range.to; i++) {
+      const item = visible[i];
+      if (item?._id) {
+        this.selectedMediaIds.add(item._id);
+      }
+    }
+    this.selectedMediaIds = new Set(this.selectedMediaIds);
+  }
+
   selectAllMedia(): void {
     const allMedia = this.currentMedia || [];
     allMedia.forEach(m => {

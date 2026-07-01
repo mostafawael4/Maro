@@ -275,6 +275,60 @@
   }
 }
 
+// ─── Multi-select hint banner ──────────────────────────────────────────────
+.selection-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 218, 185, 0.08);
+  border: 1.5px solid rgba(255, 218, 185, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 218, 185, 0.85);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  animation: fadeIn 0.3s ease-out;
+
+  svg {
+    flex-shrink: 0;
+    color: #ffdab9;
+    opacity: 0.7;
+  }
+
+  strong {
+    color: #ffdab9;
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    background: rgba(255, 218, 185, 0.15);
+    border: 1px solid rgba(255, 218, 185, 0.3);
+    border-radius: 4px;
+    color: #ffdab9;
+  }
+
+  // Show desktop hint on desktop, mobile hint on mobile
+  .hint-desktop {
+    display: inline;
+  }
+  .hint-mobile {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .hint-desktop {
+      display: none;
+    }
+    .hint-mobile {
+      display: inline;
+    }
+  }
+}
+
 .gallery-grid {
   width: 100% !important;
   max-width: 100% !important;
@@ -298,10 +352,25 @@
     grid-template-columns: repeat(1, 1fr);
   }
 
+  // ─── Drag-selecting state ──────────────────────────────────────────────────
+  &.drag-selecting {
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+
+    .gallery-item {
+      // Prevent accidental scroll/bounce during drag
+      touch-action: none;
+    }
+  }
+
   &.selection-mode {
     .gallery-item {
       cursor: pointer;
       transition: all 0.2s ease;
+      user-select: none;
+      -webkit-user-select: none;
 
       &:hover {
         transform: translateY(-4px);
@@ -311,6 +380,13 @@
       &.selected {
         border: 3px solid #ffdab9;
         box-shadow: 0 8px 20px rgba(139, 58, 58, 0.3);
+      }
+
+      // ─── Drag-highlighted state (visual during drag gesture) ─────────────
+      &.drag-highlighted:not(.selected) {
+        border: 3px solid rgba(255, 218, 185, 0.6);
+        box-shadow: 0 0 16px rgba(255, 218, 185, 0.25);
+        animation: dragPulse 0.6s ease-in-out infinite alternate;
       }
     }
   }
@@ -743,5 +819,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes dragPulse {
+  from {
+    box-shadow: 0 0 12px rgba(255, 218, 185, 0.15);
+  }
+
+  to {
+    box-shadow: 0 0 20px rgba(255, 218, 185, 0.35);
   }
 }

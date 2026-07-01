@@ -64,18 +64,43 @@
     <p>{{ error }}</p>
   </div>
 
-  <div class="gallery-grid" *ngIf="!loading && !error && hasFilteredMedia" [class.selection-mode]="selectionMode">
-    <div *ngFor="let item of visibleMedia; let i = index" class="gallery-item" [class.selected]="selectionMode && isSelected(item)" (click)="selectionMode ? onToggleSelection(item, $event) : null">
+  <!-- Multi-select hint (shows only when selection mode is active and there are items) -->
+  <div class="selection-hint" *ngIf="selectionMode && hasFilteredMedia">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="16" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </svg>
+    <span>
+      <strong>Multi-select:</strong> 
+      <span class="hint-desktop">Hold <kbd>Shift</kbd> + click to select a range</span>
+      <span class="hint-mobile">Long-press &amp; drag across images to select multiple</span>
+    </span>
+  </div>
+
+  <div class="gallery-grid" #galleryGrid *ngIf="!loading && !error && hasFilteredMedia"
+    [class.selection-mode]="selectionMode"
+    [class.drag-selecting]="isDragSelecting"
+    (touchmove)="onTouchMove($event)"
+    (touchend)="onTouchEnd($event)"
+    (touchcancel)="onTouchEnd($event)">
+    <div *ngFor="let item of visibleMedia; let i = index"
+      class="gallery-item"
+      [class.selected]="selectionMode && isSelected(item)"
+      [class.drag-highlighted]="isDragHighlighted(i)"
+      [attr.data-index]="i"
+      (click)="onItemClick(i, $event)"
+      (touchstart)="onTouchStart(i, $event)">
 
       <!-- Selection Checkbox (admin selection mode) -->
-      <div *ngIf="selectionMode" class="selection-checkbox" (click)="onToggleSelection(item, $event)">
+      <div *ngIf="selectionMode" class="selection-checkbox" (click)="onCheckboxClick(i, item, $event)">
         <input type="checkbox" [checked]="isSelected(item)" />
         <svg *ngIf="isSelected(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
 
-      <div *ngIf="isVideo(item)" class="video-preview-wrapper" (click)="onOpenMedia(i, $event)">
+      <div *ngIf="isVideo(item)" class="video-preview-wrapper">
         <video [src]="item.url" [poster]="getVideoThumbnailUrl(item)" preload="metadata" muted
           (loadedmetadata)="onMediaLoad(item.filename)" [class.loaded]="isMediaLoaded(item.filename)"
           class="media-video">
@@ -101,15 +126,15 @@
       <img *ngIf="!isVideo(item)" [src]="getImageUrl(item)" [srcset]="getSrcSet(item)"
         sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
         [alt]="getDisplayName(item)" loading="lazy" (load)="onMediaLoad(item.filename)"
-        [class.loaded]="isMediaLoaded(item.filename)" (click)="onOpenMedia(i, $event); $event.stopPropagation()"
-        style="pointer-events: auto">
+        [class.loaded]="isMediaLoaded(item.filename)"
+        style="pointer-events: none; user-select: none; -webkit-user-drag: none;">
 
       <div class="image-overlay">
         <span class="image-filename">{{ getDisplayName(item) }}</span>
         <span class="image-date">{{ item.uploadedAt | date: 'short' }} · {{ formatSize(item.size) }}</span>
       </div>
 
-      <button class="download-btn" [disabled]="isDownloading(item)"
+      <button *ngIf="!selectionMode" class="download-btn" [disabled]="isDownloading(item)"
         [title]="isDownloading(item) ? 'Downloading...' : (isVideo(item) ? 'Download video' : 'Download image')"
         (click)="onDownload(item, $event)">
         <svg *ngIf="!isDownloading(item)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -129,7 +154,7 @@
         </svg>
       </button>
 
-      <button *ngIf="isAuthenticated" class="delete-btn" (click)="onDelete(item, $event)"
+      <button *ngIf="isAuthenticated && !selectionMode" class="delete-btn" (click)="onDelete(item, $event)"
         [title]="'Delete ' + (isVideo(item) ? 'video' : 'image')">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

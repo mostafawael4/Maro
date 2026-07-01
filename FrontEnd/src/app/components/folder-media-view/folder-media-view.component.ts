@@ -47,6 +47,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   @Output() selectBackground = new EventEmitter<void>();
   @Output() downloadFolder = new EventEmitter<void>();
   @Output() toggleMediaSelection = new EventEmitter<OrderImage>();
+  @Output() rangeSelectMedia = new EventEmitter<{ from: number; to: number }>();
 
 
   downloadingItems: Set<string> = new Set();
@@ -54,7 +55,24 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
   itemsToShow: number = 12;
   isLoadingMore: boolean = false;
 
+  // ─── Multi-select state ─────────────────────────────────────────────────────
+  /** Index of last individually-toggled item (within visibleMedia). Used for Shift+click range. */
+  lastSelectedIndex: number = -1;
+  /** Whether user is currently drag-selecting on touch */
+  isDragSelecting: boolean = false;
+  /** Long-press timer handle */
+  private longPressTimer: any = null;
+  /** Starting index of a drag selection */
+  private dragStartIndex: number = -1;
+  /** Set of indices touched during the current drag gesture */
+  dragTouchedIndices: Set<number> = new Set();
+  /** Whether items in current drag are being selected (true) or deselected (false) */
+  private dragSelectAction: boolean = true;
+  /** Threshold (ms) for long-press to start drag selection */
+  private readonly LONG_PRESS_MS = 400;
+
   @ViewChild('scrollAnchor') scrollAnchor!: ElementRef<HTMLElement>;
+  @ViewChild('galleryGrid') galleryGrid!: ElementRef<HTMLElement>;
   private observer: IntersectionObserver | null = null;
 
   constructor(private ordersService: OrdersService) { }
@@ -65,6 +83,7 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyObserver();
+    this.cancelLongPress();
   }
 
   private setupIntersectionObserver(): void {
@@ -143,15 +162,140 @@ export class FolderMediaViewComponent implements AfterViewInit, OnDestroy {
     return this.selectedMediaIds.has(media._id || '');
   }
 
+  /** Whether an item is being highlighted during the current drag gesture */
+  isDragHighlighted(index: number): boolean {
+    return this.isDragSelecting && this.dragTouchedIndices.has(index);
+  }
+
   onToggleSelection(media: OrderImage, event: Event): void {
     event.stopPropagation();
     this.toggleMediaSelection.emit(media);
   }
 
+  // ─── Desktop: Shift+click range selection ──────────────────────────────────
+  onItemClick(index: number, event: MouseEvent): void {
+    if (!this.selectionMode) {
+      this.openMedia.emit({ index, sortedMedia: this.filteredMedia });
+      return;
+    }
+
+    const item = this.visibleMedia[index];
+    if (!item) return;
+
+    if (event.shiftKey && this.lastSelectedIndex >= 0 && this.lastSelectedIndex !== index) {
+      // Shift+click → range select between lastSelectedIndex and index
+      const from = Math.min(this.lastSelectedIndex, index);
+      const to = Math.max(this.lastSelectedIndex, index);
+      this.rangeSelectMedia.emit({ from, to });
+      // Don't update lastSelectedIndex so user can shift-click again from same anchor
+    } else {
+      // Normal click → toggle single item
+      this.toggleMediaSelection.emit(item);
+      this.lastSelectedIndex = index;
+    }
+  }
+
+  onCheckboxClick(index: number, media: OrderImage, event: Event): void {
+    event.stopPropagation();
+    this.toggleMediaSelection.emit(media);
+    this.lastSelectedIndex = index;
+  }
+
+  // ─── Mobile: Long-press + drag to multi-select ──────────────────────────────
+  onTouchStart(index: number, event: TouchEvent): void {
+    if (!this.selectionMode) return;
+
+    this.cancelLongPress();
+    this.longPressTimer = setTimeout(() => {
+      // Long-press detected → start drag selection
+      this.isDragSelecting = true;
+      this.dragStartIndex = index;
+      this.dragTouchedIndices.clear();
+      this.dragTouchedIndices.add(index);
+
+      // Determine if we're selecting or deselecting based on current item state
+      const item = this.visibleMedia[index];
+      this.dragSelectAction = !(item?._id && this.selectedMediaIds.has(item._id));
+
+      // Apply to the first item
+      if (item) {
+        this.toggleMediaSelection.emit(item);
+        this.lastSelectedIndex = index;
+      }
+
+      // Haptic feedback (if available on mobile)
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    }, this.LONG_PRESS_MS);
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (!this.isDragSelecting || !this.galleryGrid?.nativeElement) return;
+
+    // Prevent scrolling while drag-selecting
+    event.preventDefault();
+
+    const touch = event.touches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target) return;
+
+    // Find the gallery-item ancestor
+    const galleryItem = target.closest('.gallery-item') as HTMLElement;
+    if (!galleryItem) return;
+
+    const indexAttr = galleryItem.getAttribute('data-index');
+    if (indexAttr === null) return;
+
+    const currentIndex = parseInt(indexAttr, 10);
+    if (isNaN(currentIndex) || this.dragTouchedIndices.has(currentIndex)) return;
+
+    // New item reached during drag
+    this.dragTouchedIndices.add(currentIndex);
+    const item = this.visibleMedia[currentIndex];
+    if (!item?._id) return;
+
+    const isCurrentlySelected = this.selectedMediaIds.has(item._id);
+
+    // Only toggle if the action matches (selecting unselected, or deselecting selected)
+    if (this.dragSelectAction && !isCurrentlySelected) {
+      this.toggleMediaSelection.emit(item);
+    } else if (!this.dragSelectAction && isCurrentlySelected) {
+      this.toggleMediaSelection.emit(item);
+    }
+
+    this.lastSelectedIndex = currentIndex;
+
+    // Small haptic tick
+    if (navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    this.cancelLongPress();
+    if (this.isDragSelecting) {
+      // End drag selection
+      this.isDragSelecting = false;
+      this.dragTouchedIndices.clear();
+      this.dragStartIndex = -1;
+    }
+  }
+
+  private cancelLongPress(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
   onOpenMedia(index: number, event?: Event): void {
     if (this.selectionMode) {
       const item = this.visibleMedia[index];
-      if (item) this.toggleMediaSelection.emit(item);
+      if (item) {
+        this.toggleMediaSelection.emit(item);
+        this.lastSelectedIndex = index;
+      }
       return;
     }
     this.openMedia.emit({ index, sortedMedia: this.filteredMedia });
